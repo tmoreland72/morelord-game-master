@@ -4,7 +4,7 @@ import { ID, escapeHTML as e, summarize } from "./core.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
-  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.3.11 or newer and its Socketlib connection.");
+  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.3.12 or newer and its Socketlib connection.");
   return api;
 };
 export const activeGM = () => core().users.list().find(user => user.active && user.isGM);
