@@ -1,0 +1,245 @@
+{
+  "name": "Volatile Magic Table",
+  "img": "icons/magic/light/orbs-hand-gray.webp",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "iczCHQ0nMWRU0sk0",
+      "name": "Disaster",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Expend the spell, drop to 1 HP, and cast a randomly selected spell at a random location within range.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "0ONrte5lZmYVHfbn",
+      "name": "Mutation",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Be twisted by formless energy. One of your limbs is that of a crab, insect, or tentacled thing.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "az3lcWFuGNXDElTl",
+      "name": "Rift",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>A tear opens in space-time, sucking unsecured objects or creatures into deep space over 4 rounds time.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "SMttpJ7rDH99d4ZN",
+      "name": "Imps",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>[[1d12]] Imps appear in brimstone cloud, angry at the clumsy clatter.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "0tzy14PgEfePQnQm",
+      "name": "Seared",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Be stricken by [[1d10]] arcane damage</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Ms7CZ0927fQq676I",
+      "name": "Toxic",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>A cloud of poisonous smoke appears, engulfing the current encounter, giving everyone the &amp;Reference[condition=Poisoned] for [[1d4]] rounds.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "Rd99G3fgzqJGzGD8",
+      "name": "Spell Sickness",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Forget this spell for [[1d4]] days.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "3e3b3uBJrHukQ9F8",
+      "name": "Dazed",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Spend your next turn stunned</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "iMlJPGkQAXuoIoTt",
+      "name": "Misfire",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Cast the spell, but at a random target or location, including allies.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "g457JeWOdfz0ZI7V",
+      "name": "Dud",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Nothing happens</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        11,
+        11
+      ],
+      "_id": "KJvPRNFPIXzcxcfs",
+      "name": "Sparkles",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Comical, colorful confetti fills the air, attracting unwanted attention.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        12,
+        12
+      ],
+      "_id": "555IsZLPpvfQ7bea",
+      "name": "Late",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The spell casts, but [[1d4]] rounds from now.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": false,
+  "folder": null,
+  "flags": {},
+  "formula": "1d12",
+  "ownership": {
+    "default": 0
+  },
+  "_id": "JtRByu566t45mzkG",
+  "sort": 0
+}

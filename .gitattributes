@@ -1,0 +1,9 @@
+* text=auto
+*.mjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+packs/** binary
+AGENTS.md export-ignore
+tests/ export-ignore
+test-results/ export-ignore
+.github/ export-ignore

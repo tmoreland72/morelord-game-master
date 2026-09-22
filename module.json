@@ -1,0 +1,104 @@
+{
+  "id": "morelord-game-master",
+  "title": "Morelord Game Master",
+  "description": "A GM tray for roll requests, sound, macros, triggers, and campaign assistance.",
+  "version": "0.1.1",
+  "authors": [
+    {
+      "name": "Morelord Gaming"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.368"
+  },
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/game-master.css"
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "morelord-core",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.3.11"
+        },
+        "manifest": "https://raw.githubusercontent.com/tmoreland72/morelord-core/main/module.json"
+      }
+    ],
+    "recommends": [
+      {
+        "id": "morelord-craftworks",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.4.12"
+        }
+      },
+      {
+        "id": "morelord-journeys",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.3.5"
+        }
+      }
+    ],
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.3",
+          "verified": "6.0.3"
+        }
+      }
+    ]
+  },
+  "packs": [
+    {
+      "name": "macros",
+      "label": "Game Master Macros",
+      "path": "packs/macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "NONE",
+        "TRUSTED": "NONE",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "roll-tables",
+      "label": "Game Master Roll Tables",
+      "path": "packs/roll-tables",
+      "type": "RollTable",
+      "ownership": {
+        "PLAYER": "NONE",
+        "TRUSTED": "NONE",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "Morelord Gaming",
+      "sorting": "a",
+      "packs": [],
+      "folders": [
+        {
+          "name": "Game Master",
+          "sorting": "a",
+          "packs": [
+            "macros",
+            "roll-tables"
+          ],
+          "folders": []
+        }
+      ]
+    }
+  ],
+  "url": "https://github.com/tmoreland72/morelord-game-master",
+  "manifest": "https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json",
+  "download": "https://github.com/tmoreland72/morelord-game-master/archive/refs/heads/master.zip"
+}

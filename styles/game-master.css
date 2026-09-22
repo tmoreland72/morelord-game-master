@@ -1,0 +1,22 @@
+/* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
+#mlgm { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:min(1180px,calc(100vw - 24px)); z-index:70; pointer-events:auto; }
+#mlgm [hidden] { display:none!important; }
+#mlgm .gm-handle { display:block; margin-inline:auto; }
+#mlgm .gm-tray { height:clamp(50vh,630px,74vh); }
+#mlgm .gm-span { grid-column:span 2; }
+#mlgm .gm-column { min-width:0; }
+#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,var(--hotbar-size,90px)); gap:var(--ml-space-4); }
+#mlgm .gm-chat { white-space:pre-wrap; overflow-wrap:anywhere; }
+body.mlgm-open #hotbar { display:none!important; }
+@media(max-width:700px) { #mlgm .gm-span { grid-column:auto; } }
+
+#mlgm .gm-trigger-toolbar { justify-content:flex-start; }
+
+#mlgm .gm-roll-actions { margin-top:auto; justify-content:flex-end; }
+#mlgm .gm-roll-card { min-width:0; }
+
+#mlgm .gm-roll-column { min-width:0; align-self:start; }
+
+#mlgm .gm-trigger-card { align-self:stretch; }
+#mlgm .gm-trigger-actions { margin-top:auto; }
+#mlgm .gm-trigger-actions > .gm-trigger-status { margin-right:auto; }

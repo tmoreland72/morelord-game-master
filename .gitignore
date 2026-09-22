@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.log
+test-results/
+
+.env.*
+!.env.example
+*.zip
+.release-*
+# LevelDB numbered logs contain pack data.
+!packs/*/*.log
+packs/*/LOCK
+packs/*/LOG
+packs/*/LOG.old

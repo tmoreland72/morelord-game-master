@@ -1,0 +1,11 @@
+{
+  "_id": "RollOfFate000001",
+  "name": "Roll of Fate",
+  "type": "script",
+  "scope": "global",
+  "img": "icons/svg/dice-target.svg",
+  "command": "const ID = 'morelord-game-master';\nconst core = () => game.modules.get('morelord-core').api;\nasync function rollOfFate() {\n  if (!game.user.isGM) throw new Error('Only a GM can roll Fate.');\n  const tokens = (canvas.tokens?.controlled ?? []).filter(token => token.actor?.type === 'character');\n  if (!tokens.length) { ui.notifications.warn('Select at least one character token for Roll of Fate.'); return null; }\n  const roll = tokens.length > 1 ? await new Roll(`1d${tokens.length}`).evaluate({allowInteractive:false}) : null;\n  const chosen = tokens[(roll?.total ?? 1) - 1];\n  return ChatMessage.create({\n    content:`<section class=\"ml-chat-card\"><p>Fate has decided that ${core().ui.actorIdentity({actorUuid:chosen.actor.uuid, name:chosen.name ?? chosen.actor.name, img:chosen.document?.texture?.src ?? chosen.actor.img})} shall be targeted!</p></section>`,\n    speaker:ChatMessage.getSpeaker(), whisper:[], blind:false, ...(roll ? {rolls:[roll]} : {}),\n    flags:{[ID]:{fate:{tokenUuid:chosen.document.uuid}}}\n  }, {messageMode:'public'});\n}\n\nreturn rollOfFate();",
+  "ownership": {
+    "default": 0
+  }
+}

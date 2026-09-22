@@ -1,0 +1,29 @@
+name: Sync manifest release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: game-master-release-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          sparse-checkout: |
+            scripts
+            tests
+      - run: node --test tests/release-sync.test.cjs
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            await require('./scripts/release-sync.cjs')({ github, context, core });

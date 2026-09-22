@@ -1,0 +1,553 @@
+{
+  "name": "Wild Magic Surge",
+  "formula": "1d100",
+  "description": "<div class=\"ve-muted\"><p><em>Effect</em></p></div>",
+  "results": [
+    {
+      "type": "text",
+      "name": "",
+      "description": "<p>Roll on this table at the start of each of your turns for the next minute, ignoring this result on subsequent rolls.</p>",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        1,
+        4
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "1-4"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "CidQQpRCOTbGt4c0",
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "A creature that is Friendly toward you appears in a random unoccupied space within 60 feet of you. The creature is under the DM's control and disappears 1 minute later. Roll [[/r 1d4]] to determine the creature: on a 1, a Modron Duodrone appears; on a 2, a Flumph appears; on a 3, a Modron Monodrone appears; on a 4, a Unicorn appears. See the Monster Manual for the creature's stat block.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        5,
+        8
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "5-8"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "9oVO0iDa4pcOrpeo"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "<p>For the next minute, you regain 5 @variantrule[Hit Points|XPHB] at the start of each of your turns.</p>",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        9,
+        12
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "9-12"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "XsT7J3C3ZNMS6qi7",
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "Creatures have @variantrule[Disadvantage|XPHB] on saving throws against the next spell you cast in the next minute that involves a saving throw.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        13,
+        16
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "13-16"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "0FSIesL3H6GQ1lKq"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You are subjected to an effect that lasts for 1 minute unless its description says otherwise. Roll [[/r 1d8]] to determine the effect: on a 1, you're surrounded by faint, ethereal music only you and creatures within 5 feet of you can hear; on a 2, your size increases by one size category; on a 3, you grow a long beard made of feathers that remains until you sneeze, at which point the feathers explode from your face and vanish; on a 4, you must shout when you speak; on a 5, illusory butterflies flutter in the air within 10 feet of you; on a 6, an eye appears on your forehead, granting you @variantrule[Advantage|XPHB] on Wisdom (&amp;Reference[skill=Perception]) checks; on an 7, pink bubbles float out of your mouth whenever you speak; on an 8, your skin turns a vibrant shade of blue for 24 hours or until the effect is ended by a @spell[Remove Curse|XPHB] spell.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        17,
+        20
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "17-20"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "ildBQteWBleEYisX"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "For the next minute, all your spells with a casting time of an action have a casting time of a @variantrule[Bonus Action|XPHB].",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        21,
+        24
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "21-24"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "0sOnEXiltk2S81cz"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You are transported to the Astral Plane until the end of your next turn. You then return to the space you previously occupied or the nearest unoccupied space if that space is occupied.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        25,
+        28
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "25-28"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "xaj0HAe8QL6135bQ"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "The next time you cast a spell that deals damage within the next minute, don't roll the spell's damage dice for the damage. Instead use the highest number possible for each damage die.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        29,
+        32
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "29-32"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "L5QDHuSy1uGWPUxr"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You have @variantrule[Resistance|XPHB] to all damage for the next minute.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        33,
+        36
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "33-36"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "f378FkhcN5T0QsUa"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You turn into a potted plant until the start of your next turn. While you're a plant, you have the &amp;Reference[condition=Incapacitated] condition and have @variantrule[Vulnerability|XPHB] to all damage. If you drop to 0 @variantrule[Hit Points|XPHB], your pot breaks, and your form reverts.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        37,
+        40
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "37-40"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "jWJnPfRzW9zFXaLH"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "For the next minute, you can teleport up to 20 feet as a @variantrule[Bonus Action|XPHB] on each of your turns.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        41,
+        44
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "41-44"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "XULkxnWhX025MkZA"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "<p>You and up to three creatures you choose within 30 feet of you have the &amp;Reference[condition=Invisible] condition for 1 minute. This invisibility ends on a creature immediately after it makes an attack roll, deals damage, or casts a spell.</p>",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        45,
+        48
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "45-48"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "t1KQK96TK1y2Xxrq",
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "A spectral shield hovers near you for the next minute, granting you a +2 bonus to AC and immunity to @spell[Magic Missile|XPHB].",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        49,
+        52
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "49-52"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "nBYAeqQ5NWqY5Ntw"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You can take one extra action on this turn.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        53,
+        56
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "53-56"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "jrXKyFAh0Q7bFHdd"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You cast a random spell. If the spell normally requires @status[Concentration|XPHB], it doesn't require @status[Concentration|XPHB] in this case; the spell lasts for its full duration. Roll [[/r 1d10]] to determine the spell: on a 1, @spell[Confusion|XPHB]; on a 2, @spell[Fireball|XPHB]; on a 3, @spell[Fog Cloud|XPHB]; on a 4, @spell[Fly|XPHB] (cast on a random creature within 60 feet of you), on a 5, @spell[Grease|XPHB]; on a 6, @spell[Levitate|XPHB] (cast on yourself); on a 7, @spell[Magic Missile|XPHB] (cast as a level 5 spell); on an 8, @spell[Mirror Image|XPHB]; on a 9, @spell[Polymorph|XPHB] (cast on yourself), and if you fail the saving throw, you turn into a Goat (see appendix B); on a 10, @spell[See Invisibility|XPHB].",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        57,
+        60
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "57-60"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "kr5wYAwja2qGtQYR"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "For the next minute, any flammable, nonmagical object you touch that isn't being worn or carried by another creature bursts into flame, takes [[/r 1d4]] Fire damage, and is burning.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        61,
+        64
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "61-64"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "L0nXfHgOR8GVtWFj"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "If you die within the next hour, you immediately revive as if by the @spell[Reincarnate|XPHB] spell.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        65,
+        68
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "65-68"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "4wOZGe1y3YvRj7pa"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "<p>You have the &amp;Reference[condition=Frightened] condition until the end of your next turn. The DM determines the source of your fear.</p>",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        69,
+        72
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "69-72"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "hWjegUbwohfb4e7m",
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You teleport up to 60 feet to an unoccupied space you can see.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        73,
+        76
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "73-76"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "ZzWsdvnPVR9rMcrH"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "A random creature within 60 feet of you has the &amp;Reference[condition=Poisoned] condition for [[/r 1d4]] hours.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        77,
+        80
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "77-80"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "RPcsQQrk4faBQx46"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You radiate @variantrule[Bright Light|XPHB] in a 30-foot radius for the next minute. Any creature that ends its turn within 5 feet of you has the &amp;Reference[condition=Blinded] condition until the end of its next turn.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        81,
+        84
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "81-84"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "owJsDKg2oqJsE57H"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "Up to three creatures of your choice that you can see within 30 feet of you take [[/r 1d10]] Necrotic damage. You regain @variantrule[Hit Points|XPHB] equal to the sum of the Necrotic damage dealt.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        85,
+        88
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "85-88"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "F0HngcAyvV76QCGM"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "Up to three creatures of your choice that you can see within 30 feet of you take [[/r 4d10]] Lightning damage.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        89,
+        92
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "89-92"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "NmQXEc8hYJniPFh6"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "You and all creatures within 30 feet of you have @variantrule[Vulnerability|XPHB] to Piercing damage for the next minute.",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        93,
+        96
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "93-96"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "XjpYZvEcA4dYpkex"
+    },
+    {
+      "type": "text",
+      "name": "",
+      "description": "<p>Roll [[/r 1d6]] On a 1, you regain [[/r 2d10]] @variantrule[Hit Points|XPHB]; on a 2, one ally of your choice within 300 feet of you regains [[/r 2d10]] @variantrule[Hit Points|XPHB]; on a 3, you regain your lowest-level expended spell slot; on a 4, one ally of your choice within 300 feet of you regains their lowest-level expended spell slot; on a 5, you regain all your expended Sorcery Points; on a 6, all the effects of row 17–20 affect you simultaneously.</p>",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "weight": 1,
+      "range": [
+        97,
+        100
+      ],
+      "drawn": false,
+      "flags": {
+        "plutonium": {
+          "dedupeId": "97-100"
+        },
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "_id": "fG1IehsOMNfg5vuE",
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "img": "icons/magic/light/hand-sparks-smoke-green.webp",
+  "flags": {
+    "plutonium": {
+      "page": "tables.html",
+      "source": "XPHB",
+      "hash": "wild%20magic%20surge_xphb"
+    }
+  },
+  "folder": null,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "aDMFCKJcdKaJjTc6",
+  "sort": 0
+}
