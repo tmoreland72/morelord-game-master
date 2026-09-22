@@ -17,7 +17,8 @@ export const craftworks = () => {
   if (!api.deleriumSearch.hasAccess) throw new Error("Enable the Monsters of Drakkenheim content pack in Craftworks to search for delerium.");
   return api;
 };
-export const requestTitle = req => req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d20` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
+export const surgeDie = req => req.surgeName === 'Volatile Magic' ? 4 : 20;
+export const requestTitle = req => req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d${surgeDie(req)}` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
 let channel;
 
 
@@ -147,7 +148,7 @@ async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execu
     return {accepted:true};
   }
   let roll, declined = false;
-  if (["encounter","surge"].includes(req.kind)) roll = await new Roll(`1d${req.kind === "surge" ? 20 : req.die}`).evaluate({allowInteractive:false});
+  if (["encounter","surge"].includes(req.kind)) roll = await new Roll(`1d${req.kind === "surge" ? surgeDie(req) : req.die}`).evaluate({allowInteractive:false});
   else if (req.kind === "death") {
     // Native bonuses and advantage apply, but private checks must not reveal the outcome through sheet counters.
     const preventUpdate = req.blind !== false && Hooks.on("dnd5e.rollDeathSave", (_rolls, data) => { if (data.subject === actor) return false; });
@@ -286,15 +287,17 @@ export async function foragingTerrains() {
   const {RESOURCE_OPTIONS,routeOptionsWithDCs}=await import("../../morelord-journeys/scripts/domain/route-options.mjs");
   return routeOptionsWithDCs(RESOURCE_OPTIONS,game.settings.get("morelord-journeys","dcConfiguration")?.foraging);
 }
-export function surgeOutcome(total,threshold=1) {
+export function surgeOutcome(total,threshold=1,die=20) {
+  if (die===4) return {threshold:1,triggered:total===1};
   const triggered=total<=threshold;
   return {threshold,triggered,nextThreshold:triggered ? 1 : Math.min(20,threshold+1)};
 }
 export async function finishSurge(message,actor,result) {
   const req=validRequest(message);
+  const volatile = surgeDie(req) === 4;
   let outcome=result.getFlag(ID,"surge");
   if (!outcome) {
-    outcome=surgeOutcome(result.rolls[0].total,actor.getFlag(ID,`surges.${req.triggerId}`)?.threshold ?? 1);
+    outcome=surgeOutcome(result.rolls[0].total,actor.getFlag(ID,`surges.${req.triggerId}`)?.threshold ?? 1,surgeDie(req));
     await result.setFlag(ID,"surge",outcome);
   }
   if (outcome.triggered && !game.messages.some(m=>m.author?.isGM && m.getFlag(ID,"surgeTable")===result.id)) {
@@ -304,7 +307,7 @@ export async function finishSurge(message,actor,result) {
     await table.toMessage(results,{roll,messageData:{blind:true,whisper:game.users.filter(u=>u.isGM).map(u=>u.id),speaker:ChatMessage.getSpeaker({actor}),flags:{[ID]:{surgeTable:result.id}}},messageOptions:{messageMode:"blind"}});
   }
   const state=actor.getFlag(ID,`surges.${req.triggerId}`);
-  if (state?.resultId !== result.id && !outcome.resolved) await actor.setFlag(ID,`surges.${req.triggerId}`,{threshold:outcome.nextThreshold,resultId:result.id});
-  await result.update({content:`<section class="ml-chat-card"><p>${e(actor.name)} · ${result.rolls[0].total} against ${outcome.threshold} or lower: ${outcome.triggered ? e(`${req.surgeName || "Wild Magic"} Surge`) : "No surge"}. Next threshold: ${outcome.nextThreshold}.</p></section>`,[`flags.${ID}.surge`]:{...outcome,resolved:true}});
+  if (!volatile && state?.resultId !== result.id && !outcome.resolved) await actor.setFlag(ID,`surges.${req.triggerId}`,{threshold:outcome.nextThreshold,resultId:result.id});
+  await result.update({content:volatile ? `<section class="ml-chat-card"><p>${e(actor.name)} · d4 result ${result.rolls[0].total}: ${outcome.triggered ? "Volatile Magic Surge" : "No surge"}. Only a 1 triggers a surge.</p></section>` : `<section class="ml-chat-card"><p>${e(actor.name)} · ${result.rolls[0].total} against ${outcome.threshold} or lower: ${outcome.triggered ? e(`${req.surgeName || "Wild Magic"} Surge`) : "No surge"}. Next threshold: ${outcome.nextThreshold}.</p></section>`,[`flags.${ID}.surge`]:{...outcome,resolved:true}});
   await message.setFlag(ID,"request",{...req,completed:[actor.id]});
 }

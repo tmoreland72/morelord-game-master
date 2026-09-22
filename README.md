@@ -139,7 +139,7 @@ Compendiums are **Morelord Gaming → Game Master → Game Master Macros** and *
 
 The Triggers tab starts and stops managed script macros; stopping removes their registered listeners and timers, and refresh restores only enabled rules. New Trigger remains visible but disabled; Edit and Delete are absent. Macro commands contain their executable conditions/actions; the manager provides shared Core services, a serialized action queue, and disposable hook/timer registration. Running a managed trigger macro from the hotbar explains how to start it instead of installing an unmanaged listener. Rule IDs, enabled states, custom table overrides, and per-character surge counters survive migration. Known personal surge-table references migrate to Game Master Roll Tables; other custom bindings remain unchanged. Volatile Magic is added stopped, ready for the GM to enable.
 
-Volatile Magic qualifies on any spell cast by a character, including cantrips and racial spells, after the spell attack or non-attack casting completion. It requests the same escalating d20 as Wild Magic. Counters are separate per character and trigger; both may respond to the same qualifying Sorcerer spell without suppressing one another. Requests are public, assigned players or GMs can resolve them, and blind results remain private.
+Volatile Magic qualifies on any spell cast by a character, including cantrips and racial spells, after the spell attack or non-attack casting completion. It requests a d4 and rolls the Volatile Magic Table only on a 1, with no progression. Existing Volatile counters are ignored and left untouched. Wild Magic retains its escalating d20; both may respond to the same qualifying Sorcerer spell without suppressing one another. Requests are public, assigned players or GMs can resolve them, and blind results remain private.
 
 Roll of Fate is available on Roll Requests and as a macro. It chooses equally among currently selected character tokens (not the configured party), ignores NPC tokens, and posts a public Core chat card: Fate has decided that [Character Name] shall be targeted! One token is chosen directly; no eligible token produces only a notification. Selecting two tokens representing the same character gives that character two entries, because the selection is token-based.
 
@@ -168,3 +168,5 @@ Version 0.1.3 requires Core 0.3.12 or newer. Core 0.3.11 omitted the public runS
 The Game Master tray tab uses Core’s shared translucent window surface. Its chevron points up when closed and down when open; the button also exposes its expanded state to assistive technology.
 
 Version 0.1.4 requires Core 0.3.13 for the shared tray-handle styling.
+
+Each GM loads the installation-wide trigger catalog when joining, even if another GM is connected. An empty shared catalog is repaired with the five stopped built-ins; disabling rules is the supported way to keep them inactive. Existing nonempty configurations and enabled states are preserved.

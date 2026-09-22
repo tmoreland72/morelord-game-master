@@ -15,6 +15,7 @@ const collection=a=>new Collection(a.map(x=>[x.id,x]));
 test("Core routes chat requests; all results are GM-only; racing clicks resolve once; death saves stay private; Craftworks rules are reused",async()=>{
   const events=new Map();globalThis.Hooks={on(k,f){events.set(k,[...(events.get(k)??[]),f]);return f;},off(k,f){events.set(k,(events.get(k)??[]).filter(x=>x!==f));},call(k,...args){return !(events.get(k)??[]).some(f=>f(...args)===false);}};
   const gm={id:"gm",isGM:true,active:true},assistant={id:"assistant",isGM:true,active:true},player={id:"player",isGM:false,active:true},other={id:"other",isGM:false,active:true};
+  let dieTotal=4;
   let skillCalls=0,dieCalls=0,deathUpdates=0,dispatch,holdAnimations=false; const warnings=[];
   const actor={id:"actor",uuid:"Actor.actor",name:"Aster",type:"character",hasPlayerOwner:true,isOwner:true,system:{skills:{prc:{}}},testUserPermission:u=>u.isGM||u.id==="player",
     async rollSkill(config,_dialog,message){assert.equal(message.create,false);skillCalls++;return [{total:15,options:{target:config.target},dice:[{faces:20,results:[{result:15}]}]}];},
@@ -25,7 +26,7 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   globalThis.ui={notifications:{warn:m=>warnings.push(m)},chat:{updateMessage(){}}};
   globalThis.CONFIG={DND5E:{skills:{prc:{label:"Perception"}}}};
   globalThis.canvas={scene:{id:"scene",name:"Test scene"}};
-  globalThis.Roll=class {constructor(formula){this.formula=formula;this.total=4;}async evaluate(){dieCalls++;return this;}};
+  globalThis.Roll=class {constructor(formula){this.formula=formula;this.total=dieTotal;}async evaluate(){dieCalls++;return this;}};
   globalThis.ChatMessage={getSpeaker:({actor})=>({actor:actor.id}),async create(data){const m={id:crypto.randomUUID(),author:gm,timestamp:Date.now(),...data,getFlag(ns,key){return this.flags?.[ns]?.[key];},async setFlag(ns,key,value){this.flags[ns][key]=structuredClone(value);},async update(data){for(const [path,value] of Object.entries(data)){const parts=path.split('.');let target=this;for(const part of parts.slice(0,-1))target=target[part]??={};target[parts.at(-1)]=value;}}};if(holdAnimations && data.flags?.[ID]?.result)m._dice3danimating=true;game.messages.set(m.id,m);return m;}};
   globalThis.socketlib={registerModule:()=>({register(_name,fn){dispatch=fn;}})};
   const transport=new ContextualSocketService();transport.start();
@@ -107,6 +108,22 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   assert.equal(dieCalls,beforeRetry+1);
   assert.equal(actor.getFlag(ID,'surges.wild').threshold,1);
   assert.equal(tableCalls,2);
+
+  await actor.setFlag(ID,'surges.volatile-magic',{threshold:20});
+  const beforeVolatile=tableCalls;
+  for(const total of [4,3,2,1]) {
+    dieTotal=total;
+    const request=await createRequest({kind:'surge',surgeName:'Volatile Magic',triggerId:'volatile-magic',tableUuid:'RollTable.volatile',actorIds:[actor.id]});
+    assert.match(request.content,/1d4/);
+    await resolve(request,gm);
+    const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id);
+    assert.equal(result.rolls[0].formula,'1d4');
+    assert.equal(result.getFlag(ID,'surge').triggered,total===1);
+    assert.doesNotMatch(result.content,/Next threshold/);
+    assert.equal(actor.getFlag(ID,'surges.volatile-magic').threshold,20);
+    assert.equal(tableCalls,beforeVolatile+(total===1?1:0));
+  }
+  dieTotal=4;
 
   for (const config of [{kind:'skill',skill:'prc'},{kind:'death'},{kind:'foraging',terrainIndex:0},{kind:'delerium',zoneId:'outer'}]) {
     const request=await createRequest({...config,blind:false,actorIds:[actor.id]});await resolve(request,gm,config.kind==='delerium'?'inv':undefined);

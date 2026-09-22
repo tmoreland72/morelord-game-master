@@ -32,7 +32,8 @@ export async function initializeGlobalTriggers() {
     });
     return queue;
   });
-  if (!game.user.isGM || activeGM()?.id !== game.user.id) return;
+  // Every GM loads the catalog; another connected GM may still have an older client.
+  if (!game.user.isGM) return;
   const response = await fetch(foundry.utils.getRoute(path), {cache:'no-store'});
   const board = foundry.utils.deepClone(game.settings.get(ID, 'board'));
   let triggers;
@@ -47,7 +48,7 @@ export async function initializeGlobalTriggers() {
     const data = await response.json();
     if (data.version !== 1 || !Array.isArray(data.triggers)) throw new Error('Invalid global trigger file; existing configuration was retained.');
     triggers = data.triggers;
-    includeDefaults = (data.macroMigration ?? 0) < 2;
+    includeDefaults = (data.macroMigration ?? 0) < 2 || triggers.length === 0;
   }
   // Upgrade in place; actor counters and existing rule IDs remain unchanged.
   const upgraded = migrateTriggerMacros(triggers, {includeDefaults});
