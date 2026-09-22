@@ -8,7 +8,7 @@ let channel, queue = Promise.resolve();
 
 async function write(triggers) {
   const picker = foundry.applications.apps.FilePicker;
-  const file = new File([JSON.stringify({version:1,macroMigration:1,triggers}, null, 2)], 'triggers.json', {type:'application/json'});
+  const file = new File([JSON.stringify({version:1,macroMigration:2,triggers}, null, 2)], 'triggers.json', {type:'application/json'});
   const result = await picker.upload('data', directory, file, {}, {notify:false});
   if (!result?.path) throw new Error('Could not save global triggers. Check Foundry file-upload permissions.');
 }
@@ -36,23 +36,22 @@ export async function initializeGlobalTriggers() {
   const response = await fetch(foundry.utils.getRoute(path), {cache:'no-store'});
   const board = foundry.utils.deepClone(game.settings.get(ID, 'board'));
   let triggers;
-  let includeVolatile = true;
+  let includeDefaults = true;
   if (response.status === 404) {
     const picker = foundry.applications.apps.FilePicker;
     const root = await picker.browse('data', '');
     if (!root.dirs.includes(directory)) await picker.createDirectory('data', directory);
     triggers = (board.triggers ?? []).map(t=>({...t,sourceWorld:game.world.id}));
-    await write(triggers);
   } else {
     if (!response.ok) throw new Error(`Could not load global triggers (${response.status}).`);
     const data = await response.json();
     if (data.version !== 1 || !Array.isArray(data.triggers)) throw new Error('Invalid global trigger file; existing configuration was retained.');
     triggers = data.triggers;
-    includeVolatile = data.macroMigration !== 1;
+    includeDefaults = (data.macroMigration ?? 0) < 2;
   }
   // Upgrade in place; actor counters and existing rule IDs remain unchanged.
-  const upgraded = migrateTriggerMacros(triggers, {includeVolatile});
-  if (JSON.stringify(upgraded) !== JSON.stringify(triggers)) await write(upgraded);
+  const upgraded = migrateTriggerMacros(triggers, {includeDefaults});
+  if (includeDefaults || JSON.stringify(upgraded) !== JSON.stringify(triggers)) await write(upgraded);
   triggers = upgraded;
   // Preserve former world-specific bindings without reviving globally deleted rules.
   board.legacyWorldTriggers ??= board.triggers ?? [];

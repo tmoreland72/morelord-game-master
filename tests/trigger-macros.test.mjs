@@ -1,16 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createTriggerRuntime} from '../scripts/trigger-macros.mjs';
-import {migrateTriggerMacros,SURGE_TABLES} from '../scripts/trigger-catalog.mjs';
+import {migrateTriggerMacros,SURGE_TABLES,defaultTriggers} from '../scripts/trigger-catalog.mjs';
 
 test('migration preserves IDs, pause state, and custom tables while replacing the two known personal references',()=>{
   const rows=[{id:'original',kind:'sorcerer',enabled:true,tableUuid:SURGE_TABLES.sorcerer.replace('morelord-game-master.roll-tables','morelord-compendium.tables-1')}, {id:'custom',kind:'sorcerer',enabled:false,tableUuid:'RollTable.mine'}];
   const next=migrateTriggerMacros(rows);
   assert.equal(next[0].id,'original');assert.equal(next[0].tableUuid,SURGE_TABLES.sorcerer);
   assert.equal(next[1].enabled,false);assert.equal(next[1].tableUuid,'RollTable.mine');
-  assert.equal(next[2].kind,'volatile');assert.equal(next[2].enabled,false);
+  assert.equal(next.find(t=>t.kind==='volatile').enabled,false);
+  assert.equal(new Set(next.map(t=>t.kind)).size,6);assert.ok(next.slice(2).every(t=>!t.enabled));
   assert.deepEqual(migrateTriggerMacros(next),next);
-  assert.deepEqual(migrateTriggerMacros([],{includeVolatile:false}),[]);
+  assert.deepEqual(migrateTriggerMacros([],{includeDefaults:false}),[]);
 });
 
 test('runtime installs once, serializes actions, removes hooks/timers on stop, and rejects missing macros',async()=>{
@@ -24,3 +25,5 @@ test('runtime installs once, serializes actions, removes hooks/timers on stop, a
   const unavailable=createTriggerRuntime({resolve:async()=>null,hooks:{},onError:()=>{}});await unavailable.sync();assert.equal(unavailable.status('one'),'Unavailable');
   trigger.enabled=false;await unavailable.sync();assert.equal(unavailable.status('one'),'Stopped');
 });
+
+test('fresh installs get every managed trigger stopped with stable portable macro bindings',()=>{const rows=migrateTriggerMacros([]);assert.equal(rows.length,6);assert.deepEqual(rows,defaultTriggers());assert.ok(rows.every(t=>t.enabled===false&&t.macroUuid.startsWith('Compendium.morelord-game-master.macros.')));assert.deepEqual(migrateTriggerMacros(rows),rows);});
