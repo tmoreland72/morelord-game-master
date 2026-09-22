@@ -13,14 +13,14 @@ test('global triggers migrate once, survive world changes, retain deletions, and
   globalThis.fetch=async()=>file ? Response.json(file) : new Response('',{status:404});
   try {
     await initializeGlobalTriggers();assert.equal(file.triggers[0].id,'legacy');assert.equal(file.triggers[0].sourceWorld,'first');
-    assert.equal(file.macroMigration,2);assert.equal(file.triggers.length,6);assert.equal(file.triggers[0].enabled,true);assert.ok(file.triggers.slice(1).every(t=>!t.enabled));
+    assert.equal(file.macroMigration,2);assert.equal(file.triggers.length,5);assert.equal(file.triggers[0].enabled,true);assert.ok(file.triggers.slice(1).every(t=>!t.enabled));
     assert.equal(board.saved[0].id,'local-roll');assert.equal(board.last.die,8);assert.equal(board.legacyWorldTriggers[0].id,'legacy');
     game.world.id='second';board={saved:[{id:'second-roll'}],triggers:[{id:'second-legacy'}]};
     await initializeGlobalTriggers();assert.equal(board.triggers[0].id,'legacy');assert.equal(board.saved[0].id,'second-roll');assert.equal(board.legacyWorldTriggers[0].id,'second-legacy');
     await saveGlobalTriggers([]);assert.deepEqual(file.triggers,[]);
     await initializeGlobalTriggers();assert.deepEqual(board.triggers,[]);
     game.user=player;assert.throws(()=>saveGlobalTriggers([{id:'unauthorized'}]),/Only GMs/);assert.deepEqual(file.triggers,[]);
-    game.user=gm;file={version:1,macroMigration:1,triggers:[{id:'volatile-magic',kind:'volatile',enabled:false}]};await initializeGlobalTriggers();assert.equal(file.triggers.length,6);assert.ok(file.triggers.every(t=>!t.enabled));
+    game.user=gm;file={version:1,macroMigration:1,triggers:[{id:'volatile-magic',kind:'volatile',enabled:false}]};await initializeGlobalTriggers();assert.equal(file.triggers.length,5);assert.ok(file.triggers.every(t=>!t.enabled));
     file={version:2,triggers:[]};await assert.rejects(initializeGlobalTriggers,/Invalid global trigger/);
   } finally {globalThis.fetch=originalFetch;}
 });

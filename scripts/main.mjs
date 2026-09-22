@@ -114,7 +114,7 @@ function savedName(type,config) {
 }
 function render() {
   if (!root) return;
-  root.innerHTML = `${button("toggle", "◆  Game Master", "", `class="gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray"`)}
+  root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>

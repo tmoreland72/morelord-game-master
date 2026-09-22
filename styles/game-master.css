@@ -1,7 +1,7 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
 #mlgm { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:min(1180px,calc(100vw - 24px)); z-index:70; pointer-events:auto; }
 #mlgm [hidden] { display:none!important; }
-#mlgm .gm-handle { display:block; margin-inline:auto; }
+#mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:clamp(50vh,630px,74vh); }
 #mlgm .gm-span { grid-column:span 2; }
 #mlgm .gm-column { min-width:0; }

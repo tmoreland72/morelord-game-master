@@ -10,16 +10,17 @@ export const SURGE_TABLES = {
 };
 export function defaultTriggers() {
   const names = {sorcerer:'Wild Magic Surge',volatile:'Volatile Magic',sneak:'Sneak Attack',item:'Item Use — Roll Table','lucky-find':'Lucky Finds','world-clock':'World Clock'};
-  return Object.keys(TRIGGER_MACROS).map(kind => ({
+  return Object.keys(TRIGGER_MACROS).filter(kind => kind !== 'item').map(kind => ({
     id:kind==='sorcerer'?'wild-magic-surge':kind==='volatile'?'volatile-magic':kind==='sneak'?'sneak-attack':kind,
     kind,name:names[kind],enabled:false,macroUuid:triggerMacroUuid(kind),
     ...(SURGE_TABLES[kind]?{tableUuid:SURGE_TABLES[kind],tableName:kind==='volatile'?'Volatile Magic Table':'Wild Magic Surge'}:{}),
-    ...(kind==='world-clock'?{gameMinutes:10,realMinutes:1}:{}),
-    ...(kind==='item'?{actorName:'Configured character',itemName:'configured item or feature',tableName:'configured roll table'}:{})
+    ...(kind==='world-clock'?{gameMinutes:10,realMinutes:1}:{})
   }));
 }
 export function migrateTriggerMacros(triggers, {includeDefaults = true} = {}) {
-  const result = triggers.map(trigger => {
+  const result = triggers.filter(trigger => !(trigger.id === 'item' && trigger.kind === 'item'
+    && trigger.actorName === 'Configured character' && !trigger.actorId && !trigger.itemId
+    && !trigger.tableUuid && !trigger.tableId)).map(trigger => {
     const next = {...trigger, macroUuid:trigger.macroUuid || triggerMacroUuid(trigger.kind)};
     if (SURGE_TABLES[trigger.kind] && (!trigger.tableUuid || trigger.tableUuid === SURGE_TABLES[trigger.kind].replace('morelord-game-master.roll-tables','morelord-compendium.tables-1'))) {
       next.tableUuid = SURGE_TABLES[trigger.kind];
