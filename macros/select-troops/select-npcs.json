@@ -1,0 +1,15 @@
+{
+  "name": "Select NPCs",
+  "type": "script",
+  "scope": "global",
+  "img": "icons/svg/target.svg",
+  "ownership": {
+    "default": 0
+  },
+  "command": "if (!game.user.isGM) return ui.notifications.warn('GM only.');\nif (!canvas.ready || !canvas.scene) return ui.notifications.warn('Open a scene first.');\nconst {escapeHTML:e}=await import('/modules/morelord-game-master/scripts/core.mjs');\nconst sceneId=canvas.scene.id;\nconst typeName=t=>game.actors.get(t.document.actorId)?.name ?? t.actor?.name ?? t.document.name;\nconst groups=new Map();\nfor (const token of canvas.tokens.placeables) {\n  if (token.actor?.type!=='npc') continue;\n  const name=typeName(token);\n  groups.set(name,(groups.get(name)??0)+1);\n}\nconst names=[...groups.keys()].sort((a,b)=>a.localeCompare(b));\nif (!names.length) return ui.notifications.info('No NPCs on this scene.');\nconst choice=await foundry.applications.api.DialogV2.wait({\n  id:'morelord-game-master-select-npcs',classes:['ml-window'],\n  window:{title:'Select NPCs'},position:{width:420},\n  content:`<div><div class=\"ml-app ml-app-shell ml-dialog-shell\"><label><span>NPC type</span><select name=\"npcType\">${names.map((name,i)=>`<option value=\"${i}\">${e(name)} (${groups.get(name)})</option>`).join('')}</select></label><p>Selects all matching tokens, including those at 0 HP.</p></div></div>`,\n  buttons:[{action:'select',label:'Select tokens',default:true,callback:(event,button)=>Number(button.form.elements.npcType.value)},{action:'cancel',label:'Cancel',callback:()=>null}],\n  close:()=>null\n});\nif (!Number.isInteger(choice) || choice<0 || choice>=names.length) return;\nif (canvas.scene?.id!==sceneId) return ui.notifications.warn('Scene changed. Reopen Select NPCs.');\ncanvas.tokens.activate();canvas.tokens.releaseAll();\nfor (const token of canvas.tokens.placeables) if(token.actor?.type==='npc' && typeName(token)===names[choice]) token.control({releaseOthers:false});\nui.notifications.info(`Selected ${canvas.tokens.controlled.length} ${names[choice]} tokens.`);\n",
+  "flags": {
+    "morelord-game-master": {
+      "selectTroops": "npc-picker"
+    }
+  }
+}

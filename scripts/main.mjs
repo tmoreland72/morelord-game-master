@@ -12,6 +12,7 @@ let campaign, campaigns = [], connection, aiBusy = false;
 const drafts = new Map();
 let campaignSelection = 0;
 let terrainOptions = [];
+let settingTrackVolumes = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
@@ -62,7 +63,7 @@ Hooks.once("ready", async () => {
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger };
   core().ui.documentation.register({id:ID,title:"Morelord Game Master",subtitle:"Your table, within reach.",icon:"fa-solid fa-dice-d20",sections:[
     {id:"rolls",title:"Requests and character verification",icon:"fa-solid fa-dice",paragraphs:["Select participants on the Party tab. Configure roll options directly on cards; every change is remembered. Dice buttons request immediately. Core assigns each character to an eligible logged-in player or the active GM. If a player disconnects, any GM can resolve the pending chat request.","Roll requests are always public. Blind results and summaries are private to GMs and Assistant GMs; disable Blind roll for public results. Requests remain in chat, where any GM can roll for anyone. Blind death saves use native system bonuses, but the GM tracks successes and failures privately. Skill checks include individual totals and an average after all rolls are complete."]},
-    {id:"tools",title:"Sound, macros, and triggers",icon:"fa-solid fa-sliders",paragraphs:["Save playlist and ambience buttons, and drag macros into the empty Macros tab. Configure the ambience folder in Game settings. Configured triggers continue while the tray is hidden. Configured World Clock triggers advance 10 game minutes per real minute by default, with configurable intervals. Pause and combat suspend the clock; combat adds 6 seconds per round when it ends. Calendar adjustments remain available."]},
+    {id:"tools",title:"Sound, macros, and triggers",icon:"fa-solid fa-sliders",paragraphs:["Above Now Playing, set all playlist track volumes to a percentage, including stopped tracks and ambience. Saved playback buttons reapply their configured volumes when started. Save playlist and ambience buttons, and drag macros into the empty Macros tab. Configure the ambience folder in Game settings. Configured triggers continue while the tray is hidden. Configured World Clock triggers advance 10 game minutes per real minute by default, with configurable intervals. Pause and combat suspend the clock; combat adds 6 seconds per round when it ends. Calendar adjustments remain available."]},
     {id:"ai",title:"Campaign AI",icon:"fa-solid fa-book",paragraphs:["Start the local companion, enter its URL and token in Game settings, and connect from Campaign AI. The companion keeps campaign files and conversations separate. Sending shares the selected campaign context with your configured OpenAI model. See the module README for private service setup."]}
   ]});
   if (!game.user.isGM) return;
@@ -134,7 +135,7 @@ function content() {
     const cards = playing.map(({p,s})=>`<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${s.volume}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume">${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`).join("");
     return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
       + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
-      + column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""));
+      + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks and ambience.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
   return aiContent();
@@ -213,6 +214,7 @@ async function act(action, id) {
   if (action === "saved") { const s = state.saved.find(x => x.id === id); if (s) await run(s.type, s.config); }
   if (action === "playlist") return playlistForm();
   if (action === "ambience") return ambienceForm();
+  if (action === "set-track-volumes") return setTrackVolumes();
   if (action === "stop-music" || action === "stop-ambience") for (const p of game.playlists) if (Boolean(p.getFlag(ID,"ambience")) === (action === "stop-ambience")) await p.stopAll();
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
   if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
@@ -223,6 +225,11 @@ async function act(action, id) {
 }
 async function onChange(event) {
   const el = event.target;
+  if (el.id === "ml-game-master-track-volume" && el.checkValidity()) {
+    gm();
+    const percent = Number(el.value);
+    await persist(n=>{n.last.allTrackVolume=percent;});return;
+  }
   if (tab === "party" && el.name === "actorUuids") {
     const ids=[...root.querySelectorAll('[name="actorUuids"]:checked')].map(el=>el.value.split('.').at(-1));
     await persist(n=>{n.partyActorIds=ids;});return;
@@ -239,6 +246,30 @@ async function onChange(event) {
     if (sequence === campaignSelection) { campaign = selected; render(); }
   }
   if (el.id === "mlgm-upload") await uploadFiles(el.files);
+}
+async function setTrackVolumes() {
+  gm();
+  if (settingTrackVolumes) return;
+  const field = root.querySelector('#ml-game-master-track-volume');
+  if (!field?.reportValidity()) return;
+  const percent = Number(field.value);
+  const volume = foundry.audio.AudioHelper.inputToVolume(percent / 100);
+  settingTrackVolumes = true;
+  try {
+    await persist(n=>{n.last.allTrackVolume=percent;});
+    render();
+    let count = 0;
+    for (const playlist of game.playlists) {
+      const updates = playlist.sounds.map(sound=>({_id:sound.id,volume}));
+      if (!updates.length) continue;
+      await playlist.updateEmbeddedDocuments("PlaylistSound",updates);
+      count += updates.length;
+    }
+    ui.notifications.info(`Set ${count} playlist tracks to ${percent}%.`);
+  } finally {
+    settingTrackVolumes = false;
+    render();
+  }
 }
 async function run(type, config) {
   if (["group", "player", "death"].includes(type)) await createRequest({...config,...(type === "group" ? {actorIds:partyActorIds()} : {}),kind:type === "death" ? "death" : "skill"});

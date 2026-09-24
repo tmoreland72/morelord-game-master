@@ -1,5 +1,9 @@
 # Morelord Game Master
 
+[Mass Combat macros](macros/mass-combat/README.md) resolve selected attacker and target groups using average damage, focus fire, casualty previews, and optional HP updates.
+
+Smithy at the Scar has optional [native wave-control macros](macros/smithy-at-the-scar/README.md) for perimeter spawning, ten rounds of reinforcements, and the ratling safe word.
+
 Version 0.1.1 — working implementation of the September 20, 2026 design checkpoint.
 
 ## Start in Foundry
@@ -8,7 +12,7 @@ The module is already in the development installation's `Data/modules/morelord-g
 
 As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. Change the shortcut in Foundry's keybinding settings. The tray hides the local hotbar while open and restores its existing visibility when closed. Players receive roll requests in chat; they do not get the GM tray.
 
-Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.3.9+ is required (including its Socketlib dependency). The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search additionally requires Craftworks 0.4.12+ and its enabled Monsters of Drakkenheim content pack. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
+Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.3.13+ is required (including its Socketlib dependency). The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search additionally requires Craftworks 0.4.12+ and its enabled Monsters of Drakkenheim content pack. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
 
 ## Available controls
 
@@ -18,7 +22,7 @@ Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API.
 - **Encounter:** select d4, d6, d8, d10, d12, or d20 from the dropdown; default d8.
 - **Skill checks:** optional DC, native automatic modifiers, and DIS / Roll / ADV chat controls. Complete-only summary cards include individual totals, pass/fail when a DC is set, and averages, including single-player checks.
 - **Delerium Search:** uses Craftworks rules, rewards, and encounters. Foraging uses Journeys terrain/DC settings and food rules. Both produce complete-only chat summaries.
-- **Sound:** saved playlist and ambience controls start immediately. Starting music stops other music first and shuffles. Stop controls appear under Now Playing only while something is playing.
+- **Sound:** saved playlist and ambience controls start immediately. Starting music stops other music first and shuffles. Above Now Playing, enter a percentage (0–100) and choose **Set All Track Volumes** to update every current playlist track, including stopped tracks and ambience. The percentage is remembered per world and uses Foundry's volume-slider scale. Saved playback buttons retain their configured volumes and reapply them when started. Stop controls appear under Now Playing only while something is playing.
 - **Macros:** immediately after Roll Requests, starts empty. Drag macros into the panel, drag to reorder, click to execute, or right-click and choose Remove. Each pin is 50% larger than Foundry's action-bar slots, with twice the spacing and the same rounded-square shape, with its name on hover. The Macros tab has no outer frame. There is no ten-slot limit. Pins are world-specific and shared by GMs in that world; unpinning does not delete the underlying macro.
 - **Triggers:** **+ New Trigger** is left-aligned above the unframed trigger cards and precedes the When/Then cards, with start/stop controls. New Trigger is disabled and Edit/Delete are hidden. Supports item-use → roll table, Sorcerer-source spell → player d20 request → conditional roll table, and qualifying weapon hit → native Sneak Attack damage. Triggers operate while the tray is hidden. The configured Sneak Attack and Wild Magic rules now apply to every matching character, including Grim Shara and Rhyndor. Legacy character bindings are ignored for these two rule types; rule IDs and existing surge counters are preserved. Item-use rules remain character-specific.
 - **Campaign AI:** a private companion-backed campaign library, PDF/TXT/Markdown uploads, campaign notes and rules editions, separate durable conversations, optional scene/party names, and Markdown conversation export. OpenAI API is the initial working adapter; provider credentials must be configured separately.
@@ -155,7 +159,7 @@ Core (66), Craftworks (67), and Game Master (19) automated tests pass, together 
 
 ## GitHub installation and releases
 
-Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. This module is distributed only through GitHub, without a Foundry package-directory or Morelord website listing. Morelord Core 0.3.11 or newer is required; version 0.3.10 lacks the shared roll-request services.
+Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. This module is distributed only through GitHub, without a Foundry package-directory or Morelord website listing. Morelord Core 0.3.13 or newer is required; version 0.3.10 lacks the shared roll-request services.
 
 Use the existing 0.1.1 version for the first release, then increment module.json and package.json for later updates. Stop Foundry before committing pack databases. Run npm test, node --test tests/release-sync.test.cjs, and relevant Dev1 checks. Commit the complete LevelDB packs, including numbered .log files and their CURRENT/MANIFEST files, then push master. Sync manifest release creates a matching tag and GitHub release; wait for it to pass and verify the public manifest and archive. Never move an existing version tag. No release.ps1 or release.config.json is used for this GitHub branch-archive workflow.
 
