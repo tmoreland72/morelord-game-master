@@ -1,6 +1,6 @@
 export const TRIGGER_MACROS = {
-  sorcerer:'WildMagicSurge01', volatile:'VolatileMagic001', sneak:'SneakAttack00001', item:'ItemUseTable0001',
-  'lucky-find':'LuckyFinds000001', 'world-clock':'WorldClock000001'
+  sorcerer:'WildMagicSurge01', volatile:'VolatileMagic001', sneak:'SneakAttack00001', 'hunters-mark':'HuntersMark00001', item:'ItemUseTable0001',
+  'ammo-recovery':'AmmoRecovery0001', 'lucky-find':'LuckyFinds000001', 'world-clock':'WorldClock000001'
 };
 export const triggerMacroUuid = kind => TRIGGER_MACROS[kind]
   ? `Compendium.morelord-game-master.macros.Macro.${TRIGGER_MACROS[kind]}` : null;
@@ -9,7 +9,7 @@ export const SURGE_TABLES = {
   volatile:'Compendium.morelord-game-master.roll-tables.RollTable.JtRByu566t45mzkG'
 };
 export function defaultTriggers() {
-  const names = {sorcerer:'Wild Magic Surge',volatile:'Volatile Magic',sneak:'Sneak Attack',item:'Item Use — Roll Table','lucky-find':'Lucky Finds','world-clock':'World Clock'};
+  const names = {sorcerer:'Wild Magic Surge',volatile:'Volatile Magic',sneak:'Sneak Attack','hunters-mark':"Hunter's Mark",item:'Item Use — Roll Table','ammo-recovery':'Ammunition Recovery','lucky-find':'Lucky Finds','world-clock':'World Clock'};
   return Object.keys(TRIGGER_MACROS).filter(kind => kind !== 'item').map(kind => ({
     id:kind==='sorcerer'?'wild-magic-surge':kind==='volatile'?'volatile-magic':kind==='sneak'?'sneak-attack':kind,
     kind,name:names[kind],enabled:false,macroUuid:triggerMacroUuid(kind),

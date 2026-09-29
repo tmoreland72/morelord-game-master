@@ -17,6 +17,7 @@ export function isSorcererSpell(item) {
 export function matchesTriggerActor(kind,actor) {
   if (actor?.type !== 'character') return false;
   const has=(type,id)=>actor.items.some(i=>i.type===type && i.system.identifier===id);
+  if (kind==='hunters-mark') return true;
   if (kind==='volatile') return true;
   if (kind==='sorcerer') return has('class','sorcerer') && has('subclass','wild-magic');
   if (kind==='sneak') return has('class','rogue') && has('feat','sneak-attack');
@@ -41,6 +42,24 @@ export function sneakTarget(message,actor,item) {
     if (target.ac == null || (!roll.isCritical && roll.total<target.ac)) continue;
     const token=fromUuidSync(target.token)?.object;
     if (roll.hasAdvantage || (token && nearbyAlly(actor,token))) return target;
+  }
+  return null;
+}
+export function huntersMarkHit(message,actor,item) {
+  if (message?.type !== 'attack') return null;
+  const roll=message.rolls?.[0];
+  if (!roll || roll.isFumble) return null;
+  const critical=Boolean(roll.isCritical || roll.dice?.some(d=>d.faces===20 && d.results.some(r=>r.active!==false && !r.discarded && r.result===20)));
+  for (const mark of actor.concentration?.items ?? []) {
+    if (mark.system.identifier !== 'hunters-mark' || (mark.system.source?.rules==='2014' && item.type!=='weapon')) continue;
+    for (const target of message.system.targets ?? []) {
+      if (!critical && (target.ac==null || roll.total<target.ac)) continue;
+      const defender=fromUuidSync(target.token)?.actor;
+      const marked=Array.from(defender?.appliedEffects ?? []).some(effect=>effect.active &&
+        [effect.system?.origin?.activity, effect.system?.origin?.item, effect.origin]
+          .some(origin=>origin===mark.uuid || origin?.startsWith(`${mark.uuid}.Activity.`)));
+      if (marked) return {target,feature:mark,critical};
+    }
   }
   return null;
 }
@@ -75,7 +94,7 @@ export async function executeTrigger(trigger,event) {
   if (['world-clock','lucky-find'].includes(trigger.kind)) return false;
   if (trigger.kind === 'item' && trigger.sourceWorld && trigger.sourceWorld !== game.world.id) return false;
   if (event.getFlag(ID,'triggerResult')) return false;
-  const message=trigger.kind==='sneak' ? attackForDamage(event) : ['sorcerer','volatile'].includes(trigger.kind) ? rootOrigin(event) : event;
+  const message=['sneak','hunters-mark'].includes(trigger.kind) ? attackForDamage(event) : ['sorcerer','volatile'].includes(trigger.kind) ? rootOrigin(event) : event;
   if (!message || (['sorcerer','volatile'].includes(trigger.kind) && !spellCompleted(message))) return false;
   // Class rules deliberately ignore legacy character bindings, preserving rule IDs and surge counters.
   const actor=ChatMessage.getSpeakerActor?.(message.speaker) ?? game.actors.get(message.speaker.actor);
@@ -84,10 +103,15 @@ export async function executeTrigger(trigger,event) {
   if (!actor || !item || !message.author || (!message.author.isGM && !actor.testUserPermission(message.author,'OWNER'))) return false;
   if (message.speaker.actor!==actor.id) return false;
   if (message.getFlag(ID,'triggerHandled')?.includes(trigger.id)) return false;
-  let target;
+  let target,markHit;
   if (trigger.kind==='sneak') {
     target=sneakTarget(message,actor,item);
     if (!target) return false;
+  } else if (trigger.kind==='hunters-mark') {
+    markHit=huntersMarkHit(message,actor,item);
+    if (!markHit) return false;
+    target=markHit.target;
+    if (game.messages.some(m=>m.getFlag(ID,'triggerResult')?.kind==='hunters-mark' && m.getFlag(ID,'triggerResult')?.sourceId===message.id)) return false;
   } else {
     if (!message.getFlag(ID,'triggerUse')) return false;
     if (trigger.kind==='sorcerer' ? !isSorcererSpell(item) : trigger.kind==='volatile' ? item.type!=='spell' : item.id!==trigger.itemId) return false;
@@ -101,16 +125,17 @@ export async function executeTrigger(trigger,event) {
     if (!table) throw new Error('Import the configured Wild Magic table into this world first.');
     if (!game.messages.some(m=>m.author?.isGM && m.getFlag(ID,'request')?.sourceId===message.id && m.getFlag(ID,'request')?.kind==='surge' && m.getFlag(ID,'request')?.triggerId===trigger.id))
       await createRequest({kind:'surge',actorIds:[actor.id],triggerId:trigger.id,sourceId:message.id,tableUuid:table.uuid,surgeName:trigger.kind==='volatile' ? 'Volatile Magic' : 'Wild Magic'});
-  } else if (trigger.kind==='sneak') {
-    const feature=actor.items.find(i=>i.type==='feat' && i.system.identifier==='sneak-attack'), activity=feature?.system.activities.find(a=>a.type==='damage');
-    if (!activity) throw new Error('Sneak Attack damage activity is missing.');
-    const config=activity.getDamageConfig({isCritical:Boolean(message.rolls[0].isCritical)});
-    const damageType=Array.from(item.system.damage.base.types)[0];
+  } else if (['sneak','hunters-mark'].includes(trigger.kind)) {
+    const label=markHit ? "Hunter's Mark" : 'Sneak Attack';
+    const feature=markHit?.feature ?? actor.items.find(i=>i.type==='feat' && i.system.identifier==='sneak-attack'), activity=feature?.system.activities.find(a=>a.type==='damage');
+    if (!activity) throw new Error(`${label} damage activity is missing.`);
+    const config=activity.getDamageConfig({isCritical:markHit?.critical ?? Boolean(message.rolls[0].isCritical)});
+    const damageType=(!markHit || feature.system.source?.rules==='2014') ? Array.from(item.system.damage?.base?.types ?? [])[0] : null;
     for (const roll of config.rolls) if (damageType) {roll.options.type=damageType;roll.data.roll.damage.type=damageType;}
     config.subject=activity;config.hookNames=['damage'];
     const rolls=await CONFIG.Dice.DamageRoll.build(config,{configure:false},{create:false});
     if (!rolls?.length) return false;
-    await ChatMessage.create({...privateData,type:'damage',system:{...activity.messageSources,targets:[target],origin:message.id},flavor:e(`${actor.name} · Sneak Attack`),rolls},{messageMode:'blind'});
+    await ChatMessage.create({...privateData,type:'damage',system:{...activity.messageSources,targets:[target],origin:message.id},flavor:e(`${actor.name} · ${label}`),rolls},{messageMode:'blind'});
   } else {
     const table=await triggerTable(trigger);
     if (!table) throw new Error('Trigger roll table is missing.');

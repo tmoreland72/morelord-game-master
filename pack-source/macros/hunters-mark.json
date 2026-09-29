@@ -1,6 +1,6 @@
 {
-  "_id": "WildMagicSurge01",
-  "name": "Wild Magic Surge",
+  "_id": "HuntersMark00001",
+  "name": "Hunter's Mark",
   "type": "script",
   "scope": "global",
   "img": "icons/svg/dice-target.svg",
@@ -10,7 +10,7 @@
   },
   "flags": {
     "morelord-game-master": {
-      "triggerKind": "sorcerer",
+      "triggerKind": "hunters-mark",
       "schemaVersion": 1
     }
   }

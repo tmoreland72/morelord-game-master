@@ -25,12 +25,13 @@ Hooks.on('updateChatMessage', (message, changes) => {
   if (foundry.utils.getProperty(changes, 'flags.' + ID + '.triggerUse')) return process(message);
 });
 return true;`;
-const names = {sorcerer:'Wild Magic Surge', volatile:'Volatile Magic', sneak:'Sneak Attack', item:'Item Use — Roll Table', 'lucky-find':'Lucky Finds', 'world-clock':'World Clock'};
+const names = {sorcerer:'Wild Magic Surge', volatile:'Volatile Magic', sneak:'Sneak Attack','hunters-mark':"Hunter's Mark", item:'Item Use — Roll Table', 'ammo-recovery':'Ammunition Recovery','lucky-find':'Lucky Finds', 'world-clock':'World Clock'};
 await fs.mkdir(path.join(root, 'pack-source/macros'), {recursive:true});
 const documents = [];
 for (const [kind, id] of Object.entries(TRIGGER_MACROS)) {
   let command;
-  if (kind === 'world-clock') command = prelude + clockSource + '\ninitializeWorldClock();\nreturn true;';
+  if (kind === 'ammo-recovery') command = prelude + `const {recoverCombatAmmo}=await import('/modules/morelord-game-master/scripts/ammo-recovery.mjs');\nHooks.on('deleteCombat',combat=>enqueue(()=>recoverCombatAmmo(combat)));\nreturn true;`;
+  else if (kind === 'world-clock') command = prelude + clockSource + '\ninitializeWorldClock();\nreturn true;';
   else if (kind === 'lucky-find') command = prelude + triggerSource + `\nHooks.on('deleteCombat', combat => enqueue(() => executeLuckyFindTrigger(combat)));\nreturn true;`;
   else command = prelude + triggerSource + listen;
   // Validate syntax without executing a macro or touching Foundry state.

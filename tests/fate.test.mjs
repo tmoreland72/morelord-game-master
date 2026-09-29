@@ -11,7 +11,7 @@ test('Fate uses selected character tokens only, handles zero/one, and always pos
   globalThis.Roll=class {constructor(formula){assert.equal(formula,'1d2');}async evaluate(){rolled++;return {total:2};}};
   assert.equal(await rollOfFate(),null);assert.equal(warned,1);assert.equal(created.length,0);
   const token=(name,type='character')=>({name,actor:{type,name,uuid:`Actor.${name}`},document:{uuid:`Scene.s.Token.${name}`}});
-  canvas.tokens.controlled=[token('Goblin','npc'),token('A')];await rollOfFate();assert.equal(rolled,0);assert.match(created[0].data.content,/A shall be targeted/);
-  canvas.tokens.controlled.push(token('B'));await rollOfFate();assert.equal(rolled,1);assert.match(created[1].data.content,/B shall be targeted/);
+  canvas.tokens.controlled=[token('Goblin','npc'),token('A')];await rollOfFate();assert.equal(rolled,0);assert.match(created[0].data.content,/<p>A has been chosen by fate!/);
+  canvas.tokens.controlled.push(token('B'));await rollOfFate();assert.equal(rolled,1);assert.match(created[1].data.content,/<p>B has been chosen by fate!/);
   assert.deepEqual(created[1].data.whisper,[]);assert.equal(created[1].data.blind,false);assert.equal(created[1].options.messageMode,'public');
 });

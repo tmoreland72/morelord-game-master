@@ -7,7 +7,7 @@ export async function rollOfFate() {
   const roll = tokens.length > 1 ? await new Roll(`1d${tokens.length}`).evaluate({allowInteractive:false}) : null;
   const chosen = tokens[(roll?.total ?? 1) - 1];
   return ChatMessage.create({
-    content:`<section class="ml-chat-card"><p>Fate has decided that ${core().ui.actorIdentity({actorUuid:chosen.actor.uuid, name:chosen.name ?? chosen.actor.name, img:chosen.document?.texture?.src ?? chosen.actor.img})} shall be targeted!</p></section>`,
+    content:`<section class="ml-chat-card"><p>${core().ui.actorIdentity({actorUuid:chosen.actor.uuid, name:chosen.name ?? chosen.actor.name, img:chosen.document?.texture?.src ?? chosen.actor.img})} has been chosen by fate!</p></section>`,
     speaker:ChatMessage.getSpeaker(), whisper:[], blind:false, ...(roll ? {rolls:[roll]} : {}),
     flags:{[ID]:{fate:{tokenUuid:chosen.document.uuid}}}
   }, {messageMode:'public'});
