@@ -10,9 +10,9 @@ Version 0.1.1 — working implementation of the September 20, 2026 design checkp
 
 The module is already in the development installation's `Data/modules/morelord-game-master` directory. Restart Foundry if it was running when these files were created, then enable **Morelord Game Master** in **Manage Modules** for your world.
 
-As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. Change the shortcut in Foundry's keybinding settings. The tray hides the local hotbar while open and restores its existing visibility when closed. Players receive roll requests in chat; they do not get the GM tray.
+As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. Change the shortcut in Foundry's keybinding settings. The bottom-centered tray uses 65% of the viewport width and 75% of its height and stays above other Foundry windows. The tray hides the local hotbar while open and restores its existing visibility when closed. Players receive roll requests in chat; they do not get the GM tray.
 
-Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.3.13+ is required (including its Socketlib dependency). The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search additionally requires Craftworks 0.4.12+ and its enabled Monsters of Drakkenheim content pack. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
+Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.4.1+ is required (including its Socketlib dependency). The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search additionally requires Craftworks 0.4.12+ and its enabled Monsters of Drakkenheim content pack. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
 
 ## Available controls
 
@@ -159,7 +159,7 @@ Core (66), Craftworks (67), and Game Master (19) automated tests pass, together 
 
 ## GitHub installation and releases
 
-Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. This module is distributed only through GitHub, without a Foundry package-directory or Morelord website listing. Morelord Core 0.3.13 or newer is required; version 0.3.10 lacks the shared roll-request services.
+Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. This module is distributed only through GitHub, without a Foundry package-directory or Morelord website listing. Morelord Core 0.4.1 or newer is required; version 0.3.10 lacks the shared roll-request services.
 
 Use the existing 0.1.1 version for the first release, then increment module.json and package.json for later updates. Stop Foundry before committing pack databases. Run npm test, node --test tests/release-sync.test.cjs, and relevant Dev1 checks. Commit the complete LevelDB packs, including numbered .log files and their CURRENT/MANIFEST files, then push master. Sync manifest release creates a matching tag and GitHub release; wait for it to pass and verify the public manifest and archive. Never move an existing version tag. No release.ps1 or release.config.json is used for this GitHub branch-archive workflow.
 
@@ -169,7 +169,7 @@ Regression: run defaultTriggersCheck from scripts/testing/default-triggers.mjs t
 
 Version 0.1.3 requires Core 0.3.12 or newer. Core 0.3.11 omitted the public runSerialized export and can save a roll without displaying its outcome. Update Core and refresh connected clients to use the corrected API.
 
-The Game Master tray tab uses Core’s shared translucent window surface. Its chevron points up when closed and down when open; the button also exposes its expanded state to assistive technology.
+The Game Master panel and tray tab use Core’s shared window surface with a fully opaque background. Its chevron points up when closed and down when open; the button also exposes its expanded state to assistive technology.
 
 Version 0.1.4 requires Core 0.3.13 for the shared tray-handle styling.
 
@@ -186,3 +186,5 @@ September 28 Hunter's Mark fix: verified Dev1 on Foundry 14.368 / D&D5e 6.0.3 us
 Ammunition Recovery is paused by default. Enable it before combat. When a started combat is ended/deleted, it returns half the ammunition actually consumed by native attacks during that combat, rounded down separately per character and ammunition stack (5 arrows returns 2). Hits and misses both count; returning ammunition, thrown weapons, and manual inventory edits do not. Receipts persist in chat across refreshes; retain attack messages until combat ends. It restores depleted, auto-deleted stacks and posts a GM-only Core chat summary. Recovery receipts on inventory items prevent duplicate returns. Only consumption while enabled is counted; no retroactive recovery for earlier combats.
 
 Ammunition Recovery verification: all 35 Node tests and the Core design-system boundary scan passed. The Dev1 shared-runner regression passed all five checks on Foundry 14.368 / D&D5e 6.0.3, including five native receipts, restoration of a depleted stack to two arrows, and duplicate recovery prevention. Report: tests/ammo-recovery-live-report.json. Refresh GM and player clients to load the consumption hooks, then enable the trigger before combat.
+
+Panel regression: run `node tools/verify-panel.mjs` in Dev1. It uses Core's shared runner to check the 65% width, 75% height, foreground stacking, and opaque body/handle at three viewport sizes without changing world documents.

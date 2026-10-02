@@ -7,7 +7,7 @@ import os from "node:os";
 import assert from "node:assert/strict";
 import {createCompanion} from "../companion/server.mjs";
 const root=path.resolve(import.meta.dirname,".."), profile=await mkdtemp(path.join(os.tmpdir(),"mlgm-chrome-"));
-const server=http.createServer(async(req,res)=>{try{const pathname=new URL(req.url,'http://localhost').pathname;const base=pathname.startsWith('/foundry/')?path.resolve(process.env.FOUNDRY_PUBLIC||'E:/Foundry14/App/resources/app/public'):pathname.startsWith('/modules/morelord-core/')?path.resolve(root,'../morelord-core'):root;const route=pathname.startsWith('/foundry/')?pathname.slice('/foundry'.length):base===root?pathname:pathname.slice('/modules/morelord-core'.length);const p=path.resolve(base,`.${route}`);if(!p.startsWith(base+path.sep))throw Error();res.setHeader('Content-Type',p.endsWith('.html')?'text/html':p.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(p));}catch{res.writeHead(404);res.end();}});
+const server=http.createServer(async(req,res)=>{try{const pathname=new URL(req.url,'http://localhost').pathname.replace(/^\/morelord-core\//,'/modules/morelord-core/');const base=pathname.startsWith('/foundry/')?path.resolve(process.env.FOUNDRY_PUBLIC||'E:/Foundry14/App/resources/app/public'):pathname.startsWith('/modules/morelord-core/')?path.resolve(root,'../morelord-core'):root;const route=pathname.startsWith('/foundry/')?pathname.slice('/foundry'.length):base===root?pathname:pathname.slice('/modules/morelord-core'.length);const p=path.resolve(base,`.${route}`);if(!p.startsWith(base+path.sep))throw Error();res.setHeader('Content-Type',p.endsWith('.html')?'text/html':p.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(p));}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const companion=createCompanion({directory:path.join(profile,'campaign-data'),origins:[`http://127.0.0.1:${server.address().port}`],apiKey:'test-only',model:'test-model',fetchImpl:async()=>Response.json({status:'completed',output:[{content:[{type:'output_text',text:'Test answer from the campaign document.'}]}]})});
 await new Promise(r=>companion.server.listen(0,'127.0.0.1',r));
@@ -32,7 +32,12 @@ try {
   await command('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});
   await command('Page.navigate',{url:`http://127.0.0.1:${server.address().port}/tests/harness.html`});await wait('window.testReady');
   await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');
-  assert.equal(await evaluate('document.querySelector(".gm-tray").getBoundingClientRect().height>=innerHeight*.5'),true);
+  for (const [width,height] of [[1280,850],[1920,1080],[700,600]]) {
+    await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+    assert.equal(await evaluate('Math.abs(document.querySelector(".gm-tray").getBoundingClientRect().height-innerHeight*.75)<1'),true);
+    assert.equal(await evaluate('Math.abs(document.querySelector("#mlgm").getBoundingClientRect().width-innerWidth*.65)<1'),true);
+  }
+  await command('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});
   assert.equal(await evaluate('!!document.querySelector("#mlgm footer")'),false);
   assert.equal(await evaluate('document.querySelectorAll("[data-roll-card] input[name=blind]:checked").length'),0);
   await evaluate('var blind=document.querySelector("[data-roll-card=group] input[name=blind]");blind.checked=true;blind.dispatchEvent(new Event("change",{bubbles:true}))');
