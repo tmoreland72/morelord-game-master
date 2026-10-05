@@ -1,5 +1,6 @@
 import {ID,escapeHTML as e} from './core.mjs';
 import {core,activeGM,createRequest} from './requests.mjs';
+import {CRITICAL_TABLES} from './trigger-catalog.mjs';
 
 export function triggerCoordinator(trigger) {
   if (trigger.sourceWorld) return activeGM();
@@ -15,6 +16,7 @@ export function isSorcererSpell(item) {
   return item?.type === 'spell' && item.system.sourceItem === 'class:sorcerer';
 }
 export function matchesTriggerActor(kind,actor) {
+  if (CRITICAL_TABLES[kind]) return ['character','npc'].includes(actor?.type);
   if (actor?.type !== 'character') return false;
   const has=(type,id)=>actor.items.some(i=>i.type===type && i.system.identifier===id);
   if (kind==='hunters-mark') return true;
@@ -22,6 +24,25 @@ export function matchesTriggerActor(kind,actor) {
   if (kind==='sorcerer') return has('class','sorcerer') && has('subclass','wild-magic');
   if (kind==='sneak') return has('class','rogue') && has('feat','sneak-attack');
   return false;
+}
+export function criticalAttackTable(kind,message) {
+  if (!CRITICAL_TABLES[kind] || message?.type !== 'attack') return null;
+  for (const roll of message.rolls ?? []) {
+    if (!(kind === 'critical-hit' ? roll.isCritical && !roll.isFumble : roll.isFumble)) continue;
+    // Roll data is not persisted in chat; the native activity and selected mode are.
+    const attack=message.getAssociatedActivity?.()?.attack?.type ?? roll.data?.roll?.attack;
+    const mode=roll.options?.attackMode ?? message.system?.mode;
+    const category=attack?.classification === 'spell' ? 'magic'
+      : mode?.includes('thrown') || mode==='ranged' ? 'ranged' : attack?.type ?? attack?.value;
+    const id=CRITICAL_TABLES[kind][category];
+    if (id) return `Compendium.morelord-game-master.roll-tables.RollTable.${id}`;
+  }
+  return null;
+}
+export function criticalResultCard(kind,context,content) {
+  const hit=kind==='critical-hit',title=hit?'Critical Hit':'Critical Fumble';
+  const attack={melee:'Melee attack',ranged:'Ranged attack',magic:'Magic attack'}[context.attackType];
+  return `<section class="ml-chat-card ml-stack"><div class="ml-callout" data-tone="${hit?'success':'danger'}"><i class="fa-solid ${hit?'fa-burst':'fa-skull-crossbones'}" aria-hidden="true"></i><div><h3>${title}</h3><p>${e(attack)}${Number.isFinite(context.attackDie)?` · Attack die: ${context.attackDie}`:''}</p></div></div>${core().ui.actorIdentity(context.actor)}<p><strong>${e(context.itemName)}</strong> triggered this ${hit?'critical hit':'critical fumble'} table.</p>${content}</section>`;
 }
 function nearbyAlly(actor,target) {
   const attacker=actor.getActiveTokens().find(t=>t.document.parent===target.document.parent);
@@ -103,8 +124,11 @@ export async function executeTrigger(trigger,event) {
   if (!actor || !item || !message.author || (!message.author.isGM && !actor.testUserPermission(message.author,'OWNER'))) return false;
   if (message.speaker.actor!==actor.id) return false;
   if (message.getFlag(ID,'triggerHandled')?.includes(trigger.id)) return false;
-  let target,markHit;
-  if (trigger.kind==='sneak') {
+  let target,markHit,criticalTable;
+  if (CRITICAL_TABLES[trigger.kind]) {
+    criticalTable=criticalAttackTable(trigger.kind,message);
+    if (!criticalTable) return false;
+  } else if (trigger.kind==='sneak') {
     target=sneakTarget(message,actor,item);
     if (!target) return false;
   } else if (trigger.kind==='hunters-mark') {
@@ -137,8 +161,14 @@ export async function executeTrigger(trigger,event) {
     if (!rolls?.length) return false;
     await ChatMessage.create({...privateData,type:'damage',system:{...activity.messageSources,targets:[target],origin:message.id},flavor:e(`${actor.name} · ${label}`),rolls},{messageMode:'blind'});
   } else {
-    const table=await triggerTable(trigger);
+    const table=criticalTable ? await fromUuid(criticalTable) : await triggerTable(trigger);
     if (!table) throw new Error('Trigger roll table is missing.');
+    if (criticalTable) {
+      const attackRoll=message.rolls.find(roll=>trigger.kind==='critical-hit'?roll.isCritical&&!roll.isFumble:roll.isFumble);
+      flags[ID].criticalCard={attackType:Object.keys(CRITICAL_TABLES[trigger.kind]).find(type=>CRITICAL_TABLES[trigger.kind][type]===table.id),
+        itemName:item.name,attackDie:attackRoll?.d20?.total,actor:{actorUuid:actor.uuid,name:actor.name,img:actor.img}};
+      privateData.flavor=e(`${actor.name} · ${trigger.kind==='critical-hit'?'Critical Hit':'Critical Fumble'}`);
+    }
     const {roll,results}=await table.roll();
     await table.toMessage(results,{roll,messageData:privateData,messageOptions:{messageMode:'blind'}});
   }
@@ -166,6 +196,11 @@ export async function executeLuckyFindTrigger(combat) {
 }
 
 export function initializeTriggers() {
+  Hooks.on('preCreateChatMessage',message=>{
+    const kind=message.getFlag(ID,'triggerResult')?.kind,context=message.getFlag(ID,'criticalCard');
+    if (CRITICAL_TABLES[kind] && context)
+      message.updateSource({content:criticalResultCard(kind,context,message.content)});
+  });
   Hooks.on('dnd5e.preCreateUsageMessage',(activity,config)=>{
     foundry.utils.setProperty(config.data,`flags.${ID}.triggerUse`,{actorId:activity.actor?.id,itemId:activity.item?.id,activityType:activity.type,needsDamage:Boolean(activity.damage?.parts?.length || activity.damage?.includeBase || activity.healing),completed:false});
   });

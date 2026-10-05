@@ -1,0 +1,167 @@
+{
+  "folder": null,
+  "name": "Critical Hit - Melee",
+  "_id": "6h8fBCDiPGXNSKwS",
+  "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-grey.svg",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "bRFlPj3kB5SOTnWB",
+      "name": "No Bonus",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Only standard critical hit damage applies.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "O1FKj2yjFMNZUjwR",
+      "name": "Chink in Defenses",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent's AC is halved for attacker's strikes until the next time they are damaged by attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "0p1tlsNP6DmfpgbL",
+      "name": "Followup",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker immediately gains an attack of opportunity on their opponent.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "MmUoXEJdgals0In0",
+      "name": "Tactical Positioning",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker can move themselves and/or their opponent a total of 10 feet. If both are used to steap away from each other, then that is treated as a disengage. This can also be used to get behind their opponent or swap position with them.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "uo0qszMQYRXtGjPN",
+      "name": "Wide Open",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent has no DEX AC bonus and any attacks on the opponent are at advantage. This lasts until the opponent uses an action.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Sp9KdOzSEXR8RcwK",
+      "name": "Setup",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The next attack by the opponent on any target is at a disadvantage and the attacker gets an opportunity attack on this opponent immediately after that attack.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "rCG5JWhGy7iwQhqf",
+      "name": "Faint",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The next attack by the opponent on the attacker is at disadvantage. If this attack hits, the attacker makes a DEX saving throw (DC 15) to avoid all damage and only takes half damage if they fail the save.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "J2kbcT6UpMmDraxg",
+      "name": "Savage Advance",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The next strike at the opponent by the attacker is at an advantage and the opponent's next strike at the attacker is at disadvantage.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "MX2AkTyAAkLVd6W5",
+      "name": "Wound",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent takes [[/roll d4]] bleeding damage every subsequent turn of combat after this strike.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "vx8rEfzyBqWdL7I5",
+      "name": "Disarm",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent must make a STR saving throw (DC 15) to keep hold of item held in primary hand.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "sort": 100000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "formula": "1d10"
+}

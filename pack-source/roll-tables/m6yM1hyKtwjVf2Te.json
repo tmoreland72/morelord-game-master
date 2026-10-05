@@ -1,0 +1,167 @@
+{
+  "folder": null,
+  "name": "Critical Miss - Melee",
+  "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-grey.svg",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "bRFlPj3kB5SOTnWB",
+      "name": "Overreach",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent gains advantage on the next strake at the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "O1FKj2yjFMNZUjwR",
+      "name": "Misjudge Distance",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent has an opportunity to disengage and they also have advantage on the next strike at the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "0p1tlsNP6DmfpgbL",
+      "name": "Lose Balance",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker is unable to take any further attacks or actions this round (including bonus actions, free actions, or reactions). The opponent has advantage on the next strike on the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "MmUoXEJdgals0In0",
+      "name": "Slip",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker must make a DEX saving throw (DC 15) or become prone. Success and they make no further actions this round(including bonus actions, free actions, or reactions). The opponent has advantage on the next strike on the attacker.</p><p></p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "uo0qszMQYRXtGjPN",
+      "name": "Juggle Weapon",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker's next strike at the opponent is at disadvantage and cannot employ any feats or class abilities with the strike. The opponent has advantage on the next strike on the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Sp9KdOzSEXR8RcwK",
+      "name": "Dropped",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker must make a STR saving throw (DC 15) or drop their weapon. Success and the next strike at the opponent is ad disadvantage while the opponent has advantage on their next strike on attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "rCG5JWhGy7iwQhqf",
+      "name": "Crisis of Confidence",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker must make a CHR saving throw (DC 15) or become Frightened of their opponent. Attacker can perform saving throw each round to shake off the condition. Opponent has advantage on their next strike at the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "J2kbcT6UpMmDraxg",
+      "name": "Collide",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent gains an immediate attack of opportunity that must be an unarmed attack. After this, the opponent has advantage on the next strike against the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "MX2AkTyAAkLVd6W5",
+      "name": "Obvious Preparation",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Opponent gains an immediately attack of opportunity on the attacker.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "vx8rEfzyBqWdL7I5",
+      "name": "Strained",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker takes [[/roll d4]] muscle damage reducing Strength by that amount for the rest of the combat.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "flags": {},
+  "formula": "1d10",
+  "ownership": {
+    "default": 0
+  },
+  "_id": "m6yM1hyKtwjVf2Te",
+  "sort": 200000
+}

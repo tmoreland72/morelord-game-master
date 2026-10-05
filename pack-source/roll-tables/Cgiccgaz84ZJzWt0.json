@@ -1,0 +1,167 @@
+{
+  "folder": null,
+  "name": "Critical Miss - Ranged",
+  "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-grey.svg",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "bRFlPj3kB5SOTnWB",
+      "name": "Off Target",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Shot goes wide and any creature adjacent to the intended target must make a DEX saving throw (DC 15) to get out of the way or become the new target for this shot.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "O1FKj2yjFMNZUjwR",
+      "name": "Distracted",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Shot goes wide and the target has a reaction opportunity to find cover. The attacker can make no further actions, bonus actions, or reactions this turn and can only move half their movement.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "0p1tlsNP6DmfpgbL",
+      "name": "Snagged",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker's clothing gets caught and pulls the shot wide. Attacker is considered Grappled until the start of their next turn.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "MmUoXEJdgals0In0",
+      "name": "Sweaty Palms",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The shot goes wide and the grip of the weapon (or method of projection) gets slick. Attackers next attack is at disadvantage.</p><p></p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "uo0qszMQYRXtGjPN",
+      "name": "Damaged",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The weapon gets damaged, sending the shot wide. All future attacks using this weapon are at half range until the attacker takes a short or long rest to repair it. If the weapons is thrown, the attacker also takes [[/roll d2]] muscle strain reducing Dexterity by that amount for the remainder of this combat.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Sp9KdOzSEXR8RcwK",
+      "name": "Slipped",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker must make a DEX saving throw (DC 15) or become Prone as the shot goes way above target. Success means the attacker's movement is halved until the start of their next turn and they can take no further actions this turn.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "rCG5JWhGy7iwQhqf",
+      "name": "Bent",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The weapon gets bang into the wall and becomes slightly bent. Attacks with this weapon are at disadvantage until the attacker uses an action to straighten it out.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "J2kbcT6UpMmDraxg",
+      "name": "Crisis of Confidence",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The shot is so wide of its target that during this combat, further attacks with this weapon are at disadvantage until it next inflicts damage.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "MX2AkTyAAkLVd6W5",
+      "name": "Spill Ammo",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Shot goes wide and all carried ammo is spilled on the ground. An action or bonus action can be used to pick up no more than 10 of the loose ammo on the ground.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "vx8rEfzyBqWdL7I5",
+      "name": "Strained",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker takes [[/roll d4]] muscle strain reducing Dexterity by that amount for the rest of the combat.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "flags": {},
+  "formula": "1d10",
+  "ownership": {
+    "default": 0
+  },
+  "_id": "Cgiccgaz84ZJzWt0",
+  "sort": 0
+}

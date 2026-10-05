@@ -8,7 +8,7 @@ let channel, queue = Promise.resolve();
 
 async function write(triggers) {
   const picker = foundry.applications.apps.FilePicker;
-  const file = new File([JSON.stringify({version:1,macroMigration:4,triggers}, null, 2)], 'triggers.json', {type:'application/json'});
+  const file = new File([JSON.stringify({version:1,macroMigration:5,triggers}, null, 2)], 'triggers.json', {type:'application/json'});
   const result = await picker.upload('data', directory, file, {}, {notify:false});
   if (!result?.path) throw new Error('Could not save global triggers. Check Foundry file-upload permissions.');
 }
@@ -40,6 +40,7 @@ export async function initializeGlobalTriggers() {
   let includeDefaults = true;
   let addHuntersMark = false;
   let addAmmoRecovery = false;
+  let addCritical = false;
   if (response.status === 404) {
     const picker = foundry.applications.apps.FilePicker;
     const root = await picker.browse('data', '');
@@ -50,6 +51,7 @@ export async function initializeGlobalTriggers() {
     const data = await response.json();
     if (data.version !== 1 || !Array.isArray(data.triggers)) throw new Error('Invalid global trigger file; existing configuration was retained.');
     triggers = data.triggers;
+    addCritical = (data.macroMigration ?? 0) < 5;
     addAmmoRecovery = (data.macroMigration ?? 0) < 4;
     addHuntersMark = (data.macroMigration ?? 0) < 3;
     includeDefaults = (data.macroMigration ?? 0) < 2 || triggers.length === 0;
@@ -60,7 +62,9 @@ export async function initializeGlobalTriggers() {
     upgraded.push(migrateTriggerMacros([]).find(t=>t.kind==='hunters-mark'));
   if (addAmmoRecovery && !upgraded.some(t=>t.kind==='ammo-recovery'))
     upgraded.push(migrateTriggerMacros([]).find(t=>t.kind==='ammo-recovery'));
-  if (addAmmoRecovery || addHuntersMark || includeDefaults || JSON.stringify(upgraded) !== JSON.stringify(triggers)) await write(upgraded);
+  if (addCritical) for (const kind of ['critical-hit','critical-fumble'])
+    if (!upgraded.some(t=>t.kind===kind)) upgraded.push(migrateTriggerMacros([]).find(t=>t.kind===kind));
+  if (addCritical || addAmmoRecovery || addHuntersMark || includeDefaults || JSON.stringify(upgraded) !== JSON.stringify(triggers)) await write(upgraded);
   triggers = upgraded;
   // Preserve former world-specific bindings without reviving globally deleted rules.
   board.legacyWorldTriggers ??= board.triggers ?? [];

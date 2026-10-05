@@ -1,0 +1,167 @@
+{
+  "folder": null,
+  "name": "Critical Hit - Magic",
+  "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-grey.svg",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "bRFlPj3kB5SOTnWB",
+      "name": "Empowered",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The attack is cast at one level higher while still using the same spell slot as intended.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "O1FKj2yjFMNZUjwR",
+      "name": "Dominating",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Any saving throws induced by the spell are at disadvantage.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "0p1tlsNP6DmfpgbL",
+      "name": "Quickened",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The caster's bonus action can be used to cast any single action spell that they know.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "MmUoXEJdgals0In0",
+      "name": "Teleport",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Attacker can teleport to any unoccupied space within 30 feet.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "uo0qszMQYRXtGjPN",
+      "name": "Supercharged",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Any damage dice rolls count as maxed or the duration of the spell is doubled if there are no dice.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Sp9KdOzSEXR8RcwK",
+      "name": "Instant Recall",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The casting of the spell does not expend use of a spell slot.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "rCG5JWhGy7iwQhqf",
+      "name": "Inspired",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The next spell that the caster performs is at advantage.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "J2kbcT6UpMmDraxg",
+      "name": "Forked",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>An attack of opportunity can be taken to any adjacent target within range with an off-shoot of the original spell. This does half damage or has half duration and does not use any spell slots.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "MX2AkTyAAkLVd6W5",
+      "name": "Intimidating",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Any physical attacks against the caster made by any foes witnessing the spell are at disadvantage. This lasts until the caster takes damage.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "vx8rEfzyBqWdL7I5",
+      "name": "Rout",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Target must make a CHA saving throw (DC 15) or flee the battlefield. Sucess and the target is Frightened of the caster.</p>",
+      "drawn": false,
+      "flags": {},
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "flags": {},
+  "formula": "1d10",
+  "ownership": {
+    "default": 0
+  },
+  "_id": "uwz0wHvB633FWZGo",
+  "sort": 400000
+}

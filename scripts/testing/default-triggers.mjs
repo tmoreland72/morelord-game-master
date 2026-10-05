@@ -10,7 +10,7 @@ export const defaultTriggersCheck={id:'game-master.fresh-global-triggers-stopped
       const placeholder={id:'item',kind:'item',actorName:'Configured character',enabled:false};
       assert(migrateTriggerMacros([placeholder],{includeDefaults:false}).length===0,'Remove the old unconfigured panel template');
       const triggers=migrateTriggerMacros(seed);
-      assert(triggers.length===7&&triggers.every(t=>t.enabled===false),'Fresh and Volatile-only installations need seven stopped triggers.');
+      assert(triggers.length===9&&triggers.every(t=>t.enabled===false),'Fresh and Volatile-only installations need nine stopped triggers.');
       for(const trigger of triggers)assert((await fromUuid(trigger.macroUuid))?.documentName==='Macro','Every default resolves to an installed Macro.');
       await game.settings.set(ID,'board',{...board,triggers});
       const runtime=await initializeTriggerMacros();await runtime.sync();
@@ -30,7 +30,7 @@ export const emptyGlobalCatalogCheck={id:'game-master.empty-global-catalog-recov
     await saveGlobalTriggers([]);
     await initializeGlobalTriggers();
     const triggers=game.settings.get(ID,'board').triggers;
-    assert(triggers.length===7&&triggers.every(t=>!t.enabled),'Reloading an empty catalog restores seven stopped defaults.');
+    assert(triggers.length===9&&triggers.every(t=>!t.enabled),'Reloading an empty catalog restores nine stopped defaults.');
   }finally{
     await saveGlobalTriggers(original.triggers);
     await game.settings.set(ID,'board',board);

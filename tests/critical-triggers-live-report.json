@@ -1,0 +1,199 @@
+{
+  "suite": "morelord-core-smoke",
+  "schemaVersion": 1,
+  "startedAt": "2026-10-05T18:45:17.788Z",
+  "environment": {
+    "foundry": "14.368",
+    "system": {
+      "id": "dnd5e",
+      "version": "6.0.3"
+    },
+    "role": "gm",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "modules": [
+      {
+        "id": "3ds-atlas",
+        "version": "1.4.4"
+      },
+      {
+        "id": "demon-queen-awakens",
+        "version": "6.0.0"
+      },
+      {
+        "id": "dice-so-nice",
+        "version": "6.4.2"
+      },
+      {
+        "id": "dnd-arcana-unleashed",
+        "version": "1.0.2"
+      },
+      {
+        "id": "dnd-dungeon-masters-guide",
+        "version": "2.0.0"
+      },
+      {
+        "id": "dnd-monster-manual",
+        "version": "1.4.0"
+      },
+      {
+        "id": "dnd-players-handbook",
+        "version": "2.2.0"
+      },
+      {
+        "id": "dnd-ravenloft-horrors-within",
+        "version": "2.0.0"
+      },
+      {
+        "id": "drakkenheim-core",
+        "version": "3.0.0"
+      },
+      {
+        "id": "drakkenheim-monsters",
+        "version": "2.0.1"
+      },
+      {
+        "id": "drakkenheim-scgd",
+        "version": "3.0.0"
+      },
+      {
+        "id": "fa-battlemaps",
+        "version": "1.2.28"
+      },
+      {
+        "id": "grim-hollow-core",
+        "version": "2.0.1"
+      },
+      {
+        "id": "grim-hollow-players-guide",
+        "version": "2.0.2"
+      },
+      {
+        "id": "heliana-core",
+        "version": "2.4.2"
+      },
+      {
+        "id": "hero-mancer",
+        "version": "3.3.0"
+      },
+      {
+        "id": "house-divided",
+        "version": "5.0.2"
+      },
+      {
+        "id": "mage-hand-press-core",
+        "version": "2.0.1"
+      },
+      {
+        "id": "mage-hand-press-valdas-spire-of-secrets",
+        "version": "2.0.0"
+      },
+      {
+        "id": "monks-active-tiles",
+        "version": "14.01"
+      },
+      {
+        "id": "morelord-character-export",
+        "version": "0.3.5"
+      },
+      {
+        "id": "morelord-compendium",
+        "version": "1.0.10"
+      },
+      {
+        "id": "morelord-core",
+        "version": "0.4.1"
+      },
+      {
+        "id": "morelord-craftworks",
+        "version": "0.4.16"
+      },
+      {
+        "id": "morelord-downtime",
+        "version": "0.1.1"
+      },
+      {
+        "id": "morelord-encounters",
+        "version": "0.1.15"
+      },
+      {
+        "id": "morelord-game-master",
+        "version": "0.1.8"
+      },
+      {
+        "id": "morelord-journeys",
+        "version": "0.3.8"
+      },
+      {
+        "id": "morelord-marketplace",
+        "version": "0.10.1"
+      },
+      {
+        "id": "quick-insert",
+        "version": "3.7.8"
+      },
+      {
+        "id": "socketlib",
+        "version": "v1.1.4"
+      },
+      {
+        "id": "spell-book",
+        "version": "2.5.2"
+      },
+      {
+        "id": "tagger",
+        "version": "1.6.0"
+      },
+      {
+        "id": "tidy5e-sheet",
+        "version": "14.1.2"
+      },
+      {
+        "id": "vtta-tokenizer",
+        "version": "5.0.3"
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "core.ready",
+      "status": "pass",
+      "durationMs": 0
+    },
+    {
+      "id": "core.users",
+      "status": "pass",
+      "durationMs": 0
+    },
+    {
+      "id": "core.character-routing",
+      "status": "pass",
+      "durationMs": 1
+    },
+    {
+      "id": "core.ignored-users-window",
+      "status": "pass",
+      "durationMs": 466
+    },
+    {
+      "id": "game-master.critical-hit-and-fumble-tables",
+      "status": "pass",
+      "durationMs": 27708
+    },
+    {
+      "id": "morelord-game-master.trigger-footer",
+      "status": "pass",
+      "durationMs": 42
+    }
+  ],
+  "summary": {
+    "pass": 6,
+    "fail": 0,
+    "skip": 0
+  },
+  "ok": true,
+  "browserErrors": []
+}

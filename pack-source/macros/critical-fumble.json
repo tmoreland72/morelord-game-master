@@ -1,6 +1,6 @@
 {
-  "_id": "WildMagicSurge01",
-  "name": "Wild Magic Surge",
+  "_id": "CriticalFumble01",
+  "name": "Critical Fumble",
   "type": "script",
   "scope": "global",
   "img": "icons/svg/dice-target.svg",
@@ -10,7 +10,7 @@
   },
   "flags": {
     "morelord-game-master": {
-      "triggerKind": "sorcerer",
+      "triggerKind": "critical-fumble",
       "schemaVersion": 1
     }
   }

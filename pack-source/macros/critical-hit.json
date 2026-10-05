@@ -1,6 +1,6 @@
 {
-  "_id": "WildMagicSurge01",
-  "name": "Wild Magic Surge",
+  "_id": "CriticalHit00001",
+  "name": "Critical Hit",
   "type": "script",
   "scope": "global",
   "img": "icons/svg/dice-target.svg",
@@ -10,7 +10,7 @@
   },
   "flags": {
     "morelord-game-master": {
-      "triggerKind": "sorcerer",
+      "triggerKind": "critical-hit",
       "schemaVersion": 1
     }
   }

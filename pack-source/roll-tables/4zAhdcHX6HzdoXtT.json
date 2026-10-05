@@ -1,0 +1,207 @@
+{
+  "folder": null,
+  "name": "Critical Miss - Magic",
+  "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-grey.svg",
+  "description": "",
+  "results": [
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        1,
+        1
+      ],
+      "_id": "bRFlPj3kB5SOTnWB",
+      "name": "Fizzle",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Until the end of the next round, spells appear to be cast as normal, however, as it travels to the target, it goes out and there are no effects and no damage.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        2,
+        2
+      ],
+      "_id": "O1FKj2yjFMNZUjwR",
+      "name": "Drained",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Until the end of your next turn, spells act normal but take the highest level spell slot available to cast.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        3,
+        3
+      ],
+      "_id": "0p1tlsNP6DmfpgbL",
+      "name": "Short Circuit",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Until the next rest, the spell is cast, however, this and all spells cast inflicts 1 point of psychic damage per level of the the spell to the caster - half damage on successful saving throw.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        4,
+        4
+      ],
+      "_id": "MmUoXEJdgals0In0",
+      "name": "Feeble",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>The spell is cast as normal, however, the effects are halved - either in damage or duration, as applicable.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        5,
+        5
+      ],
+      "_id": "uo0qszMQYRXtGjPN",
+      "name": "Mirror Feedback",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>For the next minute, the energy committed by casting spells is split between target and caster, each suffering half the effects and taking half damage or half duration as applicable. The caster can attempt to make a spell saving throw to avoid effects.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        6,
+        6
+      ],
+      "_id": "Sp9KdOzSEXR8RcwK",
+      "name": "Misguided",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>For the next minute, rolling a 1 or 2 on a [[1d6]] will cause spells to avoid the intended target and jumps to the nearest random target instead. If there are no valid targets, the spell effects become inverted. The caster can attempt to make a successful saving throw to cancel the spell before it's release. The spell slot is still consumed.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        7,
+        7
+      ],
+      "_id": "rCG5JWhGy7iwQhqf",
+      "name": "Crisis of Confidence",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Future spell casts are at disadvantage until one succeeds or until the next long rest.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        8,
+        8
+      ],
+      "_id": "J2kbcT6UpMmDraxg",
+      "name": "Unstable",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Until the next long rest, magic attack rolls of 3 or less count as a critical miss.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        9,
+        9
+      ],
+      "_id": "MX2AkTyAAkLVd6W5",
+      "name": "Blowback",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>Until the next short or long rests, casting spells does [[1d4]] psychic damage to caster. Caster can perform saving throws to reduce damage.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    },
+    {
+      "type": "text",
+      "weight": 1,
+      "range": [
+        10,
+        10
+      ],
+      "_id": "vx8rEfzyBqWdL7I5",
+      "name": "Surge",
+      "img": "https://assets.forge-vtt.com/bazaar/core/icons/svg/d20-black.svg",
+      "description": "<p>A tear in the magic fabrick causes a @UUID[Compendium.morelord-game-master.roll-tables.RollTable.aDMFCKJcdKaJjTc6]{Wild Magic Surge}.</p>",
+      "drawn": false,
+      "flags": {
+        "gatherer": {
+          "quantity": "1"
+        }
+      },
+      "documentUuid": null
+    }
+  ],
+  "replacement": true,
+  "displayRoll": true,
+  "flags": {},
+  "formula": "1d10",
+  "ownership": {
+    "default": 0
+  },
+  "_id": "4zAhdcHX6HzdoXtT",
+  "sort": 0
+}

@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {TRIGGER_MACROS} from '../scripts/trigger-catalog.mjs';
+import {TRIGGER_MACROS,CRITICAL_TABLES} from '../scripts/trigger-catalog.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const clean = source => source.replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '');
-const triggerSource = clean((await fs.readFile(path.join(root, 'scripts/triggers.mjs'), 'utf8')).split('export function initializeTriggers()')[0]);
+const triggerSource = `const CRITICAL_TABLES = ${JSON.stringify(CRITICAL_TABLES)};\n` + clean((await fs.readFile(path.join(root, 'scripts/triggers.mjs'), 'utf8')).split('export function initializeTriggers()')[0]);
 const clockSource = clean(await fs.readFile(path.join(root, 'scripts/world-clock.mjs'), 'utf8'));
 const prelude = `// Managed by the Game Master Triggers tab. Start/stop there, not from the hotbar.
 if (!game.user.isGM) return;
@@ -25,7 +25,7 @@ Hooks.on('updateChatMessage', (message, changes) => {
   if (foundry.utils.getProperty(changes, 'flags.' + ID + '.triggerUse')) return process(message);
 });
 return true;`;
-const names = {sorcerer:'Wild Magic Surge', volatile:'Volatile Magic', sneak:'Sneak Attack','hunters-mark':"Hunter's Mark", item:'Item Use — Roll Table', 'ammo-recovery':'Ammunition Recovery','lucky-find':'Lucky Finds', 'world-clock':'World Clock'};
+const names = {sorcerer:'Wild Magic Surge', volatile:'Volatile Magic', sneak:'Sneak Attack','hunters-mark':"Hunter's Mark", item:'Item Use — Roll Table', 'ammo-recovery':'Ammunition Recovery','lucky-find':'Lucky Finds', 'world-clock':'World Clock','critical-hit':'Critical Hit','critical-fumble':'Critical Fumble'};
 await fs.mkdir(path.join(root, 'pack-source/macros'), {recursive:true});
 const documents = [];
 for (const [kind, id] of Object.entries(TRIGGER_MACROS)) {

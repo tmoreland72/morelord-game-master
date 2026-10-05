@@ -9,7 +9,7 @@ test('migration preserves IDs, pause state, and custom tables while replacing th
   assert.equal(next[0].id,'original');assert.equal(next[0].tableUuid,SURGE_TABLES.sorcerer);
   assert.equal(next[1].enabled,false);assert.equal(next[1].tableUuid,'RollTable.mine');
   assert.equal(next.find(t=>t.kind==='volatile').enabled,false);
-  assert.equal(new Set(next.map(t=>t.kind)).size,7);assert.ok(next.slice(2).every(t=>!t.enabled));
+  assert.equal(new Set(next.map(t=>t.kind)).size,9);assert.ok(next.slice(2).every(t=>!t.enabled));
   assert.deepEqual(migrateTriggerMacros(next),next);
   assert.deepEqual(migrateTriggerMacros([],{includeDefaults:false}),[]);
 });
@@ -26,7 +26,7 @@ test('runtime installs once, serializes actions, removes hooks/timers on stop, a
   trigger.enabled=false;await unavailable.sync();assert.equal(unavailable.status('one'),'Stopped');
 });
 
-test('fresh installs get every managed trigger stopped with stable portable macro bindings',()=>{const rows=migrateTriggerMacros([]);assert.equal(rows.length,7);assert.deepEqual(rows,defaultTriggers());assert.ok(rows.every(t=>t.enabled===false&&t.macroUuid.startsWith('Compendium.morelord-game-master.macros.')));assert.deepEqual(migrateTriggerMacros(rows),rows);});
+test('fresh installs get every managed trigger stopped with stable portable macro bindings',()=>{const rows=migrateTriggerMacros([]);assert.equal(rows.length,9);assert.deepEqual(rows,defaultTriggers());assert.ok(rows.every(t=>t.enabled===false&&t.macroUuid.startsWith('Compendium.morelord-game-master.macros.')));assert.deepEqual(migrateTriggerMacros(rows),rows);});
 
 test('remove only the accidental unconfigured default item template',()=>{
   const placeholder={id:'item',kind:'item',actorName:'Configured character',enabled:false};
