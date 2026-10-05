@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "world": "drakkenheim",
+  "foundry": "14.368",
+  "results": [
+    {
+      "id": "smithy.unlinked-combat-and-four-hulk-types",
+      "status": "pass",
+      "durationMs": 2113
+    },
+    {
+      "id": "smithy.safe-word-in-unlinked-combat",
+      "status": "pass",
+      "durationMs": 883
+    }
+  ],
+  "actors": {
+    "husk": "Actor.69bAXRvZS0qdPrlI",
+    "ratling": "Actor.v6osXCahFwmobuQz",
+    "chimera": "Actor.mmChimera0000000",
+    "hulk": "Actor.mmOwhrZBkytu25Lg",
+    "gutbuster": "Actor.Xiknv4R8i7dxqqL7",
+    "hunter": "Actor.QLve30GX7Zb3nN7a",
+    "juggernaut": "Actor.H4eFETYZ4F5mDIwr"
+  },
+  "hulkSources": [
+    {
+      "uuid": "Actor.mmOwhrZBkytu25Lg",
+      "source": "Compendium.drakkenheim-monsters.monsters.Actor.mmOwhrZBkytu25Lg",
+      "folder": "Aberration"
+    },
+    {
+      "uuid": "Actor.sHgFXfdwxl0mefuB",
+      "source": null,
+      "folder": "Haze Hulks"
+    }
+  ]
+}

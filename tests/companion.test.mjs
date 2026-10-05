@@ -6,7 +6,10 @@ import path from "node:path";
 import { createCompanion,validateUpload,responseBody } from "../companion/server.mjs";
 
 test("authenticated campaign library persists, isolates contexts, handles files, and survives API failures",async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(),"mlgm-test-"));
+  const { mkdir } = await import('node:fs/promises');
+  const working = path.resolve(import.meta.dirname, '../tmp');
+  await mkdir(working, {recursive: true});
+  const directory = await mkdtemp(path.join(working,"mlgm-test-"));
   const calls = []; let fail = false;
   const {server,token} = createCompanion({directory,apiKey:"test-key",model:"test-model",fetchImpl:async (url,options) => {
     calls.push(JSON.parse(options.body));

@@ -12,3 +12,6 @@ test-results/
 packs/*/LOCK
 packs/*/LOG
 packs/*/LOG.old
+
+# Local working files
+/tmp/

@@ -4,7 +4,10 @@ import path from "node:path";
 import os from "node:os";
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 export async function startBrowser() {
-  const profile=await mkdtemp(path.join(os.tmpdir(),"mlgm-live-"));
+  const { mkdir } = await import('node:fs/promises');
+  const working = path.resolve(import.meta.dirname, '../tmp');
+  await mkdir(working, {recursive: true});
+  const profile=await mkdtemp(path.join(working,"mlgm-live-"));
   const chrome=spawn(process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{windowsHide:true,stdio:'ignore'});
   let socket;
   const close=async()=>{socket?.close();chrome.kill();await delay(500);await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});};

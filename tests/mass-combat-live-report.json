@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "world": "drakkenheim",
+  "scene": "The Scar",
+  "disposableCopy": true,
+  "foundry": "14.368",
+  "system": "6.0.3",
+  "results": [
+    {
+      "id": "mass.capture-twenty-attackers",
+      "status": "pass",
+      "durationMs": 279
+    },
+    {
+      "id": "mass.preview-focus-resistance-and-immunity",
+      "status": "pass",
+      "durationMs": 605
+    },
+    {
+      "id": "mass.stale-preview-rejected",
+      "status": "pass",
+      "durationMs": 273
+    },
+    {
+      "id": "mass.apply-hp-without-status-or-defeated-writes",
+      "status": "pass",
+      "durationMs": 812
+    }
+  ],
+  "installed": [
+    {
+      "id": "KPeLunrDwScSrwPH",
+      "name": "Mass Combat — Select Attackers"
+    },
+    {
+      "id": "Auur6TMbL9bOuiXt",
+      "name": "Mass Combat — Attack Targets"
+    },
+    {
+      "id": "4vgX34PunmSmJxx0",
+      "name": "Mass Combat — Apply Damage"
+    }
+  ],
+  "originalTokens": 68
+}

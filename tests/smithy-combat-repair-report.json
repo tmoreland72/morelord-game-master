@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "combatId": "9hjVaQ0KQWD0m5jS",
+  "combatants": 40,
+  "defenderInitiativesPreserved": 28,
+  "newHusks": 12,
+  "sceneTokens": 40,
+  "round": 0,
+  "state": {
+    "actors": {
+      "husk": "Actor.69bAXRvZS0qdPrlI",
+      "ratling": "Actor.kJiRPjOEfAOB9wXz",
+      "chimera": "Actor.mmChimera0000000",
+      "hulk": "Actor.mmOwhrZBkytu25Lg",
+      "gutbuster": "Actor.Xiknv4R8i7dxqqL7",
+      "hunter": "Actor.QLve30GX7Zb3nN7a",
+      "juggernaut": "Actor.H4eFETYZ4F5mDIwr"
+    },
+    "inset": 4,
+    "controllerId": "XQYtkaFofgFDrB9G",
+    "combatId": "9hjVaQ0KQWD0m5jS",
+    "pending": null,
+    "wave": 1,
+    "reinforcements": 0
+  },
+  "removedOrphanEncounter": "8t801Wfqd19IK0jv"
+}

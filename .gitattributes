@@ -7,3 +7,5 @@ AGENTS.md export-ignore
 tests/ export-ignore
 test-results/ export-ignore
 .github/ export-ignore
+release-notes/ export-ignore
+tmp/ export-ignore

@@ -188,3 +188,5 @@ Ammunition Recovery is paused by default. Enable it before combat. When a starte
 Ammunition Recovery verification: all 35 Node tests and the Core design-system boundary scan passed. The Dev1 shared-runner regression passed all five checks on Foundry 14.368 / D&D5e 6.0.3, including five native receipts, restoration of a depleted stack to two arrows, and duplicate recovery prevention. Report: tests/ammo-recovery-live-report.json. Refresh GM and player clients to load the consumption hooks, then enable the trigger before combat.
 
 Panel regression: run `node tools/verify-panel.mjs` in Dev1. It uses Core's shared runner to check the 65% width, 75% height, foreground stacking, and opaque body/handle at three viewport sizes without changing world documents.
+
+Release history lives in `release-notes/`; Foundry links to this history directory through the manifest `changelog` URL. Use the module-local `/tmp/` directory for working files; it is ignored by Git and excluded from release packages.

@@ -1,8 +1,11 @@
+import { mkdir as mkdirWorkingDirectory } from 'node:fs/promises';
+const localWorkingDirectory = new URL('../tmp/', import.meta.url);
+await mkdirWorkingDirectory(localWorkingDirectory, {recursive: true});
 import {spawn} from 'node:child_process';
 import {readFile,mkdtemp,rm,writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-const profile=await mkdtemp(path.join(os.tmpdir(),'smithy-browser-'));
+const profile=await mkdtemp(path.join(path.resolve(import.meta.dirname, '../tmp'),'smithy-browser-'));
 const chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',[
   '--headless=new','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'
 ],{windowsHide:true,stdio:['ignore','ignore','pipe']});

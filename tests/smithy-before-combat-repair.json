@@ -1,0 +1,7078 @@
+{
+  "world": "drakkenheim",
+  "scene": {
+    "folder": "X47RYdYOBx8rY0lj",
+    "name": "The Scar",
+    "_id": "PNczK53V7aOnK84v",
+    "active": true,
+    "navigation": true,
+    "navOrder": 0,
+    "thumb": "worlds/drakkenheim/assets/scenes/thumb-75DIewIQnWOv2mlD2gR22Q.webp",
+    "width": 6000,
+    "height": 6200,
+    "padding": 0.25,
+    "shiftX": 0,
+    "shiftY": 0,
+    "initial": {
+      "x": null,
+      "y": null,
+      "scale": null
+    },
+    "initialLevel": "defaultLevel0000",
+    "grid": {
+      "type": 1,
+      "size": 100,
+      "style": "solidLines",
+      "thickness": 1,
+      "color": "#000000",
+      "alpha": 0.2,
+      "distance": 5,
+      "units": "ft"
+    },
+    "tokenVision": true,
+    "fog": {
+      "mode": 1,
+      "colors": {
+        "explored": null,
+        "unexplored": null
+      }
+    },
+    "environment": {
+      "darknessLevel": 0,
+      "darknessLock": false,
+      "globalLight": {
+        "enabled": false,
+        "alpha": 0.5,
+        "bright": false,
+        "color": null,
+        "coloration": 1,
+        "luminosity": 0,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "darkness": {
+          "min": 0,
+          "max": 1
+        }
+      },
+      "cycle": true,
+      "base": {
+        "hue": 0,
+        "intensity": 0,
+        "luminosity": 0,
+        "saturation": 0,
+        "shadows": 0
+      },
+      "dark": {
+        "hue": 0.7138888888888889,
+        "intensity": 0,
+        "luminosity": -0.25,
+        "saturation": 0,
+        "shadows": 0
+      }
+    },
+    "transition": {
+      "type": null,
+      "duration": 1500,
+      "activeOnly": false
+    },
+    "drawings": [],
+    "tokens": [
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 0,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "2LQjiqP2tPz2SejG",
+        "delta": {
+          "_id": "2LQjiqP2tPz2SejG",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 58,
+                "value": 58
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4600,
+        "y": 3200,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 1,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "gSw8oFnYHL1hY71o",
+        "delta": {
+          "_id": "gSw8oFnYHL1hY71o",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 68,
+                "value": 68
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2700,
+        "y": 3600,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 2,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "IFCgKXkz0M7EeXGj",
+        "delta": {
+          "_id": "IFCgKXkz0M7EeXGj",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 66,
+                "value": 66
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4500,
+        "y": 3200,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 3,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "Ok4P1GKaZ8J1HkzV",
+        "delta": {
+          "_id": "Ok4P1GKaZ8J1HkzV",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 77,
+                "value": 77
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2600,
+        "y": 3700,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 4,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "7Iv4O6ZgtDdlJsOI",
+        "delta": {
+          "_id": "7Iv4O6ZgtDdlJsOI",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 70,
+                "value": 70
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2600,
+        "y": 3300,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 5,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "VVgvwlZONvC9WJWA",
+        "delta": {
+          "_id": "VVgvwlZONvC9WJWA",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 60,
+                "value": 60
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4800,
+        "y": 3300,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 6,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "tkiWO06f5NFdwP0l",
+        "delta": {
+          "_id": "tkiWO06f5NFdwP0l",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 59,
+                "value": 59
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4700,
+        "y": 2900,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Veteran",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/warrior-veteran.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "LDsDQpK4R964SMMd",
+        "hidden": false,
+        "sort": 7,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "cruUZksvbxt8fpsa",
+        "delta": {
+          "_id": "cruUZksvbxt8fpsa",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 66,
+                "value": 66
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2500,
+        "y": 3400,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 8,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "qhLplEmboPrrqbaZ",
+        "delta": {
+          "_id": "qhLplEmboPrrqbaZ",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 37,
+                "value": 37
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4400,
+        "y": 3800,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 9,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "E3UHiwGb8xqyAU6P",
+        "delta": {
+          "_id": "E3UHiwGb8xqyAU6P",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 32,
+                "value": 32
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4900,
+        "y": 3200,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 10,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "bQN22k5lakBMtKp4",
+        "delta": {
+          "_id": "bQN22k5lakBMtKp4",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 36,
+                "value": 36
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4400,
+        "y": 3000,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {
+          "tagger": {
+            "tags": ""
+          },
+          "dnd5e": {
+            "lockSize": false,
+            "lockScale": false
+          },
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 11,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "Z5P9mEpTapJBnDTN",
+        "delta": {
+          "_id": "Z5P9mEpTapJBnDTN",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 27,
+                "value": 27
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4500,
+        "y": 2900,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 12,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "fcLGyvb2t37s611J",
+        "delta": {
+          "_id": "fcLGyvb2t37s611J",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 33,
+                "value": 33
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4600,
+        "y": 3000,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 14,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "Gjt6nN9nngKjbW2V",
+        "delta": {
+          "_id": "Gjt6nN9nngKjbW2V",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 30,
+                "value": 30
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2600,
+        "y": 3800,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 15,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "NSgCHpMMzlaeLm2D",
+        "delta": {
+          "_id": "NSgCHpMMzlaeLm2D",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 37,
+                "value": 37
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4300,
+        "y": 3900,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 17,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "jGgAhcVQReFUpv5Z",
+        "delta": {
+          "_id": "jGgAhcVQReFUpv5Z",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 32,
+                "value": 32
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4600,
+        "y": 2700,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 18,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "lNzLiiuTqMVuGkyc",
+        "delta": {
+          "_id": "lNzLiiuTqMVuGkyc",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 38,
+                "value": 38
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2400,
+        "y": 3800,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 19,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "R0C3t8Z6dhIdMdGn",
+        "delta": {
+          "_id": "R0C3t8Z6dhIdMdGn",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 33,
+                "value": 33
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2600,
+        "y": 3900,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 20,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "91jwKpPnej44WDRF",
+        "delta": {
+          "_id": "91jwKpPnej44WDRF",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 36,
+                "value": 36
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2700,
+        "y": 3400,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Thug",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/tough.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {},
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "lRcJo3O3OqgTPVpr",
+        "hidden": false,
+        "sort": 21,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "X33bz7pA5cOTwFoc",
+        "delta": {
+          "_id": "X33bz7pA5cOTwFoc",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 37,
+                "value": 37
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 2800,
+        "y": 3500,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Reginald Ironhelm",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/mage.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {
+          "tagger": {
+            "tags": ""
+          },
+          "dnd5e": {
+            "lockSize": false,
+            "lockScale": false
+          },
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "xgSpAEMLQlSUFE00",
+        "hidden": false,
+        "sort": 22,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "RrMu0BA2Csvxx9XE",
+        "delta": {
+          "_id": "RrMu0BA2Csvxx9XE",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 73,
+                "value": 73
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 3700,
+        "y": 3400,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Mordecai Ironhelm",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/assassin.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {
+          "tagger": {
+            "tags": ""
+          },
+          "dnd5e": {
+            "lockSize": false,
+            "lockScale": false
+          },
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "Sbpy8Xzvjcdl0kGp",
+        "hidden": false,
+        "sort": 23,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "Qx4hzngnxyqZKiQJ",
+        "delta": {
+          "_id": "Qx4hzngnxyqZKiQJ",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 99,
+                "value": 99
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 3100,
+        "y": 3700,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Gertrude Ironhelm",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-adventures-faerun/assets/tokens/gladiator.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 2,
+          "scaleY": 2,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 20,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 2,
+            "texture": null
+          }
+        },
+        "flags": {
+          "tagger": {
+            "tags": ""
+          },
+          "dnd5e": {
+            "lockSize": false,
+            "lockScale": false
+          },
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "etPIZ8KTQMRxj5LO",
+        "hidden": false,
+        "sort": 24,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "tlpOryVjUBs1HYfP",
+        "delta": {
+          "_id": "tlpOryVjUBs1HYfP",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 97,
+                "value": 97
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4400,
+        "y": 3400,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Eloise Ironhelm",
+        "displayName": 30,
+        "actorLink": false,
+        "width": 1,
+        "height": 1,
+        "texture": {
+          "src": "modules/dnd-monster-manual/assets/tokens/priest.webp",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": true,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 0,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": false,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0.1,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": true,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 1,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "flags": {
+          "tagger": {
+            "tags": ""
+          },
+          "dnd5e": {
+            "lockSize": false,
+            "lockScale": false
+          },
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "depth": 1,
+        "actorId": "DdUAhnPcESNJNnPP",
+        "hidden": false,
+        "sort": 25,
+        "shape": 4,
+        "level": "defaultLevel0000",
+        "_id": "xgkjcvFhFh1G0GHL",
+        "delta": {
+          "_id": "xgkjcvFhFh1G0GHL",
+          "system": {
+            "attributes": {
+              "hp": {
+                "max": 36,
+                "value": 36
+              }
+            }
+          },
+          "items": [],
+          "effects": [],
+          "flags": {},
+          "name": null,
+          "type": null,
+          "img": null,
+          "ownership": null
+        },
+        "x": 4100,
+        "y": 3300,
+        "elevation": 0,
+        "locked": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Kronen (LG)",
+        "displayName": 30,
+        "actorLink": true,
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "texture": {
+          "src": "tokenizer/pc-images/kronen_valucas.Token.webp?1786817258272",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": false,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 30,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 20,
+          "color": null,
+          "coloration": 1,
+          "dim": 20,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": true,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": false,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 0,
+          "subject": {
+            "scale": 1,
+            "texture": "tokenizer/pc-images/kronen.Token.webp?1783612408220"
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "flags": {
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false,
+            "hideName": false
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          }
+        },
+        "actorId": "45rXvoe7B5yF1JeF",
+        "x": 4200,
+        "y": 3900,
+        "elevation": 0,
+        "level": "defaultLevel0000",
+        "shape": 4,
+        "_id": "XxyvyRrT4mkFjIsw",
+        "delta": null,
+        "sort": 0,
+        "locked": false,
+        "hidden": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Luthor Garrick",
+        "displayName": 30,
+        "actorLink": true,
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "texture": {
+          "src": "tokenizer/pc-images/luthor_garrick.Token.webp?1788446067411",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": false,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 30,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": true,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": false,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 0,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "flags": {
+          "splatter": {
+            "bloodColor": ""
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          }
+        },
+        "actorId": "UH4N8IA5wzKTvT1L",
+        "x": 4300,
+        "y": 3600,
+        "elevation": 0,
+        "level": "defaultLevel0000",
+        "shape": 4,
+        "_id": "ysZVhcO5OQRmAeII",
+        "delta": null,
+        "sort": 0,
+        "locked": false,
+        "hidden": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Rose (NG)",
+        "displayName": 30,
+        "actorLink": true,
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "texture": {
+          "src": "tokenizer/pc-images/nella_rose_farlynn.Token.webp?1787841964425",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": false,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 30,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": true,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "darkvision",
+          "color": null,
+          "attenuation": 0,
+          "brightness": 0.1,
+          "saturation": -1,
+          "contrast": 0
+        },
+        "detectionModes": {
+          "hearing": {
+            "range": null,
+            "enabled": false
+          }
+        },
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": false,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 0,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "flags": {
+          "splatter": {
+            "bloodColor": [
+              "",
+              ""
+            ]
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          },
+          "dnd5e": {
+            "lockScale": true,
+            "lockSize": false
+          },
+          "tagger": {
+            "tags": []
+          }
+        },
+        "actorId": "sko1XN2Q0QNNhq64",
+        "x": 3800,
+        "y": 3600,
+        "elevation": 0,
+        "level": "defaultLevel0000",
+        "shape": 4,
+        "_id": "xJCY27E0NN2oAUUZ",
+        "delta": null,
+        "sort": 0,
+        "locked": false,
+        "hidden": false,
+        "_movementHistory": [],
+        "_regions": []
+      },
+      {
+        "name": "Nash (N)",
+        "displayName": 30,
+        "actorLink": true,
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "texture": {
+          "src": "tokenizer/pc-images/nash_smidvarg.Token.webp?1787841414517",
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "fit": "contain",
+          "scaleX": 1,
+          "scaleY": 1,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "lockRotation": false,
+        "rotation": 0,
+        "alpha": 1,
+        "disposition": 1,
+        "displayBars": 30,
+        "bar1": {
+          "attribute": "attributes.hp"
+        },
+        "bar2": {
+          "attribute": null
+        },
+        "light": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "bright": 0,
+          "color": null,
+          "coloration": 1,
+          "dim": 0,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": null,
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "sight": {
+          "enabled": true,
+          "range": 0,
+          "angle": 360,
+          "visionMode": "basic",
+          "color": null,
+          "attenuation": 0,
+          "brightness": 0,
+          "saturation": 0,
+          "contrast": 0
+        },
+        "detectionModes": {},
+        "occludable": {
+          "radius": 0
+        },
+        "ring": {
+          "enabled": false,
+          "colors": {
+            "ring": null,
+            "background": null
+          },
+          "effects": 0,
+          "subject": {
+            "scale": 1,
+            "texture": null
+          }
+        },
+        "turnMarker": {
+          "mode": 1,
+          "animation": null,
+          "src": null,
+          "disposition": false
+        },
+        "movementAction": null,
+        "flags": {
+          "splatter": {
+            "bloodColor": ""
+          },
+          "image-hover": {
+            "hideArt": false,
+            "specificArt": "path/image.png"
+          },
+          "fa-nexus": {
+            "eyeLevelHeightFt": null
+          },
+          "Rideable": {
+            "issetRideableFlag": true,
+            "MountonEnterFlag": false,
+            "AutoMountBlackListFlag": "",
+            "AutoMountWhiteListFlag": "",
+            "MaxRiderFlag": null,
+            "CustomRidingheightFlag": null,
+            "UseRidingHeightFlag": true,
+            "RidersScaleFlag": 1,
+            "RiderPositioningFlag": "RowPlacement",
+            "RiderOffsetFlag": [
+              0,
+              0
+            ],
+            "TokenFormFlag": "TokenFormCircle",
+            "InsideMovementFlag": false,
+            "SpawnRidersFlag": "",
+            "CanbePilotedFlag": false,
+            "CheckPilotedCollisionFlag": false,
+            "PilotedbyDefaultFlag": false
+          },
+          "healthEstimate": {
+            "dontMarkDead": false,
+            "hideHealthEstimate": false
+          }
+        },
+        "actorId": "ec5SQDupVe3W0xO7",
+        "x": 4100,
+        "y": 3500,
+        "elevation": 0,
+        "level": "defaultLevel0000",
+        "shape": 4,
+        "_id": "NINfJjI1TxRshnfi",
+        "delta": null,
+        "sort": 0,
+        "locked": false,
+        "hidden": false,
+        "_movementHistory": [],
+        "_regions": []
+      }
+    ],
+    "levels": [
+      {
+        "_id": "defaultLevel0000",
+        "name": "Level",
+        "elevation": {
+          "top": 20,
+          "bottom": 0
+        },
+        "background": {
+          "color": "#999999",
+          "src": "assets/maps/battle-maps/Smithy%20on%20the%20Scar.webp",
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "foreground": {
+          "src": null,
+          "tint": "#ffffff",
+          "alphaThreshold": 0.75
+        },
+        "fog": {
+          "src": null
+        },
+        "textures": {
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "fit": "fill",
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0
+        },
+        "visibility": {
+          "levels": []
+        },
+        "sort": 0,
+        "flags": {}
+      }
+    ],
+    "lights": [
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#ff7e14",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "flame",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 2,
+          "dim": 5
+        },
+        "name": "Ambient Light",
+        "_id": "43g4E9VTXKsAsOX8",
+        "x": 2816,
+        "y": 2703,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {
+            "tags": ""
+          }
+        }
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#ff7e14",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "flame",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 3,
+          "dim": 25
+        },
+        "name": "Ambient Light",
+        "x": 3050,
+        "y": 2700,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {
+            "tags": ""
+          }
+        },
+        "_id": "Q6zMgh9wQj0gmV8p"
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#a600ff",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "pulse",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 10,
+          "dim": 40
+        },
+        "name": "Ambient Light (2)",
+        "_id": "xI5mS2pFQI0dAzZT",
+        "x": 5502,
+        "y": 3599,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {}
+        }
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#a600ff",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "pulse",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 10,
+          "dim": 40
+        },
+        "name": "Ambient Light (2)",
+        "x": 2600,
+        "y": 2000,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {}
+        },
+        "_id": "4iQ7VrwOPidiuDdY"
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#a600ff",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "pulse",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 10,
+          "dim": 40
+        },
+        "name": "Ambient Light (2)",
+        "x": 3300,
+        "y": 5500,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {}
+        },
+        "_id": "a3yt6WmnLY6wZDsR"
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#a600ff",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "pulse",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 10,
+          "dim": 40
+        },
+        "name": "Ambient Light (2)",
+        "x": 4300,
+        "y": 6200,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {}
+        },
+        "_id": "KxeBKPPijsfpEtuw"
+      },
+      {
+        "elevation": 0,
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "walls": true,
+        "vision": false,
+        "hidden": false,
+        "config": {
+          "negative": false,
+          "priority": 0,
+          "alpha": 0.5,
+          "angle": 360,
+          "color": "#ff7e14",
+          "coloration": 1,
+          "attenuation": 0.5,
+          "luminosity": 0.5,
+          "saturation": 0,
+          "contrast": 0,
+          "shadows": 0,
+          "animation": {
+            "type": "flame",
+            "speed": 5,
+            "intensity": 5,
+            "reverse": false
+          },
+          "darkness": {
+            "min": 0,
+            "max": 1
+          },
+          "bright": 5,
+          "dim": 30
+        },
+        "name": "Ambient Light",
+        "x": 4125,
+        "y": 3763,
+        "rotation": 0,
+        "locked": false,
+        "flags": {
+          "tagger": {
+            "tags": ""
+          }
+        },
+        "_id": "YahWta3x6sIiJbn5"
+      }
+    ],
+    "notes": [],
+    "sounds": [],
+    "regions": [],
+    "tiles": [],
+    "walls": [
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2700,
+          3188,
+          2700,
+          2400
+        ],
+        "_id": "1iiVAeBuGvSvnc7t"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2700,
+          2400,
+          4300,
+          2388
+        ],
+        "_id": "9gAi9sxEnFrsPz4u"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3025,
+          4200,
+          3500,
+          4200
+        ],
+        "_id": "need5W6WN1sqRuSN"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          4200,
+          3500,
+          4575
+        ],
+        "_id": "TpDDpgHDeSjyVjK4"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          4813,
+          3500,
+          5000
+        ],
+        "_id": "uRWQUqltsR4DuRhb"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          5000,
+          2700,
+          5000
+        ],
+        "_id": "pmhozV1nL8Tg7DpF"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2700,
+          5000,
+          2700,
+          4200
+        ],
+        "_id": "zuy12iX171teByzp"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2700,
+          4200,
+          2775,
+          4200
+        ],
+        "_id": "87vCqZVxgZduVONZ"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 1,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2775,
+          4200,
+          3025,
+          4200
+        ],
+        "_id": "HLPwxEmrYZnVqkmo"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 1,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          4575,
+          3500,
+          4813
+        ],
+        "_id": "yGEbFxcGWIOsiIx0"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2550,
+          2763,
+          2388,
+          2813
+        ],
+        "_id": "Y4O5vx06Gze4Lh0c"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2388,
+          2813,
+          2425,
+          2938
+        ],
+        "_id": "RXNSvWscd60gzweW"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2425,
+          2938,
+          2588,
+          2888
+        ],
+        "_id": "sPDxIGcGL6qNmxs4"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2588,
+          2888,
+          2550,
+          2763
+        ],
+        "_id": "qn93A6jDktDsRm7T"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1938,
+          3150,
+          2063,
+          3238
+        ],
+        "_id": "OVCfRI7JGye9Wf7u"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2063,
+          3238,
+          1963,
+          3475
+        ],
+        "_id": "X0mZ4XPJNZ5ZQAxG"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1963,
+          3475,
+          1788,
+          3413
+        ],
+        "_id": "g8iMVVlR4rMK4qFE"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1788,
+          3413,
+          1938,
+          3150
+        ],
+        "_id": "QtjVv4sXSLaRsXQC"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1775,
+          3950,
+          1888,
+          4288
+        ],
+        "_id": "71V6H6o2AdXnQlea"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1888,
+          4288,
+          2050,
+          4225
+        ],
+        "_id": "LfR6lJVi0sQALG6D"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2050,
+          4225,
+          1975,
+          3925
+        ],
+        "_id": "BIKwDfUWQaB7Sq2K"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1975,
+          3925,
+          1775,
+          3950
+        ],
+        "_id": "ugrovVx8qJU7rN0K"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2325,
+          4475,
+          2538,
+          4538
+        ],
+        "_id": "KpZ4fAEqe1qGT4aA"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2538,
+          4538,
+          2488,
+          4713
+        ],
+        "_id": "fu5Jt81RoVc183ja"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2488,
+          4713,
+          2288,
+          4650
+        ],
+        "_id": "0WIjqZaxffOy4jM8"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2288,
+          4650,
+          2325,
+          4475
+        ],
+        "_id": "W5JzUNprN1yCEkUT"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4013,
+          4538,
+          4050,
+          4725
+        ],
+        "_id": "rrpQpjWCiHTyAICZ"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4050,
+          4725,
+          4225,
+          4675
+        ],
+        "_id": "QLR9QeCzPCS374CA"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4225,
+          4675,
+          4200,
+          4500
+        ],
+        "_id": "ZRrdybHUntNyV8Fm"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4200,
+          4500,
+          4013,
+          4538
+        ],
+        "_id": "yGz1zYmnKenh7UPc"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4425,
+          4488,
+          4663,
+          4363
+        ],
+        "_id": "v9TWz1X1uD9PnWdb"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4663,
+          4363,
+          4763,
+          4488
+        ],
+        "_id": "hBNtwljrgtHw8bvN"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4763,
+          4488,
+          4475,
+          4638
+        ],
+        "_id": "zfSOiwcT7Rhbotjh"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4475,
+          4638,
+          4425,
+          4488
+        ],
+        "_id": "zvU0OJ6c4fKSbeHe"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5163,
+          3925,
+          5025,
+          4200
+        ],
+        "_id": "Wn6KCxZqno88ANBF"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5025,
+          4200,
+          5163,
+          4288
+        ],
+        "_id": "eAZS60zmKgoG3zHv"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5163,
+          4288,
+          5313,
+          3988
+        ],
+        "_id": "cDh7rUVYOrXjDg6k"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5313,
+          3988,
+          5163,
+          3925
+        ],
+        "_id": "pkAR6qJIfPRJ0m5x"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5188,
+          3275,
+          5200,
+          3588
+        ],
+        "_id": "fWvBm9WPAdZDP3SG"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5200,
+          3588,
+          5363,
+          3600
+        ],
+        "_id": "PuPTkd7Ns3aMs69r"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5363,
+          3600,
+          5363,
+          3250
+        ],
+        "_id": "KbKCiT4koEeECXDP"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5363,
+          3250,
+          5188,
+          3275
+        ],
+        "_id": "Q28BinzYLvsd3dTu"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5088,
+          2913,
+          5250,
+          2850
+        ],
+        "_id": "m9ruS2CFa7i2PwYD"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5250,
+          2850,
+          5088,
+          2550
+        ],
+        "_id": "ipo8Xm9xopYu78OT"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          5088,
+          2550,
+          4938,
+          2663
+        ],
+        "_id": "EmogS26cRW53i4vo"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4938,
+          2663,
+          5088,
+          2913
+        ],
+        "_id": "9sk5BwjxTotIsHs5"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4463,
+          2238,
+          4725,
+          2400
+        ],
+        "_id": "SyvxkyQQ0Sl6KHSy"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4725,
+          2400,
+          4825,
+          2263
+        ],
+        "_id": "YaTrlaJqMlSwfO6G"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4825,
+          2263,
+          4500,
+          2088
+        ],
+        "_id": "k5DFetbgn1Kgw0eY"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4500,
+          2088,
+          4463,
+          2238
+        ],
+        "_id": "fr3c6TLdQGAqKTAj"
+      },
+      {
+        "levels": [],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          7500,
+          1600,
+          7500,
+          7800
+        ],
+        "_id": "dFGKPA2XYbzKXWE8"
+      },
+      {
+        "levels": [],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1500,
+          7800,
+          1500,
+          1600
+        ],
+        "_id": "tBotENY3QBg45JgS"
+      },
+      {
+        "levels": [],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1500,
+          1600,
+          7500,
+          1600
+        ],
+        "_id": "HQE6yvBIH6kDZ6RK"
+      },
+      {
+        "levels": [],
+        "light": 0,
+        "move": 20,
+        "sight": 0,
+        "sound": 0,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          7500,
+          7800,
+          1500,
+          7800
+        ],
+        "_id": "GIAHRT6JR4F1nlwo"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          2300,
+          6588,
+          1900,
+          6588
+        ],
+        "_id": "R8K0RDgORvno9It6"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          1900,
+          6588,
+          1900,
+          7800
+        ],
+        "_id": "QsDcRLXJLvaRrECN"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          7388,
+          3500,
+          6600
+        ],
+        "_id": "EMwsiTXdf0d1jGCN"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3900,
+          6600,
+          3900,
+          7375
+        ],
+        "_id": "Ujlydpu1R9UJKPGQ"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3900,
+          7613,
+          3900,
+          7800
+        ],
+        "_id": "3u0nRUa2N41j1UWN"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          7613,
+          3500,
+          7800
+        ],
+        "_id": "Fd9nJU5rXIq8zZuA"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 0,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          4688,
+          6600,
+          4700,
+          7800
+        ],
+        "_id": "YqlgNjWLLETDlbWD"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          7388,
+          3500,
+          7613
+        ],
+        "_id": "PZrMbCcaZI6CJguP"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3900,
+          7375,
+          3900,
+          7613
+        ],
+        "_id": "217STKp3PBh6rzK1"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3500,
+          6600,
+          3700,
+          6600
+        ],
+        "_id": "a5pCK9uYB30VVGAC"
+      },
+      {
+        "levels": [
+          "defaultLevel0000"
+        ],
+        "light": 20,
+        "move": 20,
+        "sight": 20,
+        "sound": 20,
+        "dir": 0,
+        "door": 1,
+        "ds": 0,
+        "threshold": {
+          "light": null,
+          "sight": null,
+          "sound": null,
+          "attenuation": false
+        },
+        "animation": null,
+        "flags": {},
+        "c": [
+          3700,
+          6600,
+          3900,
+          6600
+        ],
+        "_id": "eDvCnXiAwYJh8gPW"
+      }
+    ],
+    "playlist": null,
+    "playlistSound": null,
+    "journal": null,
+    "journalEntryPage": null,
+    "weather": "",
+    "sort": 0,
+    "ownership": {
+      "default": 0,
+      "XQYtkaFofgFDrB9G": 3
+    },
+    "flags": {
+      "fxmaster": {
+        "effects": {
+          "core_fog": {
+            "type": "fog",
+            "options": {
+              "belowTokens": false,
+              "belowTiles": false,
+              "belowForeground": false,
+              "tint": {
+                "apply": true,
+                "value": "#6200b3"
+              },
+              "soundFxEnabled": false,
+              "direction": 185,
+              "synchronizedDirection": false,
+              "scale": 0.42,
+              "speed": 0.43,
+              "lifetime": 0.27,
+              "density": 0.6,
+              "alpha": 0.6,
+              "darknessActivationEnabled": false,
+              "darknessActivationRange": {
+                "min": 0,
+                "max": 1
+              }
+            }
+          },
+          "core_embers": {
+            "type": "embers",
+            "options": {
+              "belowTokens": false,
+              "belowTiles": false,
+              "belowForeground": false,
+              "tint": {
+                "apply": false,
+                "value": "#ffffff"
+              },
+              "soundFxEnabled": false,
+              "topDown": true,
+              "orbit": false,
+              "orbitDistance": 0.5,
+              "directionalMovement": false,
+              "direction": 180,
+              "synchronizedDirection": false,
+              "scale": 0.6,
+              "speed": 0.27,
+              "lifetime": 0.27,
+              "density": 0.49,
+              "alpha": 0.5,
+              "darknessActivationEnabled": false,
+              "darknessActivationRange": {
+                "min": 0,
+                "max": 1
+              }
+            }
+          },
+          "core_rain": {
+            "type": "rain",
+            "options": {
+              "belowTokens": false,
+              "belowTiles": false,
+              "belowForeground": false,
+              "tint": {
+                "apply": false,
+                "value": "#FFFFFF"
+              },
+              "soundFxEnabled": false,
+              "topDown": true,
+              "splash": true,
+              "splashDensity": 0.2,
+              "splashScale": 0.2,
+              "direction": 285,
+              "synchronizedDirection": false,
+              "scale": 0.27,
+              "speed": 0.27,
+              "lifetime": 0.25,
+              "density": 0.42,
+              "alpha": 1,
+              "backgroundEnabled": false,
+              "backgroundMode": "accumulate",
+              "backgroundDuration": 180,
+              "backgroundGroundMovementSpeed": 0.04,
+              "backgroundCoverage": 0.65,
+              "backgroundPatchSize": 0.85,
+              "backgroundFillVariation": 0.7,
+              "backgroundOpacity": 0.28,
+              "backgroundReflectionStrength": 0.58,
+              "backgroundShimmerStrength": 0.42,
+              "backgroundShimmerSpeed": 0.14,
+              "backgroundInteractionEnabled": false,
+              "backgroundInteractionRadius": 0.5,
+              "backgroundInteractionStrength": 0.75,
+              "backgroundInteractionLiftChance": 0.35,
+              "backgroundInteractionElevationThreshold": 5,
+              "backgroundInteractionSettleTime": 1.4,
+              "darknessActivationEnabled": false,
+              "darknessActivationRange": {
+                "min": 0,
+                "max": 1
+              }
+            }
+          }
+        },
+        "stack": [
+          {
+            "uid": "scene:particle:core_rain"
+          },
+          {
+            "uid": "scene:particle:core_embers"
+          },
+          {
+            "uid": "scene:particle:core_fog"
+          }
+        ]
+      },
+      "morelord-game-master": {
+        "smithyAtTheScar": {
+          "actors": {
+            "husk": "Actor.69bAXRvZS0qdPrlI",
+            "ratling": "Actor.kJiRPjOEfAOB9wXz",
+            "chimera": "Actor.mmChimera0000000"
+          },
+          "inset": 4,
+          "controllerId": "XQYtkaFofgFDrB9G",
+          "combatId": "8t801Wfqd19IK0jv",
+          "pending": null,
+          "wave": 1,
+          "reinforcements": 0
+        }
+      },
+      "multi-token-edit": {
+        "blackBars": false
+      },
+      "tile-arsenal": {
+        "TILEARSENAL00023": {},
+        "TILEARSENAL00022": {}
+      }
+    },
+    "_stats": {
+      "coreVersion": "14.368",
+      "systemId": "dnd5e",
+      "systemVersion": "6.0.3",
+      "createdTime": 1790214133368,
+      "modifiedTime": 1790223998838,
+      "lastModifiedBy": "XQYtkaFofgFDrB9G",
+      "compendiumSource": null,
+      "duplicateSource": null,
+      "exportSource": null
+    },
+    "navName": ""
+  },
+  "combats": [
+    {
+      "active": true,
+      "_id": "9hjVaQ0KQWD0m5jS",
+      "name": "",
+      "type": "base",
+      "system": {},
+      "scene": null,
+      "groups": [],
+      "combatants": [
+        {
+          "tokenId": "2LQjiqP2tPz2SejG",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "PZki0kzZ3RuP55wc",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100393,
+            "modifiedTime": 1790223108312,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "xJCY27E0NN2oAUUZ",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "sko1XN2Q0QNNhq64",
+          "hidden": false,
+          "_id": "0uEwHpaLfnR7Mkg2",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100393,
+            "modifiedTime": 1790223108634,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "ysZVhcO5OQRmAeII",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "UH4N8IA5wzKTvT1L",
+          "hidden": false,
+          "_id": "9fqt4XUzW2qR1Ajp",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100393,
+            "modifiedTime": 1790223108620,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "NINfJjI1TxRshnfi",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "ec5SQDupVe3W0xO7",
+          "hidden": false,
+          "_id": "umJRvetZOARXGvrf",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 17,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108654,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "Ok4P1GKaZ8J1HkzV",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "zLfA15I3ccczW6Ro",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108991,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "7Iv4O6ZgtDdlJsOI",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "jsD1wV6be81Jt0pd",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108992,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "VVgvwlZONvC9WJWA",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "cmanAY8hp3OmnGDD",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108993,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "tkiWO06f5NFdwP0l",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "fdVAHs0F2WGYy7mb",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108994,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "IFCgKXkz0M7EeXGj",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "DNvueiaQdulYCjUG",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108995,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "gSw8oFnYHL1hY71o",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "94cCtDjWLLcTmAu2",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108996,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "qhLplEmboPrrqbaZ",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "q0z8nEzz9UCWumc4",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108311,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "E3UHiwGb8xqyAU6P",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "goY0QSENyniqiQnM",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108999,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "XxyvyRrT4mkFjIsw",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "45rXvoe7B5yF1JeF",
+          "hidden": false,
+          "_id": "Crs8FpXoFXHoZqAR",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 5,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108641,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "cruUZksvbxt8fpsa",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "LDsDQpK4R964SMMd",
+          "hidden": false,
+          "_id": "6NYNvW8ct9az4KUZ",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 7,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108997,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "Gjt6nN9nngKjbW2V",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "mKVQue7ciCEThh0A",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223108998,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "bQN22k5lakBMtKp4",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "50ncrxm7wgBp5JZa",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223109000,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "Z5P9mEpTapJBnDTN",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "BcdBNqWUfFn1Bqkh",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223109002,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "jGgAhcVQReFUpv5Z",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "bxO6yaS36qXLTU1A",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100394,
+            "modifiedTime": 1790223109003,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "R0C3t8Z6dhIdMdGn",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "fqb0QvGKjnjJXgFe",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109004,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "91jwKpPnej44WDRF",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "U04ZQaXqahyEXbnQ",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109004,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "NSgCHpMMzlaeLm2D",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "5ELMoNohmVe5La4x",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109005,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "fcLGyvb2t37s611J",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "9ylYhKrQTsnYy1cj",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109006,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "lNzLiiuTqMVuGkyc",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "8NiBEA883T5mmx65",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109007,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "X33bz7pA5cOTwFoc",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "lRcJo3O3OqgTPVpr",
+          "hidden": false,
+          "_id": "YelaGlRf3x1EZhLU",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 9,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223109008,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "tlpOryVjUBs1HYfP",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "etPIZ8KTQMRxj5LO",
+          "hidden": false,
+          "_id": "NSBuCh9kC9biGrEN",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 15,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223108314,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "Qx4hzngnxyqZKiQJ",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "Sbpy8Xzvjcdl0kGp",
+          "hidden": false,
+          "_id": "LvzGNKXCSV4n16Tj",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 22,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223108316,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "RrMu0BA2Csvxx9XE",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "xgSpAEMLQlSUFE00",
+          "hidden": false,
+          "_id": "2BCqSdcOr8nDBpI8",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223108321,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "xgkjcvFhFh1G0GHL",
+          "sceneId": "PNczK53V7aOnK84v",
+          "actorId": "DdUAhnPcESNJNnPP",
+          "hidden": false,
+          "_id": "7JUJa6yM28pZFY6g",
+          "type": "base",
+          "system": {},
+          "img": null,
+          "initiative": 18,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223100395,
+            "modifiedTime": 1790223108326,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        }
+      ],
+      "round": 0,
+      "turn": null,
+      "sort": 0,
+      "flags": {},
+      "_stats": {
+        "coreVersion": "14.368",
+        "systemId": "dnd5e",
+        "systemVersion": "6.0.3",
+        "createdTime": 1790223100353,
+        "modifiedTime": 1790223993447,
+        "lastModifiedBy": "gW2L2FH2Bi905DO8",
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null
+      }
+    },
+    {
+      "scene": "PNczK53V7aOnK84v",
+      "active": false,
+      "_id": "8t801Wfqd19IK0jv",
+      "name": "",
+      "type": "base",
+      "system": {},
+      "groups": [],
+      "combatants": [
+        {
+          "tokenId": "OZALWYOSGsic59pI",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "wygP81giOVRvavlB",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223257917,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "cLFU3lQOANgHtYym",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "2OG7dt0jtBcj56u6",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258055,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "KIJeM65JKcnQjzGl",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "tK6GKOGozkNofjWP",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258056,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "t0Fk8ksm8Z8wf6nT",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "0tQHsbqK5vvRyQSE",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258060,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "2dzrYZFBhGE9AdVG",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "RxemaRu6qEnnjz8j",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258057,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "fuNHscfcefIyvxgz",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "mnydBdA1AJAvdlFN",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258063,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "YJJQS0knghqT0fX1",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "dYhMk8TCcNWUGNpG",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258058,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "uBI8TVGHTCdv9dsE",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "kbqRyu0QaLgCi7b4",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258059,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "r5jx6sgqZYxJ5Cez",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "ZrjmQDHWYEg7Wv5c",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258059,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "p2GKF96iPfafuRuW",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "BXrtvtKgzlUsOnZB",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258061,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "nURncMckHPa6iUKj",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "Hrla58a69H86mwLA",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258061,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        },
+        {
+          "tokenId": "y2cW63OWv8z3IqAX",
+          "actorId": "69bAXRvZS0qdPrlI",
+          "hidden": false,
+          "_id": "HxDc8yXYo397w5tQ",
+          "type": "base",
+          "system": {},
+          "sceneId": null,
+          "img": null,
+          "initiative": 16,
+          "defeated": false,
+          "group": null,
+          "roundJoined": 1,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.368",
+            "systemId": "dnd5e",
+            "systemVersion": "6.0.3",
+            "createdTime": 1790223256142,
+            "modifiedTime": 1790223258062,
+            "lastModifiedBy": "XQYtkaFofgFDrB9G",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          }
+        }
+      ],
+      "round": 0,
+      "turn": null,
+      "sort": 0,
+      "flags": {},
+      "_stats": {
+        "coreVersion": "14.368",
+        "systemId": "dnd5e",
+        "systemVersion": "6.0.3",
+        "createdTime": 1790223250197,
+        "modifiedTime": 1790223993447,
+        "lastModifiedBy": "gW2L2FH2Bi905DO8",
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null
+      }
+    }
+  ]
+}

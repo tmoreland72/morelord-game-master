@@ -47,3 +47,5 @@ All roll-request cards are public, including Wild Magic d20 requests; assigned-p
 
 - Trigger definitions are global across worlds on the same Foundry installation. Macros, saved roll requests, sound buttons, and remembered options are world-specific.
 - World Clock defaults to 10 game minutes per real minute; game pause and started combat suspend its timer. Defer combat time and add 6 seconds per round on combat end without double-counting native advancement. Preserve manual calendar adjustments. Hex-map timing is future work.
+
+- Keep release notes and changelogs in `release-notes/`. Put temporary scripts, staging folders, browser profiles, and other working files in the owning module's `/tmp/` directory; ignore `/tmp/` in Git and exclude it from release archives. Preserve permanent source, documentation, and regression evidence.

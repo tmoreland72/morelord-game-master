@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "world": "drakkenheim",
+  "scene": "The Scar",
+  "disposableCopy": true,
+  "foundry": "14.368",
+  "system": "6.0.3",
+  "results": [
+    {
+      "id": "smithy.setup-ui",
+      "status": "pass",
+      "durationMs": 378
+    },
+    {
+      "id": "smithy.wave-one-placement-and-initiative",
+      "status": "pass",
+      "durationMs": 7180
+    },
+    {
+      "id": "smithy.reinforcement-and-duplicate-guard",
+      "status": "pass",
+      "durationMs": 2329
+    },
+    {
+      "id": "smithy.wave-two-and-safe-word",
+      "status": "pass",
+      "durationMs": 9295
+    },
+    {
+      "id": "smithy.wave-three-and-four",
+      "status": "pass",
+      "durationMs": 7815
+    }
+  ],
+  "existingTokensPreserved": 49,
+  "installed": true,
+  "actors": {
+    "husk": "Actor.69bAXRvZS0qdPrlI",
+    "ratling": "Actor.v6osXCahFwmobuQz",
+    "chimera": "Actor.mmChimera0000000"
+  }
+}
