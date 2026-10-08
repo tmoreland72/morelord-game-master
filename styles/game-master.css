@@ -38,3 +38,12 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule > div { display:grid; grid-template-columns:3.25rem minmax(0,1fr); gap:var(--ml-space-2); align-items:baseline; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-trigger-rule dd { margin:0; }
+#mlgm .gm-ai { display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-ai-thread { display:flex; flex-direction:column; gap:var(--ml-space-2); max-height:min(50vh,28rem); overflow:auto; min-width:0; }
+#mlgm .gm-ai-question { margin:0; font-weight:var(--ml-font-weight-bold); }
+#mlgm .gm-ai-answer :where(p, ul, ol, pre, h1, h2, h3) { margin:0 0 var(--ml-space-2); }
+#mlgm .gm-ai-answer :last-child { margin-bottom:0; }
+#mlgm .gm-ai-pending, #mlgm .gm-ai-error { margin:0; }
+#mlgm .gm-ai-ask { align-items:flex-end; }
+#mlgm .gm-ai-ask textarea { flex:1 1 auto; width:0; min-width:8rem; min-height:var(--ml-control-height); max-height:8rem; }
+#mlgm .gm-ai-ask > button { flex:0 0 auto; }
