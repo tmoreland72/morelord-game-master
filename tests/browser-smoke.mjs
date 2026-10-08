@@ -45,7 +45,7 @@ try {
   await evaluate('var blind=document.querySelector("[data-roll-card=check] input[name=blind]");blind.checked=true;blind.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('testState().board.last.check?.blind===true');
   assert.equal(await evaluate('!!document.querySelector("[data-action=quick-request][data-id=fate]")'),true);
-  assert.equal(await evaluate(`(() => { const sameRow = root => { const tops = [...root.children].map(el => el.getBoundingClientRect().top); return Math.max(...tops) - Math.min(...tops) < 8; }; return sameRow(document.querySelector("[data-roll-card=check]")) && [...document.querySelectorAll(".gm-quick")].every(sameRow); })()`), true);
+  assert.equal(await evaluate(`(() => { const rows=[...document.querySelectorAll(".gm-request-row")]; return rows.length>=6 && rows.every(row=>getComputedStyle(row).flexWrap==="nowrap" && Math.max(...[...row.children].map(el=>el.getBoundingClientRect().top))-Math.min(...[...row.children].map(el=>el.getBoundingClientRect().top))<8); })()`), true);
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="ability";type.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('document.querySelector("[data-roll-card=check] select[name=checkId]").value==="wis" && [...document.querySelectorAll("[data-roll-card=check] label>span")].some(s=>s.textContent==="Ability")');
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="skill";type.dispatchEvent(new Event("change",{bubbles:true}))');
@@ -112,6 +112,8 @@ try {
   const shot=await command('Page.captureScreenshot',{format:'png'});await writeFile(path.join(root,'test-results','tray-desktop.png'),Buffer.from(shot.data,'base64'));
   await command('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'),true);
+  assert.equal(await evaluate('[...document.querySelectorAll(".gm-request-row")].every(row=>getComputedStyle(row).flexWrap==="nowrap")'),true);
+  assert.equal(await evaluate('document.querySelector("#mlgm-tab-settings").textContent'),'GM Settings');
   const mobile=await command('Page.captureScreenshot',{format:'png'});await writeFile(path.join(root,'test-results','tray-mobile.png'),Buffer.from(mobile.data,'base64'));
   assert.equal(await evaluate('testState().board.saved.some(s=>s.type==="group" || s.type==="player")'),false);
   await click('[data-action="tab"][data-id="settings"]');

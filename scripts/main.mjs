@@ -8,7 +8,7 @@ import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, resolveRollActors, visibleSpecialties } from "./roll-requests.mjs";
 
-const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "Settings", party: "Player Settings" };
+const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve(), status = "Ready. Choose an action to configure it.";
 let campaign, campaigns = [], connection, aiBusy = false;
 const drafts = new Map();
@@ -24,6 +24,10 @@ const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}
 const label = (name, content) => `<label><span>${e(name)}</span>${content}</label>`;
 const inlineField = (name, content) => `<label class="gm-inline"><span>${e(name)}</span>${content}</label>`;
 const requestButton = (action, id, name, extra = "") => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="${e(name)}" aria-label="${e(name)}" ${extra}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i></button>`;
+function requestRow({card, fields = "", blind = null, action, id = "", name, disabled = false}) {
+  const blindControl = blind == null ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${blind ? "checked" : ""}><span>Blind roll</span></label>`;
+  return `<form class="gm-request-row" data-roll-card="${e(card)}">${fields}${blindControl}${requestButton(action, id, name, disabled ? "disabled" : "")}</form>`;
+}
 const input = (name, value = "", attrs = "") => `<input name="${name}" value="${e(value)}" ${attrs}>`;
 const select = (name, options) => `<select name="${name}">${options}</select>`;
 const gm = () => { if (!game.user.isGM) throw new Error("Only the GM can use this action."); };
@@ -128,7 +132,7 @@ function render() {
   if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
 function content() {
-  if (tab === "rolls") return `<div class="ml-stack gm-rolls" data-gap="3">${checkBuilder()}${quickRequests()}</div>`;
+  if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="2">${checkBuilder()}${quickRequests()}</div>`;
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Every request starts visible, and this world remembers each choice.</p>${SPECIALTIES.map(specialty=>`<label class="ml-check"><input type="checkbox" name="specialty" value="${specialty.id}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`).join("")}</div>`;
   if (tab === "triggers") return `<div class="ml-stack" data-gap="4"><div class="ml-grid" data-columns="3">${triggerCards()}</div></div>`;
@@ -157,23 +161,33 @@ function checkBuilder() {
   const actors = partyActorIds().map(id => game.actors.get(id)).filter(Boolean);
   const actorId = actors.some(actor => actor.id === c.actorId) ? c.actorId : actors[0]?.id ?? "";
   const checkLabel = checkType === "skill" ? "Skill" : "Ability";
-  return `<form class="gm-request-builder" data-roll-card="check">${inlineField("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join("")))}${inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("")))}${inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"'))}${inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join("")))}${scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""}<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>${requestButton("send-check", "", "Send check", scope === "tokens" || actors.length ? "" : "disabled")}</form>`;
+  const fields = [
+    inlineField("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join(""))),
+    inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join(""))),
+    inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"')),
+    inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join(""))),
+    scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""
+  ].join("");
+  return requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)});
 }
 function quickRequests() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
-  return `<div class="gm-quick-row">${visibleSpecialties(settings).map(id => quickControl(id)).join("")}</div>`;
+  return visibleSpecialties(settings).map(id => quickControl(id)).join("");
 }
 function quickControl(id) {
   const c = state.last[id] ?? {};
-  const blind = `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
   const actors = partyActorIds().map(actorId => game.actors.get(actorId)).filter(Boolean);
   const names = {encounter: "Encounter Check", search: "Delerium Search", foraging: "Foraging Check", death: "Death Save", fate: "Roll of Fate"};
-  if (id === "fate") return `<div class="gm-quick">${requestButton("quick-request", "fate", names.fate)}</div>`;
-  if (id === "encounter") return `<form class="gm-quick" data-roll-card="encounter">${inlineField("Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join("")))}${blind}${requestButton("quick-request", "encounter", names.encounter)}</form>`;
-  if (id === "foraging") return `<form class="gm-quick" data-roll-card="foraging">${inlineField("Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join("")))}${blind}${requestButton("quick-request", "foraging", names.foraging)}</form>`;
-  if (id === "death") return `<form class="gm-quick" data-roll-card="death">${inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join("")))}${blind}${requestButton("quick-request", "death", names.death)}</form>`;
-  let zones = []; try { zones = craftworks().deleriumSearch.getZones(); } catch { /* Craftworks reports its own error when the request is sent. */ }
-  return `<form class="gm-quick" data-roll-card="search">${inlineField("Area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join("")))}${blind}${requestButton("quick-request", "search", names.search)}</form>`;
+  if (id === "fate") return requestRow({card: "fate", action: "quick-request", id: "fate", name: names.fate});
+  const zones = id === "search" ? searchZones() : [];
+  const field = id === "encounter" ? inlineField("Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join("")))
+    : id === "foraging" ? inlineField("Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join("")))
+    : id === "death" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join("")))
+    : inlineField("Area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join("")));
+  return requestRow({card: id, fields: field, blind: c.blind === true, action: "quick-request", id, name: names[id]});
+}
+function searchZones() {
+  try { return craftworks().deleriumSearch.getZones(); } catch { return []; }
 }
 function readBuilder() {
   const data = new FormData(root.querySelector('[data-roll-card="check"]'));

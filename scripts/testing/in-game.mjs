@@ -18,14 +18,14 @@ export const gameMasterChecks=[{
       api.toggle(true);
       document.querySelector('#mlgm [data-action="tab"][data-id="rolls"]').click();
       assert(document.querySelector('#mlgm-tab-rolls').textContent==="Roll Requests","Tab uses the requested name.");
-      assert(document.querySelector('[data-roll-card="death"] strong').textContent==="Death Saving Throw","Death save card uses its neutral title.");
-      assert(!document.querySelector('#mlgm-panel.ml-surface, #mlgm-panel .gm-column'),"Roll cards have no outer section or column headers.");
+      assert(document.querySelector('[data-roll-card="death"] [data-action="quick-request"]').getAttribute("aria-label")==="Death Save","Death save row uses its neutral title.");
+      assert(!document.querySelector('#mlgm-panel.ml-surface, #mlgm-panel .gm-column, .gm-roll-column'),"Roll requests have no outer section or column headers.");
       assert(document.querySelector('[data-roll-card="encounter"] select[name="die"]'),"Encounter die uses a dropdown.");
-      assert(document.querySelectorAll('[data-roll-card] input[name="blind"]').length===document.querySelectorAll('[data-roll-card]').length,"Every roll card has a blind toggle.");
-      const columns=[...document.querySelectorAll('.gm-roll-column')];
-      assert(columns.length===3 && columns[0].querySelector('[data-roll-card="encounter"]') && columns[1].querySelector('[data-roll-card="group"]') && columns[2].querySelector('[data-roll-card="player"]'),"Roll cards retain three independent columns.");
-      assert(getComputedStyle(columns[0]).alignSelf==='start',"Columns use their own card heights.");
-      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|Player Settings',"Tabs use the requested names and order.");
+      const rows=[...document.querySelectorAll('.gm-request-row')];
+      assert(rows.length && rows.every(row=>getComputedStyle(row).flexWrap==="nowrap"),"Every roll request stays on one row.");
+      assert([...document.querySelectorAll('.gm-request-row:not([data-roll-card="fate"])')].every(row=>row.querySelector('input[name="blind"]')),"Private request rows include a blind toggle.");
+      assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
+      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
       const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12});
       await wait(()=>document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`));
@@ -204,11 +204,11 @@ export const gameMasterChecks=[{
         await wait(()=>game.settings.get(ID,'board').partyActorIds?.includes(uuid.split('.').at(-1))===(uuid===actor.uuid));
       }
       document.querySelector('#mlgm-tab-rolls').click();
-      let dc=document.querySelector('[data-roll-card="group"] input[name=dc]');dc.value='14';dc.dispatchEvent(new Event('change',{bubbles:true}));
-      await wait(()=>game.settings.get(ID,'board').last.group?.dc===14);
-      let blind=document.querySelector('[data-roll-card="group"] input[name=blind]');blind.checked=false;blind.dispatchEvent(new Event('change',{bubbles:true}));
-      await wait(()=>game.settings.get(ID,'board').last.group?.blind===false);
-      document.querySelector('[data-action="card-roll"][data-id="group"]').click();
+      let dc=document.querySelector('[data-roll-card="check"] input[name=dc]');dc.value='14';dc.dispatchEvent(new Event('change',{bubbles:true}));
+      await wait(()=>game.settings.get(ID,'board').last.check?.dc===14);
+      let blind=document.querySelector('[data-roll-card="check"] input[name=blind]');blind.checked=false;blind.dispatchEvent(new Event('change',{bubbles:true}));
+      await wait(()=>game.settings.get(ID,'board').last.check?.blind===false);
+      document.querySelector('[data-action="send-check"]').click();
       await wait(()=>game.messages.some(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill));
       const request=game.messages.find(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill);
       assert(JSON.stringify(request.getFlag(ID,'request').actorIds)===JSON.stringify([actor.id]),"Party rolls use the shared configured scope.");
@@ -216,7 +216,7 @@ export const gameMasterChecks=[{
       const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id),summary=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===request.id);
       assert(!result.blind&&!result.whisper.length&&!summary.blind&&!summary.whisper.length,"Blind toggle off makes both native roll and summary public.");
       document.querySelector('#mlgm-tab-party').click();document.querySelector('#mlgm-tab-rolls').click();
-      assert(document.querySelector('[data-roll-card="group"] input[name=dc]').value==='14'&&!document.querySelector('[data-roll-card="group"] input[name=blind]').checked,"Card controls persist without a popup.");
+      assert(document.querySelector('[data-roll-card="check"] input[name=dc]').value==='14'&&!document.querySelector('[data-roll-card="check"] input[name=blind]').checked,"Request row controls persist without a popup.");
       document.querySelector('#mlgm-tab-triggers').click();
       assert(document.querySelector('[data-action="new-trigger"]').disabled,"New Trigger stays visible but disabled.");
       assert(!document.querySelector('[data-action="trigger-edit"], [data-action="trigger-remove"]'),"Trigger editing/deletion is hidden.");

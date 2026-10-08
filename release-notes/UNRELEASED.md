@@ -1,3 +1,3 @@
 # Unreleased
 
-- Roll Requests uses one builder for skill checks, ability checks, and saving throws. Choose the party, selected party tokens, or one character, then send. The builder and each specialty request keep their selector, blind toggle, and dice button on one row. The Settings tab can hide each specialty for the current world.
+- Roll Requests uses one shared row for the check builder and every specialty request: selectors, Blind roll when the request can be private, and the dice button, always on one line. GM Settings can hide each specialty for the current world.

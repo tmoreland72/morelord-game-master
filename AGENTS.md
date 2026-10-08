@@ -5,22 +5,22 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 
 - Morelord Core is required. Reuse its UI, participation, user filtering, skill
   rolls, and contextual socket service; do not recreate these locally.
-- Configure participants on the Player Settings tab. Party roll cards and saved group checks use this shared scope; single-character checks choose from it.
+- Configure participants on the Player Settings tab. Party requests, selected-token requests, and single-character checks use this shared scope.
 - Requests stay in chat, never player popup dialogs. Eligible online players may
   roll their characters. Any GM may roll for anyone, including inactive players.
-- Each roll card has a saved Blind roll toggle. Blind results and summaries are GM/Assistant-only; non-blind results are public. Never return private totals in request flags or acknowledgements.
+- The check builder and each private specialty request have a saved Blind roll toggle. Roll of Fate stays public and has no blind toggle. Blind results and summaries are GM/Assistant-only; non-blind results are public. Never return private totals in request flags or acknowledgements.
 - Show check results only as chat cards, never in the Game Master tray.
-- Preserve the bottom tray. Tabs are Roll Requests, Macros, Sound, Triggers, Campaign AI, and Player Settings. Roll Requests uses inline cards without section/column headers.
-- Request cards show only the title, optional DC, and character roll controls.
-- Roll Requests, Macros, and Triggers have no outer surface frame. Roll cards contain options, a blind toggle, and a bottom-right dice-icon action.
-- Module settings belong in Foundry Game Settings, not the tray.
-- Sound actions use full-width Core buttons. Saved roll cards use Core trash-icon deletion controls.
+- Preserve the bottom tray. Tabs are Roll Requests, Macros, Sound, Triggers, Campaign AI, GM Settings, and Player Settings. Roll Requests is the check builder followed by one specialty row per enabled request, with no section or column headers.
+- Every roll request in the tray uses one shared row and stays on one line: its selector or selectors, the Blind roll toggle when the request can be private, and the dice request button. The builder's selectors are type, skill or ability, optional DC, and who rolls.
+- Roll Requests, Macros, and Triggers have no outer surface frame.
+- Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Ambience, the Campaign AI companion, and other module configuration stay in Foundry Game Settings.
+- Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
 - Starting music stops other music first and uses native shuffle; ambience remains separate.
 - Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
 - Delerium Search reuses Craftworks rules and rewards with Game Master's chat UI.
 - Blind death saves keep sheet counters unchanged; public death saves retain native updates.
 
-- Derive saved labels: skill for groups, skill - character for players, playlist/file names for sound.
+- Derive saved sound labels from playlist and file names.
 - Call for Roll actions are not saved buttons; save all control changes immediately for next time. Encounter dice use a dropdown.
 - Create skill summaries only after every roll card exists; retain averages for single-player checks.
 - Delerium summaries have no average; reuse Craftworks rewards/encounters and expose their actions.
@@ -37,7 +37,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Trigger timing: Wild Magic waits for the spell attack roll, or casting completion when no attack is required; Sneak Attack waits for the linked weapon damage card. Do not trigger on the initial usage/attack card.
 - Give every popup form a distinct stable ID so Core retains its size independently.
 
-Roll cards use three independent columns: encounter/search/foraging/death on the left, group checks in the middle, and player checks on the right. Cards retain their own heights. Labels use Encounter Check, Foraging Check, and saved labels such as Stealth Check or Persuasion Check - Daludriel. Blind roll defaults off for unconfigured cards; saved choices remain sticky.
+Roll Requests uses one check builder and one row for each enabled specialty request: Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. Encounter uses the die dropdown. Blind roll defaults off for unconfigured rows; saved choices remain sticky.
 
 Trigger cards place status, enable/pause, edit, and delete icons in a bottom-aligned footer. Icons have tooltips and accessible labels.
 
