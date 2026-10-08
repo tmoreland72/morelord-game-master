@@ -26,7 +26,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-specialty-field { display:flex; flex:1 1 auto; flex-direction:row; align-items:center; gap:var(--ml-space-2); width:auto; min-width:0; margin:0; }
 #mlgm .gm-specialty-field > span { flex:0 0 auto; white-space:nowrap; }
 #mlgm .gm-specialty-field > select { flex:1 1 auto; width:0; min-width:0; }
-#mlgm .gm-specialty-row > .ml-check, #mlgm .gm-specialty-row > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-specialty-row > .ml-check, #mlgm .gm-specialty-row > .gm-row-action { flex:0 0 auto; }
 @container gm-rolls (min-width: 24rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @container gm-rolls (min-width: 40rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 #mlgm .gm-request-row { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); width:100%; min-width:0; margin:0; padding:0; border:0; overflow-x:auto; }
@@ -34,7 +34,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-request-row > .gm-inline > span { flex:0 0 auto; white-space:nowrap; }
 #mlgm .gm-request-row > .gm-inline > select, #mlgm .gm-request-row > .gm-inline > input { flex:1 1 auto; width:0; min-width:4.5rem; }
 #mlgm .gm-request-row > .ml-check { display:flex; flex:0 0 auto; align-items:center; width:auto; min-width:max-content; margin:0; }
-#mlgm .gm-request-row > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-request-row > .gm-row-action { flex:0 0 auto; }
 
 #mlgm .gm-roll-column { min-width:0; align-self:start; }
 
@@ -44,7 +44,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-name, #mlgm .gm-trigger-scope { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #mlgm .gm-trigger-name { flex:1 1 40%; }
 #mlgm .gm-trigger-scope { flex:1 1 60%; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); }
-#mlgm .gm-trigger-header > .gm-trigger-status, #mlgm .gm-trigger-header > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-trigger-header > .gm-trigger-status, #mlgm .gm-trigger-header > .gm-row-action { flex:0 0 auto; }
 #mlgm .gm-trigger-rule { display:grid; gap:var(--ml-space-1); margin:0; }
 #mlgm .gm-trigger-rule > div { display:grid; grid-template-columns:3.25rem minmax(0,1fr); gap:var(--ml-space-2); align-items:baseline; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }

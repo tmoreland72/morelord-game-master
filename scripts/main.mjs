@@ -25,7 +25,7 @@ const option = (id, name, selected) => `<option value="${e(id)}" ${id === select
 const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}" data-gap="4"><strong>${e(title)}</strong>${body}</div>`;
 const label = (name, content) => `<label><span>${e(name)}</span>${content}</label>`;
 const inlineField = (name, content) => `<label class="gm-inline"><span>${e(name)}</span>${content}</label>`;
-const requestButton = (action, id, name, extra = "") => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="${e(name)}" aria-label="${e(name)}" ${extra}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i></button>`;
+const requestButton = (action, id, name, extra = "") => `<button type="button" class="ml-icon-button gm-row-action" data-action="${action}" data-id="${e(id)}" title="${e(name)}" aria-label="${e(name)}" ${extra}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i></button>`;
 function requestRow({card, fields = "", blind = null, action, id = "", name, disabled = false}) {
   const blindControl = blind == null ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${blind ? "checked" : ""}><span>Blind roll</span></label>`;
   return `<form class="gm-request-row" data-roll-card="${e(card)}">${fields}${blindControl}${requestButton(action, id, name, disabled ? "disabled" : "")}</form>`;
@@ -70,7 +70,7 @@ Hooks.once("init", () => {
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "A folder in Foundry's user data containing audio files.", scope: "world", config: false, type: String, default: "Ambience" });
   game.settings.register(ID, "companion", { name: "Campaign AI companion URL", hint: "The local Morelord companion service. Provider keys stay on the service.", scope: "client", config: false, type: String, default: "http://127.0.0.1:31401" });
-  for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: true, type: Boolean, default: true });
+  for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
 });
@@ -598,7 +598,7 @@ function triggerCards() {
     const running = Boolean(trigger.enabled);
     const name = trigger.name ?? "";
     const scope = triggerScope(trigger) ?? "";
-    return `<article class="ml-card gm-trigger-card"><header class="gm-trigger-header"><strong class="gm-trigger-name" title="${e(name)}">${e(name)}</strong><span class="gm-trigger-scope" title="${e(scope)}">${e(scope)}</span><span class="ml-status gm-trigger-status" data-tone="${running ? "success" : "muted"}" role="img" title="${e(status)}" aria-label="${e(status)}"><i class="fa-solid ${running ? "fa-circle-check" : "fa-circle-pause"}" aria-hidden="true"></i></span><button type="button" class="ml-icon-button" data-action="trigger-toggle" data-id="${e(trigger.id)}" aria-pressed="${running}" title="${running ? "Pause trigger" : "Enable trigger"}" aria-label="${running ? "Pause trigger" : "Enable trigger"}"><i class="fa-solid ${running ? "fa-pause" : "fa-play"}" aria-hidden="true"></i></button></header><dl class="gm-trigger-rule"><div><dt>When</dt><dd>${e(triggerWhen(trigger))}</dd></div><div><dt>Then</dt><dd>${e(triggerThen(trigger))}</dd></div></dl></article>`;
+    return `<article class="ml-card gm-trigger-card"><header class="gm-trigger-header"><strong class="gm-trigger-name" title="${e(name)}">${e(name)}</strong><span class="gm-trigger-scope" title="${e(scope)}">${e(scope)}</span><span class="ml-status gm-trigger-status" data-tone="${running ? "success" : "muted"}" role="img" title="${e(status)}" aria-label="${e(status)}"><i class="fa-solid ${running ? "fa-circle-check" : "fa-circle-pause"}" aria-hidden="true"></i></span><button type="button" class="ml-icon-button gm-row-action" data-action="trigger-toggle" data-id="${e(trigger.id)}" aria-pressed="${running}" title="${running ? "Pause trigger" : "Enable trigger"}" aria-label="${running ? "Pause trigger" : "Enable trigger"}"><i class="fa-solid ${running ? "fa-pause" : "fa-play"}" aria-hidden="true"></i></button></header><dl class="gm-trigger-rule"><div><dt>When</dt><dd>${e(triggerWhen(trigger))}</dd></div><div><dt>Then</dt><dd>${e(triggerThen(trigger))}</dd></div></dl></article>`;
   }).join("");
 }
 
