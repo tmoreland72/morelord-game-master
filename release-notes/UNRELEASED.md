@@ -1,5 +1,6 @@
 # Unreleased
 
+- Set All Track Volumes stores the level on every PlaylistSound in every playlist, including stopped tracks and ambience, and on saved playback buttons. The current song changes immediately, and a playlist started afterward plays at that level.
 - The open Game Master tray stays above the canvas and sidebars and below Foundry windows, so playlist, ambience, settings, and campaign dialogs, context menus, and the file picker remain clickable.
 - A DC or Blind roll choice stays in place when chat, playlist, or player updates arrive while the tray is open.
 - Successful tray actions use Foundry notifications.
