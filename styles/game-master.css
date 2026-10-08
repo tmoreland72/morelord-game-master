@@ -1,5 +1,6 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
-#mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:2147483647; pointer-events:auto; }
+/* Above the canvas and sidebars (--z-index-app: 30). Below Foundry windows (100), tooltips, notifications, and popover context menus. */
+#mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:61; z-index:calc(var(--z-index-ui) + 1); pointer-events:auto; }
 #mlgm [hidden] { display:none!important; }
 #mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:75vh; }

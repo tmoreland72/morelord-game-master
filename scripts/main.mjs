@@ -8,7 +8,7 @@ import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 
 const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", party: "Player Settings" };
-let root, open = false, tab = "rolls", state, saving = Promise.resolve(), status = "Ready. Choose an action to configure it.";
+let root, open = false, tab = "rolls", state, saving = Promise.resolve();
 let campaign, campaigns = [], connection, aiBusy = false;
 const drafts = new Map();
 let campaignSelection = 0;
@@ -24,8 +24,8 @@ const label = (name, content) => `<label><span>${e(name)}</span>${content}</labe
 const input = (name, value = "", attrs = "") => `<input name="${name}" value="${e(value)}" ${attrs}>`;
 const select = (name, options) => `<select name="${name}">${options}</select>`;
 const gm = () => { if (!game.user.isGM) throw new Error("Only the GM can use this action."); };
-const notify = text => { status = text; };
-function fail(error) { console.error(`${ID} |`, error); ui.notifications.error(error.message ?? String(error)); notify(error.message ?? String(error)); }
+const notify = text => ui.notifications.info(text);
+function fail(error) { console.error(`${ID} |`, error); ui.notifications.error(error.message ?? String(error)); }
 function persist(change) {
   // Serialize settings writes so fast clicks cannot overwrite a previous save.
   saving = saving.catch(() => {}).then(async () => {
@@ -110,8 +110,43 @@ function savedName(type,config) {
   if (type === "ambience") return config.files.map(f=>f.path.split('/').at(-1).replace(/\.[^.]+$/,"")).join(" + ");
   return "Death Saving Throw";
 }
+function controlKey(el) {
+  if (el.id) return `#${el.id}`;
+  const card = el.closest("[data-roll-card]")?.dataset.rollCard ?? "";
+  if (el.dataset.sound) return `sound:${el.dataset.playlist}:${el.dataset.sound}`;
+  return `${card}:${el.name}:${el.type === "radio" || el.type === "checkbox" ? el.value : ""}`;
+}
+function snapshotControls(container, active = container.ownerDocument?.activeElement) {
+  return [...container.querySelectorAll("input, select, textarea")].filter(el => el.type !== "file").map(el => {
+    const toggle = el.type === "checkbox" || el.type === "radio";
+    const value = toggle ? Boolean(el.checked) : el.value;
+    const initial = toggle ? Boolean(el.defaultChecked) : el.defaultValue;
+    let start = null, end = null;
+    try { start = el.selectionStart; end = el.selectionEnd; } catch { /* non-text controls */ }
+    return {key: controlKey(el), toggle, value, dirty: value !== initial, focused: el === active, start, end};
+  });
+}
+function restoreControls(container, drafts) {
+  if (!drafts?.length) return;
+  const fields = [...container.querySelectorAll("input, select, textarea")];
+  let focus;
+  for (const draft of drafts) {
+    if (!draft.dirty && !draft.focused) continue;
+    const el = fields.find(field => controlKey(field) === draft.key);
+    if (!el || el.type === "file") continue;
+    if (draft.toggle) el.checked = draft.value;
+    else el.value = draft.value;
+    if (draft.focused) focus = {el, start: draft.start, end: draft.end};
+  }
+  if (!focus?.el.isConnected) return;
+  focus.el.focus({preventScroll: true});
+  if (Number.isInteger(focus.start) && focus.el.setSelectionRange) {
+    try { focus.el.setSelectionRange(focus.start, focus.end); } catch { /* number and select controls */ }
+  }
+}
 function render() {
   if (!root) return;
+  const controls = snapshotControls(root);
   root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
@@ -120,9 +155,11 @@ function render() {
     <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   const hotbar=document.querySelector("#hotbar");
   root.style.setProperty("--hotbar-size",`${(Number.parseFloat(hotbar ? getComputedStyle(hotbar).getPropertyValue("--hotbar-size") : "") || 60)*1.5}px`);
+  restoreControls(root, controls);
   core().ui.applyPageLayout({element:root});
-  if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
+  if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = draftsMap();
 }
+function draftsMap() { return drafts.get(campaign?.id) ?? ""; }
 function content() {
   if (tab === "rolls") return [["fate","encounter","search","foraging","death"],["group",...state.saved.filter(s=>s.type === "group").map(s=>s.id)],["player",...state.saved.filter(s=>s.type === "player").map(s=>s.id)]].map(ids=>`<div class="ml-stack gm-roll-column" data-gap="4">${ids.map(id=>rollCard(id)).join("")}</div>`).join("");
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
@@ -361,8 +398,22 @@ export async function requestCheck(config) {
   render();
   return message;
 }
-for (const hook of ["morelordGameMasterTriggersChanged","createChatMessage","deleteChatMessage","updateChatMessage","updatePlaylist","updatePlaylistSound","createMacro","updateMacro","deleteMacro","updateUser"]) Hooks.on(hook, () => { if (open && tab !== "ai") render(); });
-Hooks.on("updateSetting", setting => { if (setting.key === `${ID}.macros` && game.user.isGM) render(); if (setting.key === `${ID}.board` && game.user.isGM) { state = foundry.utils.deepClone(get("board")); render(); } });
+function refreshTray(tabs) {
+  if (!open || !root || (tabs && !tabs.includes(tab))) return;
+  render();
+}
+Hooks.on("morelordGameMasterTriggersChanged", () => refreshTray(["triggers"]));
+for (const hook of ["updatePlaylist", "updatePlaylistSound"]) Hooks.on(hook, () => refreshTray(["sound"]));
+for (const hook of ["createMacro", "updateMacro", "deleteMacro"]) Hooks.on(hook, () => refreshTray(["macros"]));
+Hooks.on("updateUser", () => refreshTray(["party", "rolls"]));
+Hooks.on("updateSetting", setting => {
+  if (!game.user.isGM) return;
+  if (setting.key === `${ID}.macros`) refreshTray(["macros"]);
+  if (setting.key === `${ID}.board`) {
+    state = foundry.utils.deepClone(get("board"));
+    if (open && ["rolls", "sound", "triggers", "party"].includes(tab)) render();
+  }
+});
 
 export async function addTrigger({name,actorId,itemId,tableId,tableUuid,kind="item",id,gameMinutes=10,realMinutes=1}) {
   gm();
