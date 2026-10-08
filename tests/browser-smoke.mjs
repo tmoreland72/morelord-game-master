@@ -96,7 +96,7 @@ try {
   await click('[data-action="stop-music"]');assert.equal(await evaluate('!!document.querySelector("[data-action=stop-music]")'),false);
   await evaluate('var board=game.settings.get("morelord-game-master","board");board.triggers=[{id:"sneak",name:"Sneak Attack",kind:"sneak",enabled:false},{id:"clock",name:"World Clock",kind:"world-clock",enabled:false,gameMinutes:10,realMinutes:1}];game.settings.set("morelord-game-master","board",board)');
   await click('[data-action="tab"][data-id="triggers"]');
-  assert.equal(await evaluate('document.querySelector("[data-action=new-trigger]").disabled'),true);
+  assert.equal(await evaluate('document.querySelector("[data-action=new-trigger]")'),null);
   await wait('document.querySelectorAll(".gm-trigger-card").length===2');
   assert.equal(await evaluate(`(()=>{
     const cards=[...document.querySelectorAll(".gm-trigger-card")];
@@ -152,7 +152,7 @@ try {
   await click('[data-action="toggle"]');assert.notEqual(await evaluate('testState().hotbar'),'none');
   await evaluate('document.querySelector("#hotbar").style.display="none"');await click('[data-action="toggle"]');await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');
   assert.deepEqual(errors,[]);assert.equal(await evaluate('window.lastError'),undefined);
-  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macro pins and reorder, compact trigger cards, playlist controls, disabled trigger authoring, campaign relay thread, narrow layout, and hotbar restoration.');
+  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macro pins and reorder, compact trigger cards, playlist controls, no New Trigger button, campaign relay thread, narrow layout, and hotbar restoration.');
   console.log('Screenshots: test-results/tray-desktop.png and tray-mobile.png. Foundry APIs are mocked in this harness.');
 } finally {
   socket?.close();chrome.kill();await new Promise(r=>server.close(r));

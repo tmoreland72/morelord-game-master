@@ -135,7 +135,6 @@ function render() {
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
-    ${tab === "triggers" ? `<div class="ml-actions gm-trigger-toolbar">${button("new-trigger","+ New Trigger","",'disabled title="Trigger authoring is currently unavailable"')}</div>` : ""}
     <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   core().ui.applyPageLayout({element:root});
 }
@@ -254,7 +253,7 @@ async function act(action, id) {
   if (action === "send-check") return sendCheck();
   if (action === "quick-request") return sendQuick(id);
   if (action === "settings") return settings();
-  if (action === "new-trigger" || action === "trigger-edit" || action === "trigger-remove") return;
+  if (action === "trigger-edit" || action === "trigger-remove") return;
   if (action === "fate") return rollOfFate();
   if (action === "unpin-macro") {await game.settings.set(ID,"macros",(get("macros") ?? []).filter(uuid=>uuid !== id));render();return;}
   if (action === "documentation") return core().ui.documentation.open(ID);

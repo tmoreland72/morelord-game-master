@@ -54,7 +54,7 @@ export const macroTriggerCheck={id:'game-master.compiled-macro-lifecycle-and-ind
     await runtime.sync();assert(rules.every(t=>runtime.status(t.id)==='Stopped'),'Stopped triggers retain listeners.');
     const count=requests().length;Hooks.callAll('updateChatMessage',source,{flags:{[ID]:{triggerUse:{completed:true}}}});await runtime.idle();assert(requests().length===count,'Stopped macro fired.');
     game.modules.get(ID).api.toggle(true);document.querySelector('#mlgm-tab-triggers').click();
-    assert(document.querySelector('[data-action="new-trigger"]').disabled,'New Trigger must be disabled.');
+    assert(!document.querySelector('[data-action="new-trigger"]'),'The Triggers tab has no New Trigger button.');
     assert(!document.querySelector('[data-action="trigger-edit"], [data-action="trigger-remove"]'),'Edit/Delete must be absent.');
   } finally {
     // Delete only messages tied to the disposable actor/request chain.
