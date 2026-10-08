@@ -141,7 +141,7 @@ function content() {
     const cards = playing.map(({p,s})=>`<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${s.volume}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume">${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`).join("");
     return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
       + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
-      + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks and ambience.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
+      + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks, ambience, and saved playback buttons.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
   return aiContent();
@@ -314,13 +314,24 @@ async function setTrackVolumes() {
   const volume = foundry.audio.AudioHelper.inputToVolume(percent / 100);
   settingTrackVolumes = true;
   try {
-    await persist(n=>{n.last.allTrackVolume=percent;});
+    await persist(n=>{
+      n.last.allTrackVolume=percent;
+      // Playback buttons reapply their own level on start, so they have to keep this one.
+      if (n.last.playlist) n.last.playlist.volume=volume;
+      for (const file of n.last.ambience?.files ?? []) file.volume=volume;
+      for (const saved of n.saved ?? []) {
+        if (saved.type==="playlist" && saved.config) saved.config.volume=volume;
+        if (saved.type==="ambience") for (const file of saved.config?.files ?? []) file.volume=volume;
+      }
+    });
     render();
     let count = 0;
-    for (const playlist of game.playlists) {
-      const updates = playlist.sounds.map(sound=>({_id:sound.id,volume}));
+    for (const playlist of [...(game.playlists.contents ?? game.playlists)]) {
+      const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])];
+      const updates = sounds.filter(sound=>sound?.id).map(sound=>({_id:sound.id,volume}));
       if (!updates.length) continue;
-      await playlist.updateEmbeddedDocuments("PlaylistSound",updates);
+      await playlist.updateEmbeddedDocuments("PlaylistSound",updates,{diff:false});
+      for (const sound of sounds) if (sound.playing && sound.sound) sound.sound.volume=volume;
       count += updates.length;
     }
     ui.notifications.info(`Set ${count} playlist tracks to ${percent}%.`);
@@ -337,7 +348,7 @@ async function run(type, config) {
     if (!p.sounds.size) throw new Error("Add tracks to this playlist before starting it.");
     for (const music of game.playlists.filter(m => !m.getFlag(ID,"ambience") && (m.playing || m.sounds.some(s => s.playing || s.pausedTime)))) await music.stopAll();
     await p.update({mode:CONST.PLAYLIST_MODES.SHUFFLE});
-    await p.updateEmbeddedDocuments("PlaylistSound", p.sounds.map(s => ({ _id:s.id, volume:config.volume })));
+    await p.updateEmbeddedDocuments("PlaylistSound", p.sounds.map(s => ({ _id:s.id, volume:config.volume })), {diff:false});
     await p.playAll(); notify(`Playing ${p.name}.`);
   }
   if (type === "ambience") {
