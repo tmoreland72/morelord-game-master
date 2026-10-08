@@ -47,13 +47,13 @@ export function deferCombatTime(combat, changes, options) {
   if (options.worldTime) options.worldTime.delta = 0;
 }
 
-export function initializeWorldClock() {
+export function initializeWorldClock({hooks = globalThis.Hooks, schedule = globalThis.setInterval} = {}) {
   const tick = createWorldClock();
   const refresh = () => { tick().catch(error => ui.notifications.error(error.message)); };
-  setInterval(refresh, 1000);
-  for (const hook of ['pauseGame', 'updateCombat', 'createCombat', 'deleteCombat', 'updateUser', 'updateSetting']) Hooks.on(hook, refresh);
-  Hooks.on('preUpdateCombat', deferCombatTime);
-  Hooks.on('deleteCombat', combat => {
+  schedule(refresh, 1000);
+  for (const hook of ['pauseGame', 'updateCombat', 'createCombat', 'deleteCombat', 'updateUser', 'updateSetting']) hooks.on(hook, refresh);
+  hooks.on('preUpdateCombat', deferCombatTime);
+  hooks.on('deleteCombat', combat => {
     if (!game.user.isGM || activeGM()?.id !== game.user.id || !combat.started) return;
     const saved = combat.getFlag(ID, 'clockSeconds');
     if (saved == null && !clockTrigger()) return;

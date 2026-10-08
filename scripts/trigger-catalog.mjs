@@ -37,3 +37,15 @@ export function migrateTriggerMacros(triggers, {includeDefaults = true} = {}) {
   }
   return result;
 }
+export function managedTriggerCommand(kind) {
+  return `// Managed by the Game Master Triggers tab. Start/stop there, not from the hotbar.
+if (!game.user.isGM) return;
+if (!scope.runtime) { ui.notifications.info('Use the Game Master Triggers tab to start or stop this macro.'); return; }
+const api = game.modules.get('morelord-game-master')?.api;
+if (typeof api?.installTrigger !== 'function') { ui.notifications.error('Morelord Game Master is not ready to run this trigger.'); return; }
+return api.installTrigger(${JSON.stringify(kind)}, scope.runtime);
+`;
+}
+export function rollOfFateCommand() {
+  return `const api = game.modules.get('morelord-game-master')?.api;\nif (typeof api?.rollOfFate !== 'function') { ui.notifications.error('Morelord Game Master is not ready.'); return; }\nreturn api.rollOfFate();`;
+}

@@ -1,9 +1,9 @@
 import {initializeAmmoTracking} from './ammo-recovery.mjs';
-import {initializeTriggerMacros,triggerStatus,triggerMacroUuid} from './trigger-macros.mjs';
+import {initializeTriggerMacros,replacePastedTriggerMacros,triggerStatus,triggerMacroUuid} from './trigger-macros.mjs';
 import {rollOfFate} from './roll-of-fate.mjs';
 import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs";
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
-import {initializeTriggers,luckyFindWorldTable} from "./triggers.mjs";
+import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 
@@ -59,9 +59,9 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
+  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
-  try { initializeRequests(); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
-  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger };
+  try { initializeRequests(); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
   state = foundry.utils.deepClone(get("board"));
