@@ -5,7 +5,10 @@
 #mlgm .gm-tray { height:75vh; }
 #mlgm .gm-span { grid-column:span 2; }
 #mlgm .gm-column { min-width:0; }
-#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,var(--hotbar-size,90px)); gap:var(--ml-space-4); }
+#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,minmax(14rem,1fr)); gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-macro { display:flex; align-items:center; justify-content:flex-start; gap:var(--ml-space-2); width:100%; min-width:0; height:auto; min-height:var(--ml-control-height); padding:var(--ml-space-1) var(--ml-space-2); text-align:left; }
+#mlgm .gm-macro img { flex:0 0 2rem; width:2rem; height:2rem; object-fit:cover; border-radius:var(--ml-radius-sm); }
+#mlgm .gm-macro span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #mlgm .gm-chat { white-space:pre-wrap; overflow-wrap:anywhere; }
 body.mlgm-open #hotbar { display:none!important; }
 @media(max-width:700px) { #mlgm .gm-span { grid-column:auto; } }

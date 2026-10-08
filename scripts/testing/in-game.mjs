@@ -153,7 +153,7 @@ export const gameMasterChecks=[{
   id:"morelord-game-master.soundboard-macro-menu",
   async run() {
     const api=game.modules.get(ID).api,previous=foundry.utils.deepClone(game.settings.get(ID,'macros'));
-    let macro;
+    let macro, other;
     try {
       api.toggle(true);
       document.querySelector('#mlgm [data-action="tab"][data-id="triggers"]').click();
@@ -170,11 +170,25 @@ export const gameMasterChecks=[{
       const transfer=new DataTransfer();transfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:macro.uuid}));
       document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));
       await wait(()=>document.querySelector(`[data-macro-uuid="${macro.uuid}"]`));
-      const tile=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),rect=tile.getBoundingClientRect();
-      assert(getComputedStyle(tile.parentElement).gap==="16px","Macro spacing is doubled.");
-      assert(rect.width===90 && rect.height===90,"Macro button is 50% larger than the native action bar.");
+      const tile=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`);
+      const icon=tile.querySelector("img"),label=tile.querySelector("span");
+      assert(icon.getBoundingClientRect().right<=label.getBoundingClientRect().left,"Macro icon sits to the left of its name.");
+      assert(label.textContent==="MLGM macro fixture" && tile.title==="MLGM macro fixture","The pin shows the name and offers the full name on hover.");
+      assert(getComputedStyle(label).textOverflow==="ellipsis" && getComputedStyle(label).whiteSpace==="nowrap","Long macro names truncate.");
       tile.click();await wait(()=>globalThis.mlgmMacroTestRuns===1);
-      document.querySelector(`[data-macro-uuid="${macro.uuid}"]`).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:rect.x+20,clientY:rect.y+20}));
+      other=await Macro.create({name:'MLGM reorder fixture',type:'script',img:'icons/svg/dice-target.svg',command:'globalThis.mlgmMacroTestRuns=(globalThis.mlgmMacroTestRuns ?? 0)+1;'});
+      const otherTransfer=new DataTransfer();otherTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:other.uuid}));
+      document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:otherTransfer}));
+      await wait(()=>document.querySelector(`[data-macro-uuid="${other.uuid}"]`));
+      const first=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),second=document.querySelector(`[data-macro-uuid="${other.uuid}"]`),move=new DataTransfer();
+      second.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:move}));
+      first.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:move}));
+      second.dispatchEvent(new DragEvent('dragend',{bubbles:true}));
+      second.click();
+      await wait(()=>{const order=game.settings.get(ID,'macros');return order.indexOf(other.uuid)===order.indexOf(macro.uuid)-1;});
+      assert(globalThis.mlgmMacroTestRuns===1,"Reordering a pin does not execute the macro.");
+      const pinned=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),box=pinned.getBoundingClientRect();
+      pinned.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:box.x+20,clientY:box.y+20}));
       await wait(()=>document.querySelector('#context-menu .context-item'));
       const remove=[...document.querySelectorAll('#context-menu .context-item')].find(el=>el.textContent.includes('Remove'));
       assert(remove,"Native macro context menu offers Remove.");remove.click();
@@ -184,6 +198,7 @@ export const gameMasterChecks=[{
       delete globalThis.mlgmMacroTestRuns;
       await game.settings.set(ID,'macros',previous);
       if (macro) await macro.delete();
+      if (other) await other.delete();
       document.querySelector('#mlgm [data-action="tab"][data-id="rolls"]').click();
     }
   }

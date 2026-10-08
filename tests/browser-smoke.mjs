@@ -73,12 +73,22 @@ try {
   assert.equal(await evaluate('document.querySelector("#mlgm-panel").classList.contains("ml-surface")'),false);
   await click('[data-action="tab"][data-id="macros"]');assert.equal(await evaluate('document.querySelectorAll("[data-macro-uuid]").length'),0);
   await evaluate('var transfer=new DataTransfer();transfer.setData("text/plain",JSON.stringify({type:"Macro",uuid:"Macro.macro"}));document.querySelector("#mlgm-panel").dispatchEvent(new DragEvent("drop",{bubbles:true,dataTransfer:transfer}))');await wait('document.querySelectorAll("[data-macro-uuid]").length===1');
+  assert.equal(await evaluate('document.querySelector("[data-macro-uuid] span").textContent'),'Start encounter');
+  assert.equal(await evaluate('document.querySelector("[data-macro-uuid]").title'),'Start encounter');
+  assert.equal(await evaluate('document.querySelector("[data-macro-uuid] img").getBoundingClientRect().right <= document.querySelector("[data-macro-uuid] span").getBoundingClientRect().left'),true);
   await click('[data-action="macro"]');assert.equal(await evaluate('testState().macroRuns'),1);
   for(let i=0;i<11;i++) {
     await evaluate(`game.macros.set('extra${i}',{id:'extra${i}',uuid:'Macro.extra${i}',name:'Extra ${i}',canExecute:true,img:'icons/svg/dice-target.svg'});var transfer=new DataTransfer();transfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:'Macro.extra${i}'}));document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}))`);
     await wait(`document.querySelectorAll('[data-macro-uuid]').length===${i+2}`);
   }
   assert.equal(await evaluate('document.querySelectorAll("[data-macro-uuid]").length'),12);
+  await evaluate('(()=>{const pins=[...document.querySelectorAll("[data-macro-uuid]")];const transfer=new DataTransfer();pins.at(-1).dispatchEvent(new DragEvent("dragstart",{bubbles:true,dataTransfer:transfer}));pins[0].dispatchEvent(new DragEvent("drop",{bubbles:true,dataTransfer:transfer}));pins.at(-1).dispatchEvent(new DragEvent("dragend",{bubbles:true}));pins.at(-1).click();})()');
+  await wait('JSON.stringify(game.settings.get("morelord-game-master","macros"))===JSON.stringify(["Macro.extra10","Macro.macro","Macro.extra0","Macro.extra1","Macro.extra2","Macro.extra3","Macro.extra4","Macro.extra5","Macro.extra6","Macro.extra7","Macro.extra8","Macro.extra9"])');
+  assert.equal(await evaluate('testState().macroRuns'),1);
+  await evaluate('game.macros.get("macro").name="A very long macro name that cannot fit beside its icon in a compact row";document.querySelector("[data-action=tab][data-id=macros]").click()');
+  await wait('document.querySelector("[data-macro-uuid=\\"Macro.macro\\"] span").textContent.startsWith("A very long")');
+  assert.equal(await evaluate('document.querySelector("[data-macro-uuid=\\"Macro.macro\\"]").title'),'A very long macro name that cannot fit beside its icon in a compact row');
+  assert.equal(await evaluate('(()=>{const name=document.querySelector("[data-macro-uuid=\\"Macro.macro\\"] span");const style=getComputedStyle(name);return style.textOverflow==="ellipsis" && style.whiteSpace==="nowrap" && name.scrollWidth>name.clientWidth;})()'),true);
   await evaluate('document.querySelector("[data-macro-uuid]").dispatchEvent(new MouseEvent("contextmenu",{bubbles:true}))');await click('#context-menu button');assert.equal(await evaluate('game.macros.has("macro")'),true);
   await evaluate('var music=game.playlists.get("music");music.mode=-1;var oldSound={id:"old",playing:true};game.playlists.set("old",{id:"old",name:"Previous music",getFlag:()=>false,sounds:new game.playlists.constructor([["old",oldSound]]),async stopAll(){oldSound.playing=false;}})');
   await click('[data-action="tab"][data-id="sound"]');await click('[data-action="playlist"]');await click('dialog button[value="0"]');await wait('testState().board.saved.some(s=>s.type==="playlist")');
@@ -125,7 +135,7 @@ try {
   await click('[data-action="toggle"]');assert.notEqual(await evaluate('testState().hotbar'),'none');
   await evaluate('document.querySelector("#hotbar").style.display="none"');await click('[data-action="toggle"]');await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');
   assert.deepEqual(errors,[]);assert.equal(await evaluate('window.lastError'),undefined);
-  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macros, playlist controls, disabled trigger authoring, authenticated companion, campaign creation/switching, draft isolation, file upload/removal, chat, narrow layout, and hotbar restoration.');
+  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macro pins and reorder, playlist controls, disabled trigger authoring, authenticated companion, campaign creation/switching, draft isolation, file upload/removal, chat, narrow layout, and hotbar restoration.');
   console.log('Screenshots: test-results/tray-desktop.png and tray-mobile.png. Foundry APIs are mocked in this harness.');
 } finally {
   socket?.close();chrome.kill();await new Promise(r=>server.close(r));await new Promise(r=>companion.server.close(r));

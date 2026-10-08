@@ -15,6 +15,7 @@ const drafts = new Map();
 let campaignSelection = 0;
 let terrainOptions = [];
 let settingTrackVolumes = false;
+let suppressMacroClick = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
@@ -79,6 +80,7 @@ Hooks.once("ready", async () => {
   root.addEventListener("click", event => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
+    if (suppressMacroClick && target.dataset.action === "macro") return;
     target.disabled = true;
     Promise.resolve(act(target.dataset.action, target.dataset.id)).catch(fail).finally(() => { if (target.isConnected) target.disabled = false; });
   });
@@ -87,7 +89,8 @@ Hooks.once("ready", async () => {
   root.addEventListener("change", event => onChange(event).catch(fail));
   root.addEventListener("dragover",event=>{if(tab === "macros")event.preventDefault();});
   root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}});
-  root.addEventListener("dragstart",event=>{const tile=event.target.closest('[data-macro-uuid]');if(tile)event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));});
+  root.addEventListener("dragstart",event=>{const tile=event.target.closest('[data-macro-uuid]');if(!tile)return;suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";});
+  root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;});});
   root.addEventListener("keydown", event => {
     if (event.key === "Escape") { toggle(false); event.stopPropagation(); }
     const current = event.target.closest('[role="tab"]');
@@ -126,8 +129,6 @@ function render() {
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
     ${tab === "triggers" ? `<div class="ml-actions gm-trigger-toolbar">${button("new-trigger","+ New Trigger","",'disabled title="Trigger authoring is currently unavailable"')}</div>` : ""}
     <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
-  const hotbar=document.querySelector("#hotbar");
-  root.style.setProperty("--hotbar-size",`${(Number.parseFloat(hotbar ? getComputedStyle(hotbar).getPropertyValue("--hotbar-size") : "") || 60)*1.5}px`);
   core().ui.applyPageLayout({element:root});
   if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
@@ -222,7 +223,7 @@ async function sendQuick(id) {
   await createRequest(config);
 }
 function macroButtons() {
-  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="ml-action-pad" data-size="hotbar" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="40" height="40" draggable="false"></button>`;}).join("");
+  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span></button>`;}).join("");
 }
 async function dropMacro(event) {
   gm();

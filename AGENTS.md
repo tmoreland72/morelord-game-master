@@ -28,7 +28,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Triggers use native spell provenance and qualifying Sneak Attack hits, with once-per-turn damage.
 
 - Foraging reuses Journeys terrain/DC configuration and food rules, with chat requests and complete-only summaries respecting visibility.
-- Macros are 50% larger than the native action bar, with twice the spacing and rounded-square shape: left click executes; native right-click menu removes only the pin.
+- Macro pins are compact rows: the icon is on the left and the name is on the right. Long names truncate with an ellipsis, and the full name is available on hover. Left click executes. Dragging a pin reorders it and saves that order immediately for the world; the drag does not execute the macro. Dropping a new macro still pins it. The native right-click menu removes only the pin.
 - + New Trigger sits left-aligned outside the content section.
 - Sorcerer triggers request a blind d20 first; threshold starts at 1, increases per missed d20, and resets after a surge table roll.
 
