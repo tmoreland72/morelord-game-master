@@ -43,10 +43,26 @@ try {
   await wait('testState().board.last.check?.blind===true');
   assert.equal(await evaluate('document.querySelector("[data-roll-card=search] .gm-specialty-title").textContent'),'Delerium Search');
   assert.equal(await evaluate('document.querySelector("[data-roll-card=search] select[name=zoneId]")!==null && document.querySelector("[data-roll-card=fate] .gm-specialty-title").textContent==="Roll of Fate" && [...document.querySelectorAll("[data-roll-card=fate] select[name=scope] option")].map(option=>option.value).join(",")==="party,tokens" && !document.querySelector("[data-roll-card=fate] input[name=blind]")'),true);
-  assert.equal(await evaluate(`(() => { const row=document.querySelector(".gm-request-row"); const cards=[...document.querySelectorAll(".gm-specialty-card")]; return document.querySelectorAll(".gm-request-row").length===1 && getComputedStyle(row).flexWrap==="nowrap" && cards.length===5 && cards.every(card=>card.querySelector(".gm-specialty-title") && card.querySelector("select") && card.querySelector(".gm-specialty-footer .ml-icon-button")); })()`), true);
+  assert.equal(await evaluate(`(() => {
+    const row=document.querySelector(".gm-request-row");
+    const builderCard=row?.closest(".ml-card");
+    const cards=[...document.querySelectorAll(".gm-specialty-card")];
+    const aligned=card=> {
+      const line=card.querySelector(".gm-specialty-row");
+      const select=line?.querySelector("select");
+      const button=line?.querySelector(".ml-icon-button");
+      const title=card.querySelector(".gm-specialty-title");
+      if(!line || !select || !button || !title || getComputedStyle(line).flexWrap!=="nowrap") return false;
+      const mid=el=>{const box=el.getBoundingClientRect(); return (box.top+box.bottom)/2;};
+      const parts=[select, button, line.querySelector(".ml-check")].filter(Boolean);
+      return title.getBoundingClientRect().bottom<=line.getBoundingClientRect().top+2 && Math.max(...parts.map(mid))-Math.min(...parts.map(mid))<8 && select.getBoundingClientRect().right<=button.getBoundingClientRect().left && (card.dataset.rollCard==="fate")!==!!line.querySelector("input[name=blind]");
+    };
+    return document.querySelectorAll(".gm-request-row").length===1 && builderCard && getComputedStyle(builderCard).borderTopWidth!=="0px" && getComputedStyle(row).flexWrap==="nowrap" && cards.length===5 && cards.every(aligned);
+  })()`), true);
   for (const [width, columns] of [[1280,3],[900,2],[390,1]]) {
     await command('Emulation.setDeviceMetricsOverride',{width,height:850,deviceScaleFactor:1,mobile:false});
     assert.equal(await evaluate('getComputedStyle(document.querySelector(".gm-specialty-grid")).gridTemplateColumns.split(" ").filter(Boolean).length'), columns);
+    assert.equal(await evaluate('[...document.querySelectorAll(".gm-specialty-row")].every(line=>getComputedStyle(line).flexWrap==="nowrap" && line.scrollWidth<=line.clientWidth+1)'), true);
   }
   await command('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="ability";type.dispatchEvent(new Event("change",{bubbles:true}))');

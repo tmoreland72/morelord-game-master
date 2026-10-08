@@ -175,7 +175,7 @@ function checkBuilder() {
     inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join(""))),
     scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""
   ].join("");
-  return requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)});
+  return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)})}</section>`;
 }
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
@@ -194,7 +194,7 @@ function specialtyCard(id) {
     : id === "death" ? ["Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join(""))]
     : ["Who rolls", select("scope", [option("party", "Party", fateScope), option("tokens", "Selected tokens", fateScope)].join(""))];
   const blind = id === "fate" ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
-  return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label><div class="gm-specialty-footer">${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
+  return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label>${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
 }
 function searchZones() {
   try { return craftworks().deleriumSearch.getZones(); } catch { return []; }
