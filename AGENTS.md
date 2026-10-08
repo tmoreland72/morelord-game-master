@@ -15,7 +15,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Roll Requests, Macros, and Triggers have no outer surface frame.
 - Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Ambience, the Campaign AI companion, and other module configuration stay in Foundry Game Settings.
 - Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
-- Starting music stops other music first and uses native shuffle; ambience remains separate.
+- Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays below Foundry windows so that dialog can be used.
 - Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
 - Delerium Search reuses Craftworks rules and rewards with Game Master's chat UI.
 - Blind death saves keep sheet counters unchanged; public death saves retain native updates.

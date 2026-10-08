@@ -34,6 +34,12 @@ const select = (name, options) => `<select name="${name}">${options}</select>`;
 const gm = () => { if (!game.user.isGM) throw new Error("Only the GM can use this action."); };
 const notify = text => { status = text; };
 function fail(error) { console.error(`${ID} |`, error); ui.notifications.error(error.message ?? String(error)); notify(error.message ?? String(error)); }
+async function press(target, work) {
+  target.disabled = true;
+  try { await work(); }
+  catch (error) { fail(error); }
+  finally { if (target.isConnected) target.disabled = false; }
+}
 function persist(change) {
   // Serialize settings writes so fast clicks cannot overwrite a previous save.
   saving = saving.catch(() => {}).then(async () => {
@@ -81,8 +87,7 @@ Hooks.once("ready", async () => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
     if (suppressMacroClick && target.dataset.action === "macro") return;
-    target.disabled = true;
-    Promise.resolve(act(target.dataset.action, target.dataset.id)).catch(fail).finally(() => { if (target.isConnected) target.disabled = false; });
+    press(target, () => act(target.dataset.action, target.dataset.id));
   });
   new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',[{name:"Remove",icon:'<i class="fa-solid fa-trash"></i>',callback:element=>act("unpin-macro",element.dataset.macroUuid).catch(fail)}],{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
@@ -408,8 +413,11 @@ async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
   const last = state.last.playlist ?? { volume:0.65 };
-  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",last.volume*100,'type="number" min="0" max="100" required')) , [["save","Save button"]]);
-  if (result) await saveAndRun("playlist",{playlist:result.data.get("playlist"), volume:volume(result.data.get("volume"))},result);
+  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",last.volume*100,'type="number" min="0" max="100" required')) , [["start","Start"]]);
+  if (!result) return;
+  const config = {playlist:result.data.get("playlist"), volume:volume(result.data.get("volume"))};
+  await saveAndRun("playlist", config);
+  await run("playlist", config);
 }
 function volume(value) { const n = Number(value); if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100."); return n / 100; }
 async function ambienceForm() {
