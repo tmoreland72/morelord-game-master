@@ -65,6 +65,7 @@ Hooks.once("ready", async () => {
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
   state = foundry.utils.deepClone(get("board"));
+  if (migrateSoundVolumes(state)) await game.settings.set(ID, "board", state);
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
@@ -90,7 +91,8 @@ Hooks.once("ready", async () => {
   });
   root.addEventListener("input", event => {
     if (event.target.id === "mlgm-prompt") drafts.set(event.target.dataset.campaign,event.target.value);
-
+    const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
+    if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
   render();
   core().ui.activateCardSelection({element:root});
@@ -166,7 +168,7 @@ function content() {
   if (tab === "triggers") return `<div class="ml-stack" data-gap="4"><div class="ml-grid" data-columns="3">${triggerCards()}</div></div>`;
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
-    const cards = playing.map(({p,s})=>`<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${s.volume}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume">${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`).join("");
+    const cards = playing.map(({p,s})=>{const level=foundry.audio.AudioHelper.volumeToInput(Number(s.volume)||0),percent=Math.round(level*100);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${level}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
       + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks and ambience.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
@@ -273,7 +275,7 @@ async function onChange(event) {
     const {config}=readCard(card.dataset.rollCard),id=card.dataset.rollCard;
     await persist(n=>{const saved=n.saved.find(s=>s.id===id);if(saved)saved.config=config;else n.last[id]=config;});return;
   }
-  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: Number(el.value) }); }
+  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Number(el.value) * 100) }); }
   if (el.id === "mlgm-campaign") {
     const sequence = ++campaignSelection;
     const selected = el.value ? await api(`/campaigns/${encodeURIComponent(el.value)}`) : null;
@@ -281,13 +283,35 @@ async function onChange(event) {
   }
   if (el.id === "mlgm-upload") await uploadFiles(el.files);
 }
+function volumeFromPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100.");
+  return foundry.audio.AudioHelper.inputToVolume(n / 100);
+}
+function percentFromVolume(volume) {
+  const level = Number(volume);
+  if (!Number.isFinite(level)) return 0;
+  return Math.round(foundry.audio.AudioHelper.volumeToInput(Math.min(1, Math.max(0, level))) * 100);
+}
+function migrateSoundVolumes(board) {
+  if (!board || board.volumeScale === "foundry") return false;
+  const curve = value => foundry.audio.AudioHelper.inputToVolume(Number(value) || 0);
+  for (const saved of board.saved ?? []) {
+    if (saved.type === "playlist" && saved.config && "volume" in saved.config) saved.config.volume = curve(saved.config.volume);
+    if (saved.type === "ambience") for (const file of saved.config?.files ?? []) if ("volume" in file) file.volume = curve(file.volume);
+  }
+  if (board.last?.playlist && "volume" in board.last.playlist) board.last.playlist.volume = curve(board.last.playlist.volume);
+  for (const file of board.last?.ambience?.files ?? []) if ("volume" in file) file.volume = curve(file.volume);
+  board.volumeScale = "foundry";
+  return true;
+}
 async function setTrackVolumes() {
   gm();
   if (settingTrackVolumes) return;
   const field = root.querySelector('#ml-game-master-track-volume');
   if (!field?.reportValidity()) return;
   const percent = Number(field.value);
-  const volume = foundry.audio.AudioHelper.inputToVolume(percent / 100);
+  const volume = volumeFromPercent(percent);
   settingTrackVolumes = true;
   try {
     await persist(n=>{n.last.allTrackVolume=percent;});
@@ -372,19 +396,18 @@ async function encounter(die,name,selected) {
 async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
-  const last = state.last.playlist ?? { volume:0.65 };
-  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",last.volume*100,'type="number" min="0" max="100" required')) , [["save","Save button"]]);
-  if (result) await saveAndRun("playlist",{playlist:result.data.get("playlist"), volume:volume(result.data.get("volume"))},result);
+  const last = state.last.playlist ?? { volume:volumeFromPercent(65) };
+  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["save","Save button"]]);
+  if (result) await saveAndRun("playlist",{playlist:result.data.get("playlist"), volume:volumeFromPercent(result.data.get("volume"))},result);
 }
-function volume(value) { const n = Number(value); if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100."); return n / 100; }
 async function ambienceForm() {
   const browser = await foundry.applications.apps.FilePicker.browse("data",get("ambienceFolder"));
   const files = browser.files.filter(f => /\.(mp3|ogg|wav|flac|webm|m4a)$/i.test(f));
   if (!files.length) throw new Error("No audio files found in the configured Ambience folder.");
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Play Ambience",`<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((path,i) => { const prev = last.find(f => f.path === path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(path.split("/").pop())}</span></label>${label("Volume (%)",input(`volume${i}`,(prev?.volume ?? .4)*100,'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>` , [["save","Save button"]]);
+  const result = await form("Play Ambience",`<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((path,i) => { const prev = last.find(f => f.path === path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(path.split("/").pop())}</span></label>${label("Volume (%)",input(`volume${i}`,prev ? percentFromVolume(prev.volume) : 40,'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>` , [["save","Save button"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => ({path:files[Number(i)],volume:volume(result.data.get(`volume${i}`))}));
+  const selected = result.data.getAll("file").map(i => ({path:files[Number(i)],volume:volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
   await saveAndRun("ambience",{files:selected},result);
 }
