@@ -22,6 +22,41 @@ test('Sneak Attack requires a qualifying hit and advantage or an eligible adjace
   weapon.system.type.value='martialR';assert.equal(sneakTarget(message,actor,weapon),target);
 });
 
+test('Sneak Attack adjacency is measured on the target token scene', () => {
+  const grid = {
+    size: 100,
+    measurePath(points) {
+      const dx = points[1].x - points[0].x, dy = points[1].y - points[0].y;
+      return {distance: Math.hypot(dx, dy) / this.size * 5};
+    }
+  };
+  const scene = {id: 'combat', grid, tokens: []};
+  const allyActor = {id: 'ally', statuses: new Set()};
+  const foe = {id: 'foe', statuses: new Set()};
+  const attacker = {id: 'rogue-token', parent: scene, disposition: 1, x: 0, y: 0, width: 1, height: 1};
+  const target = {id: 'foe-token', parent: scene, actor: foe, disposition: -1, x: 100, y: 0, width: 1, height: 1};
+  const ally = {id: 'ally-token', parent: scene, actor: allyActor, disposition: 1, x: 200, y: 0, width: 1, height: 1};
+  scene.tokens = [attacker, target, ally];
+  const actor = {id: 'rogue', getDependentTokens({scenes}) { return scenes === scene ? [attacker] : []; }};
+  attacker.actor = actor;
+  globalThis.canvas = {scene: {id: 'elsewhere'}, tokens: {get placeables() { throw new Error('viewed canvas'); }}, grid: {measurePath() { throw new Error('viewed canvas'); }}};
+  globalThis.fromUuidSync = () => target;
+  const weapon = {type: 'weapon', system: {properties: new Set(['fin']), type: {value: 'martialM'}}};
+  const message = {type: 'attack', rolls: [{total: 16}], system: {targets: [{ac: 15, token: 'Scene.combat.Token.foe-token'}]}};
+  assert.equal(sneakTarget(message, actor, weapon), message.system.targets[0]);
+  ally.x = 400;
+  assert.equal(sneakTarget(message, actor, weapon), null);
+  ally.x = 200;
+  allyActor.statuses.add('unconscious');
+  assert.equal(sneakTarget(message, actor, weapon), null);
+  allyActor.statuses.delete('unconscious');
+  ally.disposition = -1;
+  assert.equal(sneakTarget(message, actor, weapon), null);
+  ally.disposition = 1;
+  attacker.disposition = 0;
+  assert.equal(sneakTarget(message, actor, weapon), null);
+});
+
  test('Wild Magic threshold increases on misses and resets on a qualifying d20',async()=>{
   const {surgeOutcome}=await import('../scripts/requests.mjs');
   let threshold=1;

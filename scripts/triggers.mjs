@@ -1,6 +1,8 @@
 import {ID,escapeHTML as e} from './core.mjs';
 import {core,activeGM,createRequest} from './requests.mjs';
 import {CRITICAL_TABLES} from './trigger-catalog.mjs';
+import {recoverCombatAmmo} from './ammo-recovery.mjs';
+import {initializeWorldClock} from './world-clock.mjs';
 
 export function triggerCoordinator(trigger) {
   if (trigger.sourceWorld) return activeGM();
@@ -44,15 +46,41 @@ export function criticalResultCard(kind,context,content) {
   const attack={melee:'Melee attack',ranged:'Ranged attack',magic:'Magic attack'}[context.attackType];
   return `<section class="ml-chat-card ml-stack"><div class="ml-callout" data-tone="${hit?'success':'danger'}"><i class="fa-solid ${hit?'fa-burst':'fa-skull-crossbones'}" aria-hidden="true"></i><div><h3>${title}</h3><p>${e(attack)}${Number.isFinite(context.attackDie)?` · Attack die: ${context.attackDie}`:''}</p></div></div>${core().ui.actorIdentity(context.actor)}<p><strong>${e(context.itemName)}</strong> triggered this ${hit?'critical hit':'critical fumble'} table.</p>${content}</section>`;
 }
-function nearbyAlly(actor,target) {
-  const attacker=actor.getActiveTokens().find(t=>t.document.parent===target.document.parent);
-  if (!attacker || !attacker.document.disposition) return false;
-  const half=canvas.grid.size/2;
-  const nearest=(a,b)=>({x:Math.max(a.x+half,Math.min(b.center.x,a.x+a.w-half)),y:Math.max(a.y+half,Math.min(b.center.y,a.y+a.h-half))});
-  return canvas.tokens.placeables.some(ally=>ally.actor && ally.actor.id!==actor.id && ally.id!==target.id
-    && ally.document.disposition===attacker.document.disposition
-    && !['incapacitated','unconscious','paralyzed','petrified','stunned','dead'].some(s=>ally.actor.statuses.has(s))
-    && canvas.grid.measurePath([nearest(ally,target),nearest(target,ally)]).distance<=5);
+function sceneTokens(scene) {
+  const tokens = scene?.tokens;
+  if (!tokens) return [];
+  if (Array.isArray(tokens)) return tokens;
+  if (Array.isArray(tokens.contents)) return tokens.contents;
+  return [...tokens];
+}
+function tokenBox(doc, grid) {
+  const object = doc.object;
+  if (object?.center && object.w != null) return {x: object.x, y: object.y, w: object.w, h: object.h, center: object.center};
+  const size = Number(grid?.size) || 1;
+  const w = (Number(doc.width) || 1) * size;
+  const h = (Number(doc.height) || 1) * size;
+  const x = Number(doc.x) || 0, y = Number(doc.y) || 0;
+  return {x, y, w, h, center: {x: x + w / 2, y: y + h / 2}};
+}
+function nearbyAlly(actor, target) {
+  const scene = target?.parent, grid = scene?.grid;
+  if (!scene || !grid?.measurePath) return false;
+  const dependents = typeof actor.getDependentTokens === 'function' ? actor.getDependentTokens({scenes: scene}) : [];
+  const attacker = dependents.find(token => token.parent === scene) ?? sceneTokens(scene).find(token => token.actor?.id === actor.id);
+  if (!attacker?.disposition) return false;
+  const half = grid.size / 2;
+  const nearest = (a, b) => ({
+    x: Math.max(a.x + half, Math.min(b.center.x, a.x + a.w - half)),
+    y: Math.max(a.y + half, Math.min(b.center.y, a.y + a.h - half))
+  });
+  const targetBox = tokenBox(target, grid);
+  return sceneTokens(scene).some(doc => {
+    if (!doc.actor || doc.actor.id === actor.id || doc.id === target.id) return false;
+    if (doc.disposition !== attacker.disposition) return false;
+    if (['incapacitated','unconscious','paralyzed','petrified','stunned','dead'].some(status => doc.actor.statuses?.has(status))) return false;
+    const ally = tokenBox(doc, grid);
+    return grid.measurePath([nearest(ally, targetBox), nearest(targetBox, ally)]).distance <= 5;
+  });
 }
 export function sneakTarget(message,actor,item) {
   if (message.type!=='attack' || item?.type!=='weapon') return null;
@@ -61,8 +89,9 @@ export function sneakTarget(message,actor,item) {
   if (!roll || roll.isFumble || roll.hasDisadvantage) return null;
   for (const target of message.system.targets ?? []) {
     if (target.ac == null || (!roll.isCritical && roll.total<target.ac)) continue;
-    const token=fromUuidSync(target.token)?.object;
-    if (roll.hasAdvantage || (token && nearbyAlly(actor,token))) return target;
+    const located=fromUuidSync(target.token);
+    const token=located?.document?.parent ? located.document : located;
+    if (roll.hasAdvantage || (token?.parent && nearbyAlly(actor,token))) return target;
   }
   return null;
 }
@@ -195,6 +224,37 @@ export async function executeLuckyFindTrigger(combat) {
   } catch (error) { completedLuckyFinds.delete(combat.id); throw error; }
 }
 
+const CHAT_TRIGGERS = new Set(['sorcerer','volatile','sneak','hunters-mark','item','critical-hit','critical-fumble']);
+export function installTrigger(kind, runtime) {
+  const {trigger, Hooks, setInterval: schedule, enqueue} = runtime ?? {};
+  if (!Hooks?.on || typeof enqueue !== 'function') throw new Error('Trigger runtime is missing.');
+  if (kind === 'ammo-recovery') {
+    Hooks.on('deleteCombat', combat => enqueue(() => recoverCombatAmmo(combat)));
+    return true;
+  }
+  if (kind === 'world-clock') {
+    if (typeof schedule !== 'function') throw new Error('Trigger runtime is missing a timer.');
+    initializeWorldClock({hooks: Hooks, schedule});
+    return true;
+  }
+  if (kind === 'lucky-find') {
+    Hooks.on('deleteCombat', combat => enqueue(() => executeLuckyFindTrigger(combat)));
+    return true;
+  }
+  if (!CHAT_TRIGGERS.has(kind)) throw new Error(`Unknown trigger kind: ${kind}`);
+  const process = message => {
+    if (!game.user.isGM || message.getFlag(ID, 'triggerResult')) return;
+    if (!message.getFlag(ID, 'triggerUse') && !['attack','damage','save'].includes(message.type)) return;
+    return enqueue(async () => {
+      if (triggerCoordinator(trigger)?.id === game.user.id) await executeTrigger(trigger, message);
+    });
+  };
+  Hooks.on('createChatMessage', process);
+  Hooks.on('updateChatMessage', (message, changes) => {
+    if (foundry.utils.getProperty(changes, `flags.${ID}.triggerUse`)) return process(message);
+  });
+  return true;
+}
 export function initializeTriggers() {
   Hooks.on('preCreateChatMessage',message=>{
     const kind=message.getFlag(ID,'triggerResult')?.kind,context=message.getFlag(ID,'criticalCard');

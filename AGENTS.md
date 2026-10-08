@@ -15,7 +15,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Roll Requests, Macros, and Triggers have no outer surface frame.
 - Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Dragging a GM Settings row saves that world's card order; hidden requests keep their place. Ambience, the Campaign AI companion, and other module configuration stay in Foundry Game Settings.
 - Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
-- Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays below Foundry windows so that dialog can be used.
+- Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays above the canvas and below Foundry windows, and a rebuild keeps in-progress fields. Sound levels use Foundry's volume curve.
 - Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
 - Delerium Search reuses Craftworks rules and rewards with Game Master's chat UI.
 - Blind death saves keep sheet counters unchanged; public death saves retain native updates.
@@ -25,7 +25,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Create skill summaries only after every roll card exists; retain averages for single-player checks.
 - Delerium summaries have no average; reuse Craftworks rewards/encounters and expose their actions.
 - Macros follows Roll Requests, starts empty, and accepts dragged macros without a ten-slot limit.
-- Triggers use native spell provenance and qualifying Sneak Attack hits, with once-per-turn damage.
+- Triggers use native spell provenance and qualifying Sneak Attack hits, with once-per-turn damage. Managed macros call the module API. Sneak Attack adjacency is measured on the target token's scene.
 
 - Foraging reuses Journeys terrain/DC configuration and food rules, with chat requests and complete-only summaries respecting visibility.
 - Macro pins are compact rows: the icon is on the left and the name is on the right. Long names truncate with an ellipsis, and the full name is available on hover. Left click executes. Dragging a pin reorders it and saves that order immediately for the world; the drag does not execute the macro. Dropping a new macro still pins it. The native right-click menu removes only the pin.

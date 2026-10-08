@@ -1,15 +1,15 @@
 import {initializeAmmoTracking} from './ammo-recovery.mjs';
-import {initializeTriggerMacros,triggerStatus,triggerMacroUuid} from './trigger-macros.mjs';
+import {initializeTriggerMacros,replacePastedTriggerMacros,triggerStatus,triggerMacroUuid} from './trigger-macros.mjs';
 import {rollOfFate} from './roll-of-fate.mjs';
 import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs";
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
-import {initializeTriggers,luckyFindWorldTable} from "./triggers.mjs";
+import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 
 const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
-let root, open = false, tab = "rolls", state, saving = Promise.resolve(), status = "Ready. Choose an action to configure it.";
+let root, open = false, tab = "rolls", state, saving = Promise.resolve();
 let campaign, campaigns = [], connection, aiBusy = false;
 const drafts = new Map();
 let campaignSelection = 0;
@@ -33,8 +33,8 @@ function requestRow({card, fields = "", blind = null, action, id = "", name, dis
 const input = (name, value = "", attrs = "") => `<input name="${name}" value="${e(value)}" ${attrs}>`;
 const select = (name, options) => `<select name="${name}">${options}</select>`;
 const gm = () => { if (!game.user.isGM) throw new Error("Only the GM can use this action."); };
-const notify = text => { status = text; };
-function fail(error) { console.error(`${ID} |`, error); ui.notifications.error(error.message ?? String(error)); notify(error.message ?? String(error)); }
+const notify = text => ui.notifications.info(text);
+function fail(error) { console.error(`${ID} |`, error); ui.notifications.error(error.message ?? String(error)); }
 async function press(target, work) {
   target.disabled = true;
   try { await work(); }
@@ -76,12 +76,13 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
+  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
-  try { initializeRequests(); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
-  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger };
+  try { initializeRequests(); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
   state = foundry.utils.deepClone(get("board"));
+  if (migrateSoundVolumes(state)) await game.settings.set(ID, "board", state);
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
@@ -113,7 +114,8 @@ Hooks.once("ready", async () => {
   });
   root.addEventListener("input", event => {
     if (event.target.id === "mlgm-prompt") drafts.set(event.target.dataset.campaign,event.target.value);
-
+    const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
+    if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
   render();
   core().ui.activateCardSelection({element:root});
@@ -133,13 +135,50 @@ function savedName(type,config) {
   if (type === "ambience") return config.files.map(f=>f.path.split('/').at(-1).replace(/\.[^.]+$/,"")).join(" + ");
   return "Death Saving Throw";
 }
+function controlKey(el) {
+  if (el.id) return `#${el.id}`;
+  const card = el.closest("[data-roll-card]")?.dataset.rollCard ?? "";
+  if (el.dataset.sound) return `sound:${el.dataset.playlist}:${el.dataset.sound}`;
+  return `${card}:${el.name}:${el.type === "radio" || el.type === "checkbox" ? el.value : ""}`;
+}
+function snapshotControls(container, active = container.ownerDocument?.activeElement) {
+  return [...container.querySelectorAll("input, select, textarea")].filter(el => el.type !== "file").map(el => {
+    const toggle = el.type === "checkbox" || el.type === "radio";
+    const value = toggle ? Boolean(el.checked) : el.value;
+    const initial = toggle ? Boolean(el.defaultChecked) : el.defaultValue;
+    let start = null, end = null;
+    try { start = el.selectionStart; end = el.selectionEnd; } catch { /* non-text controls */ }
+    return {key: controlKey(el), toggle, value, dirty: value !== initial, focused: el === active, start, end};
+  });
+}
+function restoreControls(container, drafts) {
+  if (!drafts?.length) return;
+  const fields = [...container.querySelectorAll("input, select, textarea")];
+  let focus;
+  for (const draft of drafts) {
+    if (!draft.dirty && !draft.focused) continue;
+    const el = fields.find(field => controlKey(field) === draft.key);
+    if (!el || el.type === "file") continue;
+    if (draft.toggle) el.checked = draft.value;
+    else if (el.tagName === "SELECT" && ![...el.options].some(option => option.value === String(draft.value))) continue;
+    else el.value = draft.value;
+    if (draft.focused) focus = {el, start: draft.start, end: draft.end};
+  }
+  if (!focus?.el.isConnected) return;
+  focus.el.focus({preventScroll: true});
+  if (Number.isInteger(focus.start) && focus.el.setSelectionRange) {
+    try { focus.el.setSelectionRange(focus.start, focus.end); } catch { /* number and select controls */ }
+  }
+}
 function render() {
   if (!root) return;
+  const controls = snapshotControls(root);
   root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
     <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
+  restoreControls(root, controls);
   core().ui.applyPageLayout({element:root});
   if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
@@ -150,7 +189,7 @@ function content() {
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
-    const cards = playing.map(({p,s})=>`<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${s.volume}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume">${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`).join("");
+    const cards = playing.map(({p,s})=>{const level=foundry.audio.AudioHelper.volumeToInput(Number(s.volume)||0),percent=Math.round(level*100);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${level}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
       + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks, ambience, and saved playback buttons.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
@@ -327,7 +366,7 @@ async function onChange(event) {
     await persist(n => { n.last[card.dataset.rollCard] = config; if (card.dataset.rollCard === "encounter") n.last.die = config.die; });
     return;
   }
-  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: Number(el.value) }); }
+  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Number(el.value) * 100) }); }
   if (el.id === "mlgm-campaign") {
     const sequence = ++campaignSelection;
     const selected = el.value ? await api(`/campaigns/${encodeURIComponent(el.value)}`) : null;
@@ -335,16 +374,39 @@ async function onChange(event) {
   }
   if (el.id === "mlgm-upload") await uploadFiles(el.files);
 }
+function volumeFromPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100.");
+  return foundry.audio.AudioHelper.inputToVolume(n / 100);
+}
+function percentFromVolume(volume) {
+  const level = Number(volume);
+  if (!Number.isFinite(level)) return 0;
+  return Math.round(foundry.audio.AudioHelper.volumeToInput(Math.min(1, Math.max(0, level))) * 100);
+}
+function migrateSoundVolumes(board) {
+  if (!board || board.volumeScale === "foundry") return false;
+  const curve = value => foundry.audio.AudioHelper.inputToVolume(Number(value) || 0);
+  for (const saved of board.saved ?? []) {
+    if (saved.type === "playlist" && saved.config && "volume" in saved.config) saved.config.volume = curve(saved.config.volume);
+    if (saved.type === "ambience") for (const file of saved.config?.files ?? []) if ("volume" in file) file.volume = curve(file.volume);
+  }
+  if (board.last?.playlist && "volume" in board.last.playlist) board.last.playlist.volume = curve(board.last.playlist.volume);
+  for (const file of board.last?.ambience?.files ?? []) if ("volume" in file) file.volume = curve(file.volume);
+  board.volumeScale = "foundry";
+  return true;
+}
 async function setTrackVolumes() {
   gm();
   if (settingTrackVolumes) return;
   const field = root.querySelector('#ml-game-master-track-volume');
   if (!field?.reportValidity()) return;
   const percent = Number(field.value);
-  const volume = foundry.audio.AudioHelper.inputToVolume(percent / 100);
+  const volume = volumeFromPercent(percent);
   settingTrackVolumes = true;
   try {
     await persist(n=>{
+      n.volumeScale="foundry";
       n.last.allTrackVolume=percent;
       // Playback buttons reapply their own level on start, so they have to keep this one.
       if (n.last.playlist) n.last.playlist.volume=volume;
@@ -437,22 +499,21 @@ async function encounter(die,name,selected) {
 async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
-  const last = state.last.playlist ?? { volume:0.65 };
-  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",last.volume*100,'type="number" min="0" max="100" required')) , [["start","Start"]]);
+  const last = state.last.playlist ?? { volume:volumeFromPercent(65) };
+  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["start","Start"]]);
   if (!result) return;
-  const config = {playlist:result.data.get("playlist"), volume:volume(result.data.get("volume"))};
+  const config = {playlist:result.data.get("playlist"), volume:volumeFromPercent(result.data.get("volume"))};
   await saveAndRun("playlist", config);
   await run("playlist", config);
 }
-function volume(value) { const n = Number(value); if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100."); return n / 100; }
 async function ambienceForm() {
   const browser = await foundry.applications.apps.FilePicker.browse("data",get("ambienceFolder"));
   const files = browser.files.filter(f => /\.(mp3|ogg|wav|flac|webm|m4a)$/i.test(f));
   if (!files.length) throw new Error("No audio files found in the configured Ambience folder.");
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Play Ambience",`<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((path,i) => { const prev = last.find(f => f.path === path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(path.split("/").pop())}</span></label>${label("Volume (%)",input(`volume${i}`,(prev?.volume ?? .4)*100,'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>` , [["save","Save button"]]);
+  const result = await form("Play Ambience",`<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((path,i) => { const prev = last.find(f => f.path === path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(path.split("/").pop())}</span></label>${label("Volume (%)",input(`volume${i}`,prev ? percentFromVolume(prev.volume) : 40,'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>` , [["save","Save button"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => ({path:files[Number(i)],volume:volume(result.data.get(`volume${i}`))}));
+  const selected = result.data.getAll("file").map(i => ({path:files[Number(i)],volume:volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
   await saveAndRun("ambience",{files:selected},result);
 }
@@ -466,12 +527,23 @@ export async function requestCheck(config) {
   render();
   return message;
 }
-for (const hook of ["morelordGameMasterTriggersChanged","createChatMessage","deleteChatMessage","updateChatMessage","updatePlaylist","updatePlaylistSound","createMacro","updateMacro","deleteMacro","updateUser"]) Hooks.on(hook, () => { if (open && tab !== "ai") render(); });
+function refreshTray(tabs) {
+  if (!open || !root || (tabs && !tabs.includes(tab))) return;
+  render();
+}
+Hooks.on("morelordGameMasterTriggersChanged", () => refreshTray(["triggers"]));
+for (const hook of ["updatePlaylist", "updatePlaylistSound"]) Hooks.on(hook, () => refreshTray(["sound"]));
+for (const hook of ["createMacro", "updateMacro", "deleteMacro"]) Hooks.on(hook, () => refreshTray(["macros"]));
+Hooks.on("updateUser", () => refreshTray(["party", "rolls"]));
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
-  if (setting.key === `${ID}.macros` || setting.key === `${ID}.specialtyOrder`) render();
-  if (setting.key === `${ID}.board`) { state = foundry.utils.deepClone(get("board")); render(); }
-  if (open && tab === "rolls" && SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) render();
+  if (setting.key === `${ID}.macros`) refreshTray(["macros"]);
+  if (setting.key === `${ID}.specialtyOrder`) refreshTray(["settings", "rolls"]);
+  if (setting.key === `${ID}.board`) {
+    state = foundry.utils.deepClone(get("board"));
+    if (open && ["rolls", "sound", "triggers", "party", "settings", "macros"].includes(tab)) render();
+  }
+  if (SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) refreshTray(["rolls", "settings"]);
 });
 
 export async function addTrigger({name,actorId,itemId,tableId,tableUuid,kind="item",id,gameMinutes=10,realMinutes=1}) {

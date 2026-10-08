@@ -113,8 +113,7 @@ try {
   assert.equal(await evaluate('(()=>{const name=document.querySelector("[data-macro-uuid=\\"Macro.macro\\"] span");const style=getComputedStyle(name);return style.textOverflow==="ellipsis" && style.whiteSpace==="nowrap" && name.scrollWidth>name.clientWidth;})()'),true);
   await evaluate('document.querySelector("[data-macro-uuid]").dispatchEvent(new MouseEvent("contextmenu",{bubbles:true}))');await click('#context-menu button');assert.equal(await evaluate('game.macros.has("macro")'),true);
   await evaluate('var music=game.playlists.get("music");music.mode=-1;var oldSound={id:"old",playing:true};game.playlists.set("old",{id:"old",name:"Previous music",getFlag:()=>false,sounds:new game.playlists.constructor([["old",oldSound]]),async stopAll(){oldSound.playing=false;}})');
-  await click('[data-action="tab"][data-id="sound"]');await click('[data-action="playlist"]');await click('dialog button[value="0"]');await wait('testState().board.saved.some(s=>s.type==="playlist")');
-  assert.equal(await evaluate('game.playlists.get("music").sounds.get("sound").playing'),false);
+  await click('[data-action="tab"][data-id="sound"]');await click('[data-action="playlist"]');await click('dialog button[value="0"]');await wait('testState().board.saved.some(s=>s.type==="playlist") && game.playlists.get("music").sounds.get("sound").playing');
   await click('[data-action="saved"]');await wait('game.playlists.get("music").sounds.get("sound").playing');
   assert.equal(await evaluate('game.playlists.get("music").mode'),1);assert.equal(await evaluate('oldSound.playing'),false);
   assert.equal(await evaluate('document.querySelector("[data-action=stop-music]").closest(".gm-column").querySelector("strong").textContent'),'Now Playing');

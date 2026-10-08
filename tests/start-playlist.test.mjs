@@ -57,7 +57,20 @@ test('Start Playlist starts the chosen playlist at the dialog volume', async () 
     CONST: {PLAYLIST_MODES: {SHUFFLE: 1}},
     e: value => value, label: (_name, content) => content, select: (_name, options) => options, option: id => id, input: (_name, value) => String(value),
     savedName: (_type, config) => config.playlist,
-    foundry: {utils: {randomID: () => 'saved-1'}},
+    foundry: {
+      audio: {AudioHelper: {inputToVolume: n => n ** 1.5, volumeToInput: n => n ** (1 / 1.5)}},
+      utils: {randomID: () => 'saved-1'}
+    },
+    volumeFromPercent(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error('Volume must be between 0 and 100.');
+      return (n / 100) ** 1.5;
+    },
+    percentFromVolume(volume) {
+      const level = Number(volume);
+      if (!Number.isFinite(level)) return 0;
+      return Math.round(Math.min(1, Math.max(0, level)) ** (1 / 1.5) * 100);
+    },
     state, game: {playlists},
     persist: async change => change(state),
     form: async (title, _content, actions) => {
@@ -71,8 +84,9 @@ test('Start Playlist starts the chosen playlist at the dialog volume', async () 
   assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['start', 'Start']]);
   assert.deepEqual(stopped, ['now']);
   assert.deepEqual(played, ['later']);
-  assert.equal(state.saved[0].config.volume, 0.4);
-  assert.deepEqual(JSON.parse(JSON.stringify(writes.at(-1).updates)), [{_id: 'one', volume: 0.4}, {_id: 'two', volume: 0.4}]);
+  const curved = 0.4 ** 1.5;
+  assert.equal(state.saved[0].config.volume, curved);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes.at(-1).updates)), [{_id: 'one', volume: curved}, {_id: 'two', volume: curved}]);
   context.form = async () => null;
   await vm.runInContext('playlistForm()', context);
   assert.deepEqual(played, ['later']);
