@@ -41,8 +41,14 @@ try {
   assert.equal(await evaluate('document.querySelector("[data-roll-card=check] input[name=blind]").checked'),false);
   await evaluate('var blind=document.querySelector("[data-roll-card=check] input[name=blind]");blind.checked=true;blind.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('testState().board.last.check?.blind===true');
-  assert.equal(await evaluate('!!document.querySelector("[data-action=quick-request][data-id=fate]")'),true);
-  assert.equal(await evaluate(`(() => { const rows=[...document.querySelectorAll(".gm-request-row")]; return rows.length>=6 && rows.every(row=>getComputedStyle(row).flexWrap==="nowrap" && Math.max(...[...row.children].map(el=>el.getBoundingClientRect().top))-Math.min(...[...row.children].map(el=>el.getBoundingClientRect().top))<8); })()`), true);
+  assert.equal(await evaluate('document.querySelector("[data-roll-card=search] .gm-specialty-title").textContent'),'Delerium Search');
+  assert.equal(await evaluate('document.querySelector("[data-roll-card=search] select[name=zoneId]")!==null && document.querySelector("[data-roll-card=fate] .gm-specialty-title").textContent==="Roll of Fate" && [...document.querySelectorAll("[data-roll-card=fate] select[name=scope] option")].map(option=>option.value).join(",")==="party,tokens" && !document.querySelector("[data-roll-card=fate] input[name=blind]")'),true);
+  assert.equal(await evaluate(`(() => { const row=document.querySelector(".gm-request-row"); const cards=[...document.querySelectorAll(".gm-specialty-card")]; return document.querySelectorAll(".gm-request-row").length===1 && getComputedStyle(row).flexWrap==="nowrap" && cards.length===5 && cards.every(card=>card.querySelector(".gm-specialty-title") && card.querySelector("select") && card.querySelector(".gm-specialty-footer .ml-icon-button")); })()`), true);
+  for (const [width, columns] of [[1280,3],[900,2],[390,1]]) {
+    await command('Emulation.setDeviceMetricsOverride',{width,height:850,deviceScaleFactor:1,mobile:false});
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".gm-specialty-grid")).gridTemplateColumns.split(" ").filter(Boolean).length'), columns);
+  }
+  await command('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="ability";type.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('document.querySelector("[data-roll-card=check] select[name=checkId]").value==="wis" && [...document.querySelectorAll("[data-roll-card=check] label>span")].some(s=>s.textContent==="Ability")');
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="skill";type.dispatchEvent(new Event("change",{bubbles:true}))');
@@ -139,7 +145,7 @@ try {
   const shot=await command('Page.captureScreenshot',{format:'png'});await writeFile(path.join(root,'test-results','tray-desktop.png'),Buffer.from(shot.data,'base64'));
   await command('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'),true);
-  assert.equal(await evaluate('[...document.querySelectorAll(".gm-request-row")].every(row=>getComputedStyle(row).flexWrap==="nowrap")'),true);
+  assert.equal(await evaluate('[...document.querySelectorAll(".gm-request-row")].every(row=>getComputedStyle(row).flexWrap==="nowrap") && getComputedStyle(document.querySelector(".gm-specialty-grid")).gridTemplateColumns.split(" ").filter(Boolean).length===1'),true);
   assert.equal(await evaluate('document.querySelector("#mlgm-tab-settings").textContent'),'GM Settings');
   const mobile=await command('Page.captureScreenshot',{format:'png'});await writeFile(path.join(root,'test-results','tray-mobile.png'),Buffer.from(mobile.data,'base64'));
   assert.equal(await evaluate('testState().board.saved.some(s=>s.type==="group" || s.type==="player")'),false);
@@ -147,7 +153,8 @@ try {
   await evaluate('var fate=document.querySelector("[name=specialty][value=fate]");fate.checked=false;fate.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('game.settings.get("morelord-game-master","showFate")===false');
   await click('[data-action="tab"][data-id="rolls"]');
-  assert.equal(await evaluate('!!document.querySelector("[data-id=fate]")'),false);
+  assert.equal(await evaluate('!!document.querySelector("[data-roll-card=fate]")'),false);
+  assert.equal(await evaluate('document.querySelector("[data-roll-card=search] .gm-specialty-title").textContent==="Delerium Search" && document.querySelectorAll(".gm-specialty-card").length===4'),true);
 
   await click('[data-action="toggle"]');assert.notEqual(await evaluate('testState().hotbar'),'none');
   await evaluate('document.querySelector("#hotbar").style.display="none"');await click('[data-action="toggle"]');await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');

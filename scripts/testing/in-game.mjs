@@ -21,9 +21,12 @@ export const gameMasterChecks=[{
       assert(document.querySelector('[data-roll-card="death"] [data-action="quick-request"]').getAttribute("aria-label")==="Death Save","Death save row uses its neutral title.");
       assert(!document.querySelector('#mlgm-panel.ml-surface, #mlgm-panel .gm-column, .gm-roll-column'),"Roll requests have no outer section or column headers.");
       assert(document.querySelector('[data-roll-card="encounter"] select[name="die"]'),"Encounter die uses a dropdown.");
-      const rows=[...document.querySelectorAll('.gm-request-row')];
-      assert(rows.length && rows.every(row=>getComputedStyle(row).flexWrap==="nowrap"),"Every roll request stays on one row.");
-      assert([...document.querySelectorAll('.gm-request-row:not([data-roll-card="fate"])')].every(row=>row.querySelector('input[name="blind"]')),"Private request rows include a blind toggle.");
+      const builder=document.querySelector('.gm-request-row');
+      assert(document.querySelectorAll('.gm-request-row').length===1 && getComputedStyle(builder).flexWrap==="nowrap","The check builder stays on one row.");
+      assert(document.querySelector('[data-roll-card="search"] .gm-specialty-title')?.textContent==="Delerium Search","Delerium Search is a specialty card.");
+      assert(document.querySelector('[data-roll-card="fate"] .gm-specialty-title')?.textContent==="Roll of Fate","Roll of Fate is a labeled specialty card.");
+      assert([...document.querySelectorAll('[data-roll-card="fate"] select[name="scope"] option')].map(option=>option.textContent).join('|')==="Party|Selected tokens","Roll of Fate chooses party or selected tokens.");
+      assert([...document.querySelectorAll('.gm-specialty-card:not([data-roll-card="fate"])')].every(card=>card.querySelector('input[name="blind"]')),"Private specialty cards include a blind toggle.");
       assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
       assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
