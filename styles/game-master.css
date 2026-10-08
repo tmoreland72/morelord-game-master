@@ -24,6 +24,8 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-request-row > .gm-inline > select, #mlgm .gm-request-row > .gm-inline > input { flex:1 1 auto; width:0; min-width:4.5rem; }
 #mlgm .gm-request-row > .ml-check { display:flex; flex:0 0 auto; align-items:center; width:auto; min-width:max-content; margin:0; }
 #mlgm .gm-request-row > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-battle-side { display:flex; flex-direction:column; gap:2px; min-width:0; }
+#mlgm .gm-unit-status { flex:0 0 auto; white-space:nowrap; }
 
 #mlgm .gm-roll-column { min-width:0; align-self:start; }
 

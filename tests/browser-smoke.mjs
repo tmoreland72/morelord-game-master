@@ -148,6 +148,12 @@ try {
   await wait('game.settings.get("morelord-game-master","showFate")===false');
   await click('[data-action="tab"][data-id="rolls"]');
   assert.equal(await evaluate('!!document.querySelector("[data-id=fate]")'),false);
+  await click('[data-action="tab"][data-id="battle"]');
+  await wait('document.querySelectorAll(".gm-battle-side").length===2');
+  await click('[data-action="battle-add-side"]');
+  await wait('document.querySelectorAll(".gm-battle-side").length===3');
+  assert.equal(await evaluate('document.querySelector(".gm-battle").textContent.includes("Experimental") && document.querySelector("[data-action=battle-resolve]") && !document.querySelector(".gm-unit-status")'),true);
+  assert.equal(await evaluate('[...document.querySelectorAll(".gm-battle .gm-request-row")].every(row=>getComputedStyle(row).flexWrap==="nowrap")'),true);
 
   await click('[data-action="toggle"]');assert.notEqual(await evaluate('testState().hotbar'),'none');
   await evaluate('document.querySelector("#hotbar").style.display="none"');await click('[data-action="toggle"]');await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');

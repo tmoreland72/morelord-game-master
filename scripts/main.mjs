@@ -8,8 +8,9 @@ import { ID, escapeHTML as e } from "./core.mjs";
 import { DEFAULT_RELAY_URL, MIXED_CONTENT_MESSAGE, RELAY_CAMPAIGNS, askBody, campaignKey, healthSummary, mergeThread, mixedContentBlocked, normalizeRelayURL, parseAsk, parseHealth, parseThread, pollDelay, questionText, relayRequest, renderAnswerMarkdown, threadPending, threadQuery } from "./campaign-relay.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, resolveRollActors, visibleSpecialties } from "./roll-requests.mjs";
+import { addSide, addUnit, averageDamage, createBattle, endBattle, emptyHero, grantHero, removeSide, removeUnit, resetBattle, resolveRound, roundCard, unitStatus, updateBattle, updateUnit } from "./mass-battle.mjs";
 
-const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
+const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", battle: "Mass Combat", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve(), status = "Ready. Choose an action to configure it.";
 let questionDraft = "";
 let relayStatus = "";
@@ -68,6 +69,7 @@ Hooks.once("init", () => {
   game.settings.register(ID, "relayUrl", { name: "Campaign AI relay URL", hint: "Campaign AI relay origin for this world.", scope: "world", config: false, type: String, default: DEFAULT_RELAY_URL });
   game.settings.register(ID, "relayToken", { name: "Campaign AI relay token", hint: "Bearer token for the Campaign AI relay. It is not written to the log.", scope: "world", config: false, type: String, default: "" });
   game.settings.register(ID, "relayCampaign", { name: "Campaign AI campaign", hint: "Campaign this world asks about.", scope: "world", config: false, type: String, default: "" });
+  game.settings.register(ID, "massBattle", { name: "Mass Combat battle", hint: "Experimental mass-combat battle for this world.", scope: "world", config: false, type: Object, default: null });
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: true, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
@@ -79,6 +81,7 @@ Hooks.once("ready", async () => {
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger };
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
+  if (!get("massBattle")?.sides?.length) await game.settings.set(ID, "massBattle", createBattle(() => foundry.utils.randomID()));
   state = foundry.utils.deepClone(get("board"));
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
@@ -93,8 +96,8 @@ Hooks.once("ready", async () => {
   new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',[{name:"Remove",icon:'<i class="fa-solid fa-trash"></i>',callback:element=>act("unpin-macro",element.dataset.macroUuid).catch(fail)}],{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
   root.addEventListener("change", event => onChange(event).catch(fail));
-  root.addEventListener("dragover",event=>{if(tab === "macros")event.preventDefault();});
-  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}});
+  root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "battle")event.preventDefault();});
+  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}if(tab === "battle"){event.preventDefault();dropUnit(event).catch(fail);}});
   root.addEventListener("dragstart",event=>{const tile=event.target.closest('[data-macro-uuid]');if(!tile)return;suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";});
   root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;});});
   root.addEventListener("keydown", event => {
@@ -136,7 +139,7 @@ function render() {
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
     ${tab === "triggers" ? `<div class="ml-actions gm-trigger-toolbar">${button("new-trigger","+ New Trigger","",'disabled title="Trigger authoring is currently unavailable"')}</div>` : ""}
-    <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
+    <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings","battle"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   core().ui.applyPageLayout({element:root});
 }
 function content() {
@@ -152,6 +155,7 @@ function content() {
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks and ambience.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
+  if (tab === "battle") return battleContent();
   return aiContent();
 }
 function partyActorIds() {
@@ -269,12 +273,20 @@ async function act(action, id) {
   if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
   if (action === "trigger-toggle") await persist(n => { const t = n.triggers.find(x => x.id === id); if (t) t.enabled = !t.enabled; });
 
+  if (action === "battle-resolve") return resolveBattle();
+  if (action === "battle-reset") return confirmBattle("reset");
+  if (action === "battle-end") return confirmBattle("end");
+  if (action === "battle-add-side") return saveBattle(battle => addSide(battle, `Side ${String.fromCharCode(65 + battle.sides.length)}`, () => foundry.utils.randomID()));
+  if (action === "battle-remove-side") return saveBattle(battle => removeSide(battle, id));
+  if (action === "battle-remove-unit") return saveBattle(battle => removeUnit(battle, id));
+  if (action === "battle-hero") return requestHero();
   if (action === "ai-test") return testRelay();
   if (action === "ai-ask") return askRelay(root.querySelector("#mlgm-question")?.value ?? questionDraft);
   if (action === "ai-retry") return askRelay(relayThread.entries.find(entry => entry.requestId === id)?.question ?? "");
   render();
 }
 async function onChange(event) {
+  if (await onBattleChange(event)) return;
   const el = event.target;
   if (el.id === "ml-game-master-track-volume" && el.checkValidity()) {
     gm();
@@ -426,9 +438,10 @@ export async function requestCheck(config) {
   return message;
 }
 for (const hook of ["morelordGameMasterTriggersChanged","createChatMessage","deleteChatMessage","updateChatMessage","updatePlaylist","updatePlaylistSound","createMacro","updateMacro","deleteMacro","updateUser"]) Hooks.on(hook, () => { if (open && tab !== "ai") render(); });
+Hooks.on("createChatMessage", message => { if (game.user.isGM) grantHeroResult(message).catch(fail); });
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
-  if (setting.key === `${ID}.macros`) render();
+  if (setting.key === `${ID}.macros` || (setting.key === `${ID}.massBattle` && open && tab === "battle")) render();
   if (setting.key === `${ID}.board`) { state = foundry.utils.deepClone(get("board")); render(); }
   if (open && tab === "rolls" && SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) render();
 });
@@ -579,4 +592,145 @@ function aiContent() {
   const notice = relayThread.notice ? `<p class="gm-ai-error">${e(relayThread.notice)}</p>` : "";
   const entries = relayThread.entries.map(aiEntry).join("") || `<p class="notes">No questions yet. Answers usually take a minute.</p>`;
   return `<div class="gm-ai"><p class="notes">GM only · ${e(campaign.label)}</p>${notice}<div class="gm-ai-thread" role="log" aria-live="polite">${entries}</div><form class="gm-request-row gm-ai-ask" data-ai-ask><textarea id="mlgm-question" maxlength="${4000}" rows="2" placeholder="Ask about this campaign">${e(questionDraft)}</textarea><button type="button" data-action="ai-ask">Ask</button></form></div>`;
+}
+let battleSaving = Promise.resolve();
+function saveBattle(change) {
+  battleSaving = battleSaving.catch(() => {}).then(async () => {
+    const next = change(foundry.utils.deepClone(get("massBattle")));
+    await game.settings.set(ID, "massBattle", next);
+    if (open && tab === "battle") render();
+  });
+  return battleSaving;
+}
+function battleContent() {
+  const battle = get("massBattle");
+  if (!battle?.sides?.length) return `<p class="notes">Preparing the experimental battle.</p>`;
+  const hero = {...emptyHero(), ...battle.hero};
+  const checkType = CHECK_TYPES.some(type => type.id === hero.checkType) ? hero.checkType : "skill";
+  const choices = checkChoices(checkType, catalogs());
+  const checkId = defaultCheckId(checkType, choices, hero.checkId);
+  const actors = partyActorIds().map(id => game.actors.get(id)).filter(Boolean);
+  const living = battle.sides.flatMap(side => side.units.filter(unit => unit.living > 0).map(unit => ({side, unit})));
+  const controls = `<form class="gm-request-row" data-battle-controls>${inlineField("Damage cap", input("damageCap", battle.damageCap ?? "", 'type="number" min="0" placeholder="None"'))}<label class="ml-check"><input type="checkbox" name="blind" ${battle.blind ? "checked" : ""}><span>Blind roll</span></label>${button("battle-resolve", "Resolve Round")}${button("battle-reset", "Reset")}${button("battle-end", "End Battle")}</form>`;
+  const heroRow = `<form class="gm-request-row" data-battle-hero>${inlineField("Unit", select("unitId", living.map(item => option(item.unit.id, `${item.unit.name} (${item.side.name})`, hero.unitId)).join("") || `<option value="">No living units</option>`))}${inlineField("Bonus", select("bonus", `${option("attack", "+ attack", hero.bonus)}${option("advantage", "Advantage", hero.bonus)}`))}${inlineField("Amount", input("attackBonus", hero.attackBonus ?? 2, 'type="number"'))}${inlineField("DC", input("dc", hero.dc ?? "", 'type="number" min="0"'))}${inlineField("Check", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join("")))}${inlineField("Roll", select("checkId", choices.map(choice => option(choice.id, choice.label, checkId)).join("")))}${inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, hero.actorId || actors[0]?.id)).join("")))}${button("battle-hero", "Hero Action")}</form>`;
+  const sides = battle.sides.map(side => `<section class="gm-battle-side" data-battle-side="${e(side.id)}"><form class="gm-request-row" data-battle-side-form data-battle-side="${e(side.id)}">${inlineField("Side", input("name", side.name))}${inlineField("New count", input("dropCount", side.dropCount ?? 1, 'type="number" min="1"'))}${button("battle-remove-side", "Remove Side", side.id)}</form>${side.units.map(unit => unitRow(battle, side, unit)).join("") || `<p class="notes">Drag an actor here.</p>`}</section>`).join("");
+  return `<div class="ml-stack gm-battle" data-gap="2"><p class="notes">Experimental. Chat shows the round. This tab shows counts and status only.</p>${controls}${heroRow}${sides}${button("battle-add-side", "Add Side")}</div>`;
+}
+function unitRow(battle, side, unit) {
+  const targets = battle.sides.filter(item => item.id !== side.id).flatMap(item => item.units.filter(candidate => candidate.living > 0 || candidate.id === unit.targetId).map(candidate => option(candidate.id, `${candidate.name} (${item.name})`, unit.targetId)));
+  return `<form class="gm-request-row" data-battle-unit="${e(unit.id)}">${inlineField("Name", input("name", unit.name))}${inlineField("Count", input("count", unit.count, 'type="number" min="1"'))}<span class="gm-unit-status">${e(unitStatus(unit))}</span>${inlineField("AC", input("ac", unit.ac, 'type="number"'))}${inlineField("Attack", input("attackBonus", unit.attackBonus, 'type="number"'))}${inlineField("Damage", input("damage", unit.damage, 'type="number" min="0"'))}${inlineField("HP", input("hp", unit.hp, 'type="number" min="1"'))}${inlineField("Morale DC", input("moraleDc", unit.moraleDc, 'type="number" min="0"'))}${inlineField("Morale mod", input("moraleMod", unit.moraleMod, 'type="number"'))}${inlineField("Target", select("targetId", `<option value="">No target</option>${targets.join("")}`))}${deleteButton("battle-remove-unit", unit.id, unit.name)}</form>`;
+}
+async function onBattleChange(event) {
+  const el = event.target;
+  const unitForm = el.closest("[data-battle-unit]");
+  const sideForm = el.closest("[data-battle-side-form]");
+  const controls = el.closest("[data-battle-controls]");
+  const heroForm = el.closest("[data-battle-hero]");
+  if (!unitForm && !sideForm && !controls && !heroForm) return false;
+  const battle = get("massBattle");
+  let next = battle;
+  if (unitForm) next = updateUnit(battle, unitForm.dataset.battleUnit, {[el.name]: el.type === "number" ? Number(el.value) : el.value});
+  else if (sideForm && el.name === "name") next = updateBattle(battle, {sideId: sideForm.dataset.battleSide, sideName: el.value});
+  else if (sideForm && el.name === "dropCount") next = updateBattle(battle, {sideId: sideForm.dataset.battleSide, dropCount: Number(el.value)});
+  else if (controls && el.name === "blind") next = updateBattle(battle, {blind: el.checked});
+  else if (controls && el.name === "damageCap") next = updateBattle(battle, {damageCap: el.value === "" ? null : Number(el.value)});
+  else if (heroForm) {
+    const data = new FormData(heroForm);
+    const attackBonus = Number(data.get("attackBonus"));
+    next = updateBattle(battle, {hero: {unitId: data.get("unitId") || "", bonus: data.get("bonus") === "advantage" ? "advantage" : "attack", attackBonus: Number.isInteger(attackBonus) ? attackBonus : 2, dc: parseDC(data.get("dc")) ?? heroFormDc(battle), checkType: data.get("checkType") || "skill", checkId: data.get("checkId") || "", actorId: data.get("actorId") || ""}});
+  }
+  await game.settings.set(ID, "massBattle", next);
+  if (el.name === "checkType") render();
+  return true;
+}
+function heroFormDc(battle) {
+  return Number.isInteger(battle.hero?.dc) ? battle.hero.dc : 15;
+}
+async function confirmBattle(kind) {
+  const accepted = await foundry.applications.api.DialogV2.confirm({id: `${ID}-battle-${kind}`, window: {title: kind === "end" ? "End Battle" : "Reset Battle"}, content: `<p>${kind === "end" ? "Clear this experimental battle?" : "Restore every unit to full strength?"}</p>`, classes: ["ml-window"]});
+  if (!accepted) return;
+  await saveBattle(battle => kind === "end" ? endBattle(() => foundry.utils.randomID()) : resetBattle(battle));
+}
+async function resolveBattle() {
+  await battleSaving;
+  const current = get("massBattle");
+  const {battle, events} = resolveRound(current, () => Math.floor(Math.random() * 20) + 1);
+  await game.settings.set(ID, "massBattle", battle);
+  const blind = battle.blind === true;
+  await ChatMessage.create({content: roundCard(battle.round, events), blind, whisper: blind ? game.users.filter(user => user.isGM).map(user => user.id) : [], flags: {[ID]: {massBattleRound: battle.round}}}, {messageMode: blind ? "blind" : "public"});
+  notify(`Round ${battle.round} posted to chat.`);
+  render();
+}
+async function requestHero() {
+  const form = root.querySelector("[data-battle-hero]");
+  const data = new FormData(form);
+  const battle = get("massBattle");
+  const unitId = data.get("unitId");
+  if (!battle.sides.some(side => side.units.some(unit => unit.id === unitId && unit.living > 0))) throw new Error("Choose a living unit for the hero bonus.");
+  const dc = parseDC(data.get("dc"));
+  if (dc == null) throw new Error("Enter a DC for the hero action.");
+  const checkType = CHECK_TYPES.some(type => type.id === data.get("checkType")) ? data.get("checkType") : "skill";
+  const choices = checkChoices(checkType, catalogs());
+  const actorIds = resolveRollActors({scope: "player", actorId: data.get("actorId"), partyIds: partyActorIds()});
+  const attackBonus = Number(data.get("attackBonus"));
+  const message = await createRequest(buildCheckRequest({type: checkType, checkId: defaultCheckId(checkType, choices, data.get("checkId")), dc, blind: false, actorIds}));
+  await game.settings.set(ID, "massBattle", updateBattle(get("massBattle"), {hero: {unitId, bonus: data.get("bonus") === "advantage" ? "advantage" : "attack", attackBonus: Number.isInteger(attackBonus) ? attackBonus : 2, dc, checkType, checkId: defaultCheckId(checkType, choices, data.get("checkId")), actorId: actorIds[0], requestId: message.id, grantedRequestId: ""}}));
+  notify("Hero action requested in chat.");
+  render();
+}
+async function dropUnit(event) {
+  gm();
+  const sideElement = event.target.closest("[data-battle-side]");
+  if (!sideElement) throw new Error("Drop the actor onto a side.");
+  const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
+  if (data.type !== "Actor") throw new Error("Drag an actor onto a side.");
+  const actor = await Actor.implementation.fromDropData(data);
+  if (!actor) throw new Error("Actor not found.");
+  const battle = get("massBattle");
+  const side = battle.sides.find(item => item.id === sideElement.dataset.battleSide);
+  if (!side) throw new Error("That side is no longer in the battle.");
+  await game.settings.set(ID, "massBattle", addUnit(battle, side.id, {...profileFromActor(actor), count: side.dropCount || 1}, () => foundry.utils.randomID()));
+  notify(`${actor.name} added to ${side.name}.`);
+  render();
+}
+function profileFromActor(actor) {
+  const items = actor.items?.contents ?? [];
+  const activity = items.flatMap(item => item.system?.activities?.contents ?? []).find(entry => entry?.type === "attack");
+  const weapon = items.find(item => item.system?.damage?.parts?.length);
+  const part = weapon?.system?.damage?.parts?.[0];
+  const formula = activity ? activityFormula(activity) : Array.isArray(part) ? part[0] : part?.formula;
+  return {
+    name: actor.name,
+    actorUuid: actor.uuid,
+    ac: wholeNumber(actor.system?.attributes?.ac?.value, 10),
+    hp: Math.max(1, wholeNumber(actor.system?.attributes?.hp?.max ?? actor.system?.attributes?.hp?.value, 1)),
+    attackBonus: wholeNumber(activity?.labels?.modifier ?? activity?.attack?.bonus ?? weapon?.labels?.toHit, 0),
+    damage: averageDamage(formula) ?? 1,
+    moraleMod: wholeNumber(actor.system?.abilities?.wis?.mod, 0),
+    moraleDc: 10
+  };
+}
+function activityFormula(activity) {
+  const part = activity.damage?.parts?.[0];
+  if (!part) return "";
+  if (typeof part === "string") return part;
+  if (part.formula) return part.formula;
+  if (!part.denomination) return "";
+  const bonus = Number(part.bonus || 0);
+  return `${part.number || 1}d${part.denomination}${bonus ? (bonus > 0 ? `+${bonus}` : bonus) : ""}`;
+}
+function wholeNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number) : fallback;
+}
+async function grantHeroResult(message) {
+  const result = message.getFlag?.(ID, "result");
+  const battle = get("massBattle");
+  if (!result?.requestId || battle?.hero?.requestId !== result.requestId) return;
+  const total = message.rolls?.[0]?.total;
+  if (!Number.isFinite(total)) return;
+  const next = grantHero(battle, {requestId: result.requestId, total});
+  if (next === battle) return;
+  await game.settings.set(ID, "massBattle", next);
+  if (open && tab === "battle") render();
 }

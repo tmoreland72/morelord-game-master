@@ -25,7 +25,7 @@ export const gameMasterChecks=[{
       assert(rows.length && rows.every(row=>getComputedStyle(row).flexWrap==="nowrap"),"Every roll request stays on one row.");
       assert([...document.querySelectorAll('.gm-request-row:not([data-roll-card="fate"])')].every(row=>row.querySelector('input[name="blind"]')),"Private request rows include a blind toggle.");
       assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
-      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
+      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Mass Combat|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
       const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12});
       await wait(()=>document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`));
