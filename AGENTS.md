@@ -31,7 +31,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 
 - Foraging reuses Journeys terrain/DC configuration and food rules, with chat requests and complete-only summaries respecting visibility.
 - Macro pins are compact rows: the icon is on the left and the name is on the right. Long names truncate with an ellipsis, and the full name is available on hover. Left click executes. Dragging a pin reorders it and saves that order immediately for the world; the drag does not execute the macro. Dropping a new macro still pins it. The native right-click menu removes only the pin.
-- + New Trigger sits left-aligned outside the content section.
+- The Triggers tab does not create triggers. Trigger behavior stays in module code. The tray can enable, pause, and show each trigger.
 - Sorcerer triggers request a blind d20 first; threshold starts at 1, increases per missed d20, and resets after a surge table roll.
 
 - Wild Magic and Sneak Attack triggers match class/subclass/feature identifiers, not named characters. Surge thresholds and once-per-turn Sneak Attack limits are separate per character. Preserve existing rule IDs and counters.

@@ -157,7 +157,7 @@ export const gameMasterChecks=[{
     try {
       api.toggle(true);
       document.querySelector('#mlgm [data-action="tab"][data-id="triggers"]').click();
-      assert(!document.querySelector('#mlgm [data-action="new-trigger"]').closest('#mlgm-panel'),"New Trigger is outside the content section.");
+      assert(!document.querySelector('#mlgm [data-action="new-trigger"]'),"The Triggers tab has no New Trigger button.");
       const triggerCards=[...document.querySelectorAll('.gm-trigger-card')];
       for(const card of triggerCards) {
         const header=card.querySelector('.gm-trigger-header');
@@ -241,7 +241,7 @@ export const gameMasterChecks=[{
       document.querySelector('#mlgm-tab-party').click();document.querySelector('#mlgm-tab-rolls').click();
       assert(document.querySelector('[data-roll-card="check"] input[name=dc]').value==='14'&&!document.querySelector('[data-roll-card="check"] input[name=blind]').checked,"Request row controls persist without a popup.");
       document.querySelector('#mlgm-tab-triggers').click();
-      assert(document.querySelector('[data-action="new-trigger"]').disabled,"New Trigger stays visible but disabled.");
+      assert(!document.querySelector('[data-action="new-trigger"]'),"The Triggers tab has no New Trigger button.");
       assert(!document.querySelector('[data-action="trigger-edit"], [data-action="trigger-remove"]'),"Trigger editing/deletion is hidden.");
       new (game.settings.menus.get(`${ID}.configure`).type)().render();
       await wait(()=>foundry.applications.instances.get('morelord-game-master-game-master-settings')?.rendered);
@@ -249,7 +249,7 @@ export const gameMasterChecks=[{
       settings.setPosition({width:470,height:380});await core().windowGeometry.remember(settings);await settings.close();
 
     } finally {
-      for (const id of ['morelord-game-master-new-trigger','morelord-game-master-game-master-settings']) await foundry.applications.instances.get(id)?.close();
+      for (const id of ['morelord-game-master-game-master-settings']) await foundry.applications.instances.get(id)?.close();
       const owned=game.messages.filter(m=>!before.has(m.id)&&(m.speaker?.actor===actor?.id || m.getFlag(ID,'request')?.actorIds.includes(actor?.id))).map(m=>m.id);
       await ChatMessage.deleteDocuments(game.messages.filter(m=>owned.includes(m.id)||owned.includes(m.getFlag(ID,'summary')?.requestId)).map(m=>m.id));
       if(actor)await actor.delete();await game.settings.set(ID,'board',board);
