@@ -13,8 +13,6 @@
 body.mlgm-open #hotbar { display:none!important; }
 @media(max-width:700px) { #mlgm .gm-span { grid-column:auto; } }
 
-#mlgm .gm-trigger-toolbar { justify-content:flex-start; }
-
 #mlgm .gm-roll-actions { margin-top:auto; justify-content:flex-end; }
 #mlgm .gm-roll-card { min-width:0; }
 #mlgm .gm-request-rows { min-width:0; }
