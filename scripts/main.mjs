@@ -132,7 +132,7 @@ function render() {
   if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
 function content() {
-  if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="2">${checkBuilder()}${quickRequests()}</div>`;
+  if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Every request starts visible, and this world remembers each choice.</p>${SPECIALTIES.map(specialty=>`<label class="ml-check"><input type="checkbox" name="specialty" value="${specialty.id}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`).join("")}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
@@ -170,21 +170,24 @@ function checkBuilder() {
   ].join("");
   return requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)});
 }
-function quickRequests() {
+function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
-  return visibleSpecialties(settings).map(id => quickControl(id)).join("");
+  const cards = visibleSpecialties(settings).map(id => specialtyCard(id)).join("");
+  return cards ? `<div class="gm-specialty-grid">${cards}</div>` : "";
 }
-function quickControl(id) {
+function specialtyCard(id) {
   const c = state.last[id] ?? {};
   const actors = partyActorIds().map(actorId => game.actors.get(actorId)).filter(Boolean);
   const names = {encounter: "Encounter Check", search: "Delerium Search", foraging: "Foraging Check", death: "Death Save", fate: "Roll of Fate"};
-  if (id === "fate") return requestRow({card: "fate", action: "quick-request", id: "fate", name: names.fate});
   const zones = id === "search" ? searchZones() : [];
-  const field = id === "encounter" ? inlineField("Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join("")))
-    : id === "foraging" ? inlineField("Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join("")))
-    : id === "death" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join("")))
-    : inlineField("Area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join("")));
-  return requestRow({card: id, fields: field, blind: c.blind === true, action: "quick-request", id, name: names[id]});
+  const fateScope = c.scope === "party" ? "party" : "tokens";
+  const field = id === "encounter" ? ["Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join(""))]
+    : id === "search" ? ["Search area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join(""))]
+    : id === "foraging" ? ["Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join(""))]
+    : id === "death" ? ["Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join(""))]
+    : ["Who rolls", select("scope", [option("party", "Party", fateScope), option("tokens", "Selected tokens", fateScope)].join(""))];
+  const blind = id === "fate" ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
+  return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label><div class="gm-specialty-footer">${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
 }
 function searchZones() {
   try { return craftworks().deleriumSearch.getZones(); } catch { return []; }
@@ -215,11 +218,17 @@ async function sendCheck() {
 }
 async function sendQuick(id) {
   await saving;
-  if (id === "fate") return rollOfFate();
+  if (id === "fate") return sendFate();
   const config = readQuick(id);
   if (!config.actorIds.length) throw new Error(id === "death" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
   await persist(n => { n.last[id] = config; if (id === "encounter") n.last.die = config.die; });
   await createRequest(config);
+}
+async function sendFate() {
+  const card = root.querySelector('[data-roll-card="fate"]');
+  const scope = card && new FormData(card).get("scope") === "party" ? "party" : "tokens";
+  if (card) await persist(n => { n.last.fate = {scope}; });
+  return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
 }
 function macroButtons() {
   return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span></button>`;}).join("");
@@ -247,7 +256,7 @@ async function act(action, id) {
   if (action === "quick-request") return sendQuick(id);
   if (action === "settings") return settings();
   if (action === "trigger-edit" || action === "trigger-remove") return;
-  if (action === "fate") return rollOfFate();
+  if (action === "fate") return sendFate();
   if (action === "unpin-macro") {await game.settings.set(ID,"macros",(get("macros") ?? []).filter(uuid=>uuid !== id));render();return;}
   if (action === "documentation") return core().ui.documentation.open(ID);
   if (action === "scenario") { const s = state.scenarios.find(x => x.id === id); if (s) { await persist(n => { n.last.die = s.die; }); await encounter(s.die, s.name, s.actorIds); } }
@@ -282,6 +291,7 @@ async function onChange(event) {
   }
   const card=el.closest('[data-roll-card]');
   if (card?.dataset.rollCard === "check") { await persist(n => { n.last.check = readBuilder(); }); return; }
+  if (card?.dataset.rollCard === "fate") { await persist(n => { n.last.fate = {scope: new FormData(card).get("scope") === "party" ? "party" : "tokens"}; }); return; }
   if (card && ["encounter","search","foraging","death"].includes(card.dataset.rollCard)) {
     const config = readQuick(card.dataset.rollCard);
     await persist(n => { n.last[card.dataset.rollCard] = config; if (card.dataset.rollCard === "encounter") n.last.die = config.die; });

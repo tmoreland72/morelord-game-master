@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rollOfFate} from '../scripts/roll-of-fate.mjs';
+import {fatePool, rollOfFate} from '../scripts/roll-of-fate.mjs';
 test('Fate uses selected character tokens only, handles zero/one, and always posts publicly',async()=>{
   let warned=0,rolled=0,created=[];
   globalThis.game={user:{isGM:true},modules:new Map([['morelord-core',{active:true}]])};
@@ -14,4 +14,13 @@ test('Fate uses selected character tokens only, handles zero/one, and always pos
   canvas.tokens.controlled=[token('Goblin','npc'),token('A')];await rollOfFate();assert.equal(rolled,0);assert.match(created[0].data.content,/<p>A has been chosen by fate!/);
   canvas.tokens.controlled.push(token('B'));await rollOfFate();assert.equal(rolled,1);assert.match(created[1].data.content,/<p>B has been chosen by fate!/);
   assert.deepEqual(created[1].data.whisper,[]);assert.equal(created[1].data.blind,false);assert.equal(created[1].options.messageMode,'public');
+  const party=[{type:'character',name:'Ada',uuid:'Actor.Ada',img:'ada.png'},{type:'character',name:'Bram',uuid:'Actor.Bram',img:'bram.png'},{type:'npc',name:'Goblin',uuid:'Actor.Goblin'}];
+  assert.deepEqual(fatePool({scope:'party',tokens:canvas.tokens.controlled,actors:party}).map(entry=>entry.name),['Ada','Bram']);
+  canvas.tokens.controlled=[token('Ignored')];
+  await rollOfFate({scope:'party',actors:party});
+  const partyResult=created.at(-1).data;
+  assert.equal(rolled,2);assert.match(partyResult.content,/Bram has been chosen by fate!/);
+  assert.equal(Object.values(partyResult.flags)[0].fate.scope,'party');
+  assert.equal(Object.values(partyResult.flags)[0].fate.tokenUuid,null);
+  assert.equal(await rollOfFate({scope:'party',actors:[]}),null);assert.equal(warned,2);
 });

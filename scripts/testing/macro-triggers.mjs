@@ -86,7 +86,8 @@ export const fateCheck={id:'game-master.selected-token-fate',async run(){
     assert(one.rolls.length===0,'One-token Fate should not roll dice.');
     canvas.tokens.get(tokens[1].id).control({releaseOthers:false});
     game.modules.get(ID).api.toggle(true);document.querySelector('#mlgm-tab-rolls').click();
-    document.querySelector('[data-action="fate"]').click();
+    document.querySelector('[data-roll-card="fate"] select[name="scope"]').value='tokens';
+    document.querySelector('[data-roll-card="fate"] [data-action="quick-request"]').click();
     const two=await wait(()=>game.messages.find(m=>!before.has(m.id)&&m.id!==one.id&&m.getFlag(ID,'fate')));messages.push(two.id);
     assert(tokens.some(t=>t.uuid===two.getFlag(ID,'fate').tokenUuid),'Fate must choose a selected character token.');
     assert(two.rolls[0].formula==='1d2'&&!two.blind&&!two.whisper.length,'Fate must be uniformly random and public.');
