@@ -18,7 +18,8 @@ export const craftworks = () => {
   return api;
 };
 export const surgeDie = req => req.surgeName === 'Volatile Magic' ? 4 : 20;
-export const requestTitle = req => req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d${surgeDie(req)}` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
+const abilityName = id => game.i18n.localize(CONFIG.DND5E.abilities?.[id]?.label ?? id);
+export const requestTitle = req => req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d${surgeDie(req)}` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : req.kind === "ability" ? `${abilityName(req.ability)} check` : req.kind === "save" ? `${abilityName(req.ability)} saving throw` : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
 let channel;
 
 
@@ -29,6 +30,7 @@ export function validRequest(message) {
   if (req.kind === "death") return req;
   if (req.kind === "surge") return req.triggerId && req.tableUuid && req.actorIds.length === 1 ? req : null;
   if (req.kind === "delerium") return req.searchSession?.id ? req : null;
+  if (req.kind === "ability" || req.kind === "save") return CONFIG.DND5E?.abilities?.[req.ability] ? req : null;
   return CONFIG.DND5E?.skills?.[req.skill] ? req : null;
 }
 function resultMessage(requestId, actorId) {
@@ -55,7 +57,7 @@ function scheduleRequestOutcomes(message) {
 async function updateCheckSummary(message) {
   if (requestResults(message).some(result => result._dice3danimating)) return;
   const req = validRequest(message), stats = resultsFor(message);
-  if (!["skill","foraging"].includes(req.kind) || !stats.complete) return;
+  if (!["skill","ability","save","foraging"].includes(req.kind) || !stats.complete) return;
   const rows = req.actorIds.map(id => {
     const total = stats.totals.get(id);
     return `<tr><td>${e(game.actors.get(id)?.name ?? "Missing character")}</td><td>${total ?? "Pending"}</td>${req.dc != null ? `<td>${total == null ? "Pending" : total >= req.dc ? "Pass" : "Fail"}</td>` : ""}</tr>`;
@@ -82,7 +84,7 @@ function canRoll(message, actor, user = game.user) {
   return canRollForActor(actor,user);
 }
 export function requestHTML(req) {
-  return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${skillButtons(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : ["skill","foraging"].includes(req.kind) ? skillButtons(id) : `<button type="button" data-mlgm-actor="${e(id)}">Roll</button>`}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
+  return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${skillButtons(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : ["skill","foraging","ability","save"].includes(req.kind) ? skillButtons(id) : `<button type="button" data-mlgm-actor="${e(id)}">Roll</button>`}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
 }
 function skillButtons(id) {
   return rollControls(mode => `data-mlgm-actor="${e(id)}" data-mlgm-mode="${mode}"`);
@@ -99,7 +101,9 @@ export async function createRequest(config) {
   if (config.kind === "encounter" && (!Number.isInteger(config.die) || config.die < 2 || config.die > 1000)) throw new Error("Choose a die from 2 to 1000 sides.");
   if (config.kind === "death" && (actorIds.length !== 1 || !game.actors.get(actorIds[0]).rollDeathSave)) throw new Error("Select one character who supports death saving throws.");
   if (config.kind === "foraging") config={...config,skill:"sur"};
-  if (!["encounter","death","delerium","surge"].includes(config.kind) && (game.system.id !== "dnd5e" || !CONFIG.DND5E.skills[config.skill])) throw new Error("Select a valid D&D 5e skill.");
+  if (["ability","save"].includes(config.kind)) {
+    if (game.system.id !== "dnd5e" || !CONFIG.DND5E.abilities?.[config.ability]) throw new Error("Select a valid D&D 5e ability.");
+  } else if (!["encounter","death","delerium","surge"].includes(config.kind) && (game.system.id !== "dnd5e" || !CONFIG.DND5E.skills[config.skill])) throw new Error("Select a valid D&D 5e skill.");
   if (config.kind === "surge" && (actorIds.length !== 1 || !config.triggerId || !config.tableUuid)) throw new Error("Invalid Wild Magic request.");
   if (config.kind === "foraging") {
     const terrain=(await foragingTerrains())[config.terrainIndex];
@@ -126,12 +130,26 @@ export async function rollRequest(requestId, actorId, skillId, mode = "normal") 
   if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
   return acknowledgement;
 }
+async function rollActorCheck(actor, req, mode) {
+  const advantage = mode === "adv", disadvantage = mode === "dis";
+  if (req.kind === "ability" || req.kind === "save") {
+    const method = req.kind === "ability" ? "rollAbilityCheck" : "rollSavingThrow";
+    if (typeof actor[method] !== "function") throw new Error(`${actor.name} cannot make ${req.kind === "ability" ? "an ability check" : "a saving throw"}.`);
+    const result = await actor[method](
+      {ability: req.ability, ...(req.dc == null ? {} : {target: req.dc}), ...(advantage ? {advantage: true} : {}), ...(disadvantage ? {disadvantage: true} : {})},
+      {configure: false},
+      {create: false}
+    );
+    return Array.isArray(result) ? result[0] : result?.rolls?.[0] ?? result?.roll ?? result ?? null;
+  }
+  return (await core().rolls.skill(actor, req.skill, {dc: req.dc ?? null, configure: false, create: false, advantage, disadvantage})).roll;
+}
 async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execution) {
   const message = game.messages.get(requestId), req = validRequest(message), actor = game.actors.get(actorId), sender = game.users.get(execution.senderUserId);
   if (!game.user.isGM || game.user.id !== authority(message)?.id) return {accepted:false,reason:"The request's active GM must resolve this check."};
   if (!req || !req.actorIds.includes(actorId)) return {accepted:false,reason:"This request is no longer available."};
   if (!canRoll(message,actor,sender)) return {accepted:false,reason:"The check is assigned to another player. Any GM may roll for this character."};
-  if (!["normal","adv","dis"].includes(mode) || (mode !== "normal" && !["skill","delerium","foraging"].includes(req.kind))) return {accepted:false,reason:"Invalid roll mode for this check."};
+  if (!["normal","adv","dis"].includes(mode) || (mode !== "normal" && !["skill","delerium","foraging","ability","save"].includes(req.kind))) return {accepted:false,reason:"Invalid roll mode for this check."};
   // Results are authored by the authority GM. Never trust client-supplied dice or totals.
   if (isComplete(message,actorId)) { scheduleRequestOutcomes(message); return {accepted:true,alreadyResolved:true}; }
   if (req.kind === "surge") {
@@ -161,7 +179,7 @@ async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execu
       if (!api.deleriumSearch.getSkillOptions().some(s => s.id === skillId)) return {accepted:false,reason:"Choose a Craftworks search skill."};
       roll = (await core().rolls.skill(actor,skillId,{dc:req.dc,configure:false,create:false,advantage:mode === "adv",disadvantage:mode === "dis"})).roll;
     }
-  } else roll = (await core().rolls.skill(actor,req.skill,{dc:req.dc ?? null,configure:false,create:false,advantage:mode === "adv",disadvantage:mode === "dis"})).roll;
+  } else roll = await rollActorCheck(actor, req, mode);
   if (!roll && !declined) return {accepted:false,reason:"No roll was made. For death saves, verify the character is at zero HP and has not already completed their saves."};
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),flavor:e(`${actor.name} · ${requestTitle(req)}`),rolls:roll ? [roll] : [],content:declined ? `<section class="ml-chat-card"><p>${e(actor.name)} declined the search.</p></section>` : "",blind:req.blind !== false,
     whisper:req.blind === false ? [] : game.users.filter(u => u.isGM).map(u => u.id),

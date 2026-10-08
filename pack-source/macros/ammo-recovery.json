@@ -4,14 +4,14 @@
   "type": "script",
   "scope": "global",
   "img": "icons/svg/dice-target.svg",
-  "command": "// Managed by the Game Master Triggers tab. Start/stop there, not from the hotbar.\nif (!game.user.isGM) return;\nif (!scope.runtime) { ui.notifications.info('Use the Game Master Triggers tab to start or stop this macro.'); return; }\nconst {trigger, Hooks, setInterval, enqueue, services} = scope.runtime;\nconst {ID, e, core, activeGM, createRequest} = services;\nconst {recoverCombatAmmo}=await import('/modules/morelord-game-master/scripts/ammo-recovery.mjs');\nHooks.on('deleteCombat',combat=>enqueue(()=>recoverCombatAmmo(combat)));\nreturn true;",
+  "command": "// Managed by the Game Master Triggers tab. Start/stop there, not from the hotbar.\nif (!game.user.isGM) return;\nif (!scope.runtime) { ui.notifications.info('Use the Game Master Triggers tab to start or stop this macro.'); return; }\nconst api = game.modules.get('morelord-game-master')?.api;\nif (typeof api?.installTrigger !== 'function') { ui.notifications.error('Morelord Game Master is not ready to run this trigger.'); return; }\nreturn api.installTrigger(\"ammo-recovery\", scope.runtime);\n",
   "ownership": {
     "default": 0
   },
   "flags": {
     "morelord-game-master": {
       "triggerKind": "ammo-recovery",
-      "schemaVersion": 1
+      "schemaVersion": 2
     }
   }
 }

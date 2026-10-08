@@ -18,14 +18,17 @@ export const gameMasterChecks=[{
       api.toggle(true);
       document.querySelector('#mlgm [data-action="tab"][data-id="rolls"]').click();
       assert(document.querySelector('#mlgm-tab-rolls').textContent==="Roll Requests","Tab uses the requested name.");
-      assert(document.querySelector('[data-roll-card="death"] strong').textContent==="Death Saving Throw","Death save card uses its neutral title.");
-      assert(!document.querySelector('#mlgm-panel.ml-surface, #mlgm-panel .gm-column'),"Roll cards have no outer section or column headers.");
+      assert(document.querySelector('[data-roll-card="death"] [data-action="quick-request"]').getAttribute("aria-label")==="Death Save","Death save row uses its neutral title.");
+      assert(!document.querySelector('#mlgm-panel.ml-surface, #mlgm-panel .gm-column, .gm-roll-column'),"Roll requests have no outer section or column headers.");
       assert(document.querySelector('[data-roll-card="encounter"] select[name="die"]'),"Encounter die uses a dropdown.");
-      assert(document.querySelectorAll('[data-roll-card] input[name="blind"]').length===document.querySelectorAll('[data-roll-card]').length,"Every roll card has a blind toggle.");
-      const columns=[...document.querySelectorAll('.gm-roll-column')];
-      assert(columns.length===3 && columns[0].querySelector('[data-roll-card="encounter"]') && columns[1].querySelector('[data-roll-card="group"]') && columns[2].querySelector('[data-roll-card="player"]'),"Roll cards retain three independent columns.");
-      assert(getComputedStyle(columns[0]).alignSelf==='start',"Columns use their own card heights.");
-      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|Player Settings',"Tabs use the requested names and order.");
+      const builder=document.querySelector('.gm-request-row');
+      assert(document.querySelectorAll('.gm-request-row').length===1 && getComputedStyle(builder).flexWrap==="nowrap","The check builder stays on one row.");
+      assert(document.querySelector('[data-roll-card="search"] .gm-specialty-title')?.textContent==="Delerium Search","Delerium Search is a specialty card.");
+      assert(document.querySelector('[data-roll-card="fate"] .gm-specialty-title')?.textContent==="Roll of Fate","Roll of Fate is a labeled specialty card.");
+      assert([...document.querySelectorAll('[data-roll-card="fate"] select[name="scope"] option')].map(option=>option.textContent).join('|')==="Party|Selected tokens","Roll of Fate chooses party or selected tokens.");
+      assert([...document.querySelectorAll('.gm-specialty-card:not([data-roll-card="fate"])')].every(card=>card.querySelector('input[name="blind"]')),"Private specialty cards include a blind toggle.");
+      assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
+      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
       const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12});
       await wait(()=>document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`));
@@ -153,16 +156,24 @@ export const gameMasterChecks=[{
   id:"morelord-game-master.soundboard-macro-menu",
   async run() {
     const api=game.modules.get(ID).api,previous=foundry.utils.deepClone(game.settings.get(ID,'macros'));
-    let macro;
+    let macro, other;
     try {
       api.toggle(true);
       document.querySelector('#mlgm [data-action="tab"][data-id="triggers"]').click();
-      assert(!document.querySelector('#mlgm [data-action="new-trigger"]').closest('#mlgm-panel'),"New Trigger is outside the content section.");
+      assert(!document.querySelector('#mlgm [data-action="new-trigger"]'),"The Triggers tab has no New Trigger button.");
       const triggerCards=[...document.querySelectorAll('.gm-trigger-card')];
       for(const card of triggerCards) {
-        const footer=card.querySelector('.gm-trigger-actions');
-        assert(footer.textContent.trim()===''&&footer.querySelectorAll('button[aria-label]').length===3,"Trigger status and actions are accessible icons only.");
-        assert(Math.abs(footer.getBoundingClientRect().bottom-(card.getBoundingClientRect().bottom-parseFloat(getComputedStyle(card).paddingBottom)-parseFloat(getComputedStyle(card).borderBottomWidth)))<2,"Trigger controls align with the bottom of their card.");
+        const header=card.querySelector('.gm-trigger-header');
+        const parts=[header.querySelector('.gm-trigger-name'),header.querySelector('.gm-trigger-scope'),header.querySelector('.gm-trigger-status'),header.querySelector('[data-action="trigger-toggle"]')];
+        assert(parts.every(Boolean),"Trigger header has name, scope, status, and play/pause.");
+        const mids=parts.map(part=>{const box=part.getBoundingClientRect();return (box.top+box.bottom)/2;});
+        assert(Math.max(...mids)-Math.min(...mids)<4,"Name, scope, status, and play/pause share one row.");
+        assert(!/\b(Running|Stopped|Unavailable)\b/.test(card.innerText),"The status icon replaces the Running or Stopped line.");
+        assert(card.querySelectorAll('.gm-trigger-rule > div').length===2,"When and Then sit under the header.");
+        const style=getComputedStyle(card),children=[...card.children];
+        const gap=parseFloat(style.rowGap||style.gap)||0;
+        const content=children.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0)+gap*Math.max(0,children.length-1)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth);
+        assert(Math.abs(card.getBoundingClientRect().height-content)<3,"Trigger card height fits its header and rule.");
       }
 
       macro=await Macro.create({name:'MLGM macro fixture',type:'script',img:'icons/svg/dice-target.svg',command:'globalThis.mlgmMacroTestRuns=(globalThis.mlgmMacroTestRuns ?? 0)+1;'});
@@ -170,11 +181,25 @@ export const gameMasterChecks=[{
       const transfer=new DataTransfer();transfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:macro.uuid}));
       document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));
       await wait(()=>document.querySelector(`[data-macro-uuid="${macro.uuid}"]`));
-      const tile=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),rect=tile.getBoundingClientRect();
-      assert(getComputedStyle(tile.parentElement).gap==="16px","Macro spacing is doubled.");
-      assert(rect.width===90 && rect.height===90,"Macro button is 50% larger than the native action bar.");
+      const tile=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`);
+      const icon=tile.querySelector("img"),label=tile.querySelector("span");
+      assert(icon.getBoundingClientRect().right<=label.getBoundingClientRect().left,"Macro icon sits to the left of its name.");
+      assert(label.textContent==="MLGM macro fixture" && tile.title==="MLGM macro fixture","The pin shows the name and offers the full name on hover.");
+      assert(getComputedStyle(label).textOverflow==="ellipsis" && getComputedStyle(label).whiteSpace==="nowrap","Long macro names truncate.");
       tile.click();await wait(()=>globalThis.mlgmMacroTestRuns===1);
-      document.querySelector(`[data-macro-uuid="${macro.uuid}"]`).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:rect.x+20,clientY:rect.y+20}));
+      other=await Macro.create({name:'MLGM reorder fixture',type:'script',img:'icons/svg/dice-target.svg',command:'globalThis.mlgmMacroTestRuns=(globalThis.mlgmMacroTestRuns ?? 0)+1;'});
+      const otherTransfer=new DataTransfer();otherTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:other.uuid}));
+      document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:otherTransfer}));
+      await wait(()=>document.querySelector(`[data-macro-uuid="${other.uuid}"]`));
+      const first=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),second=document.querySelector(`[data-macro-uuid="${other.uuid}"]`),move=new DataTransfer();
+      second.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:move}));
+      first.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:move}));
+      second.dispatchEvent(new DragEvent('dragend',{bubbles:true}));
+      second.click();
+      await wait(()=>{const order=game.settings.get(ID,'macros');return order.indexOf(other.uuid)===order.indexOf(macro.uuid)-1;});
+      assert(globalThis.mlgmMacroTestRuns===1,"Reordering a pin does not execute the macro.");
+      const pinned=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),box=pinned.getBoundingClientRect();
+      pinned.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:box.x+20,clientY:box.y+20}));
       await wait(()=>document.querySelector('#context-menu .context-item'));
       const remove=[...document.querySelectorAll('#context-menu .context-item')].find(el=>el.textContent.includes('Remove'));
       assert(remove,"Native macro context menu offers Remove.");remove.click();
@@ -184,6 +209,7 @@ export const gameMasterChecks=[{
       delete globalThis.mlgmMacroTestRuns;
       await game.settings.set(ID,'macros',previous);
       if (macro) await macro.delete();
+      if (other) await other.delete();
       document.querySelector('#mlgm [data-action="tab"][data-id="rolls"]').click();
     }
   }
@@ -204,11 +230,11 @@ export const gameMasterChecks=[{
         await wait(()=>game.settings.get(ID,'board').partyActorIds?.includes(uuid.split('.').at(-1))===(uuid===actor.uuid));
       }
       document.querySelector('#mlgm-tab-rolls').click();
-      let dc=document.querySelector('[data-roll-card="group"] input[name=dc]');dc.value='14';dc.dispatchEvent(new Event('change',{bubbles:true}));
-      await wait(()=>game.settings.get(ID,'board').last.group?.dc===14);
-      let blind=document.querySelector('[data-roll-card="group"] input[name=blind]');blind.checked=false;blind.dispatchEvent(new Event('change',{bubbles:true}));
-      await wait(()=>game.settings.get(ID,'board').last.group?.blind===false);
-      document.querySelector('[data-action="card-roll"][data-id="group"]').click();
+      let dc=document.querySelector('[data-roll-card="check"] input[name=dc]');dc.value='14';dc.dispatchEvent(new Event('change',{bubbles:true}));
+      await wait(()=>game.settings.get(ID,'board').last.check?.dc===14);
+      let blind=document.querySelector('[data-roll-card="check"] input[name=blind]');blind.checked=false;blind.dispatchEvent(new Event('change',{bubbles:true}));
+      await wait(()=>game.settings.get(ID,'board').last.check?.blind===false);
+      document.querySelector('[data-action="send-check"]').click();
       await wait(()=>game.messages.some(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill));
       const request=game.messages.find(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill);
       assert(JSON.stringify(request.getFlag(ID,'request').actorIds)===JSON.stringify([actor.id]),"Party rolls use the shared configured scope.");
@@ -216,9 +242,9 @@ export const gameMasterChecks=[{
       const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id),summary=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===request.id);
       assert(!result.blind&&!result.whisper.length&&!summary.blind&&!summary.whisper.length,"Blind toggle off makes both native roll and summary public.");
       document.querySelector('#mlgm-tab-party').click();document.querySelector('#mlgm-tab-rolls').click();
-      assert(document.querySelector('[data-roll-card="group"] input[name=dc]').value==='14'&&!document.querySelector('[data-roll-card="group"] input[name=blind]').checked,"Card controls persist without a popup.");
+      assert(document.querySelector('[data-roll-card="check"] input[name=dc]').value==='14'&&!document.querySelector('[data-roll-card="check"] input[name=blind]').checked,"Request row controls persist without a popup.");
       document.querySelector('#mlgm-tab-triggers').click();
-      assert(document.querySelector('[data-action="new-trigger"]').disabled,"New Trigger stays visible but disabled.");
+      assert(!document.querySelector('[data-action="new-trigger"]'),"The Triggers tab has no New Trigger button.");
       assert(!document.querySelector('[data-action="trigger-edit"], [data-action="trigger-remove"]'),"Trigger editing/deletion is hidden.");
       new (game.settings.menus.get(`${ID}.configure`).type)().render();
       await wait(()=>foundry.applications.instances.get('morelord-game-master-game-master-settings')?.rendered);
@@ -226,7 +252,7 @@ export const gameMasterChecks=[{
       settings.setPosition({width:470,height:380});await core().windowGeometry.remember(settings);await settings.close();
 
     } finally {
-      for (const id of ['morelord-game-master-new-trigger','morelord-game-master-game-master-settings']) await foundry.applications.instances.get(id)?.close();
+      for (const id of ['morelord-game-master-game-master-settings']) await foundry.applications.instances.get(id)?.close();
       const owned=game.messages.filter(m=>!before.has(m.id)&&(m.speaker?.actor===actor?.id || m.getFlag(ID,'request')?.actorIds.includes(actor?.id))).map(m=>m.id);
       await ChatMessage.deleteDocuments(game.messages.filter(m=>owned.includes(m.id)||owned.includes(m.getFlag(ID,'summary')?.requestId)).map(m=>m.id));
       if(actor)await actor.delete();await game.settings.set(ID,'board',board);

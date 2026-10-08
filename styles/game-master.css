@@ -1,22 +1,51 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
-#mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:2147483647; pointer-events:auto; }
+/* Above the canvas and sidebars. Below Foundry windows, dialogs, tooltips, and notifications. */
+#mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:61; z-index:calc(var(--z-index-ui) + 1); pointer-events:auto; }
 #mlgm [hidden] { display:none!important; }
 #mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:75vh; }
 #mlgm .gm-span { grid-column:span 2; }
 #mlgm .gm-column { min-width:0; }
-#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,var(--hotbar-size,90px)); gap:var(--ml-space-4); }
+#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,minmax(14rem,1fr)); gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-macro { display:flex; align-items:center; justify-content:flex-start; gap:var(--ml-space-2); width:100%; min-width:0; height:auto; min-height:var(--ml-control-height); padding:var(--ml-space-1) var(--ml-space-2); text-align:left; }
+#mlgm .gm-macro img { flex:0 0 2rem; width:2rem; height:2rem; object-fit:cover; border-radius:var(--ml-radius-sm); }
+#mlgm .gm-macro span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #mlgm .gm-chat { white-space:pre-wrap; overflow-wrap:anywhere; }
 body.mlgm-open #hotbar { display:none!important; }
 @media(max-width:700px) { #mlgm .gm-span { grid-column:auto; } }
 
-#mlgm .gm-trigger-toolbar { justify-content:flex-start; }
-
 #mlgm .gm-roll-actions { margin-top:auto; justify-content:flex-end; }
 #mlgm .gm-roll-card { min-width:0; }
+#mlgm .gm-request-rows { container: gm-rolls / inline-size; min-width:0; }
+#mlgm .gm-specialty-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; }
+#mlgm .gm-builder-card { min-width:0; }
+#mlgm [data-specialty] { cursor:grab; }
+#mlgm .gm-specialty-card { display:flex; flex-direction:column; gap:var(--ml-space-3); height:100%; min-width:0; }
+#mlgm .gm-specialty-title { margin:0; }
+#mlgm .gm-specialty-row { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-specialty-field { display:flex; flex:1 1 auto; flex-direction:row; align-items:center; gap:var(--ml-space-2); width:auto; min-width:0; margin:0; }
+#mlgm .gm-specialty-field > span { flex:0 0 auto; white-space:nowrap; }
+#mlgm .gm-specialty-field > select { flex:1 1 auto; width:0; min-width:0; }
+#mlgm .gm-specialty-row > .ml-check, #mlgm .gm-specialty-row > .ml-icon-button { flex:0 0 auto; }
+@container gm-rolls (min-width: 24rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@container gm-rolls (min-width: 40rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+#mlgm .gm-request-row { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); width:100%; min-width:0; margin:0; padding:0; border:0; overflow-x:auto; }
+#mlgm .gm-request-row > .gm-inline { display:flex; flex:1 1 auto; flex-direction:row; align-items:center; gap:var(--ml-space-2); min-width:0; margin:0; }
+#mlgm .gm-request-row > .gm-inline > span { flex:0 0 auto; white-space:nowrap; }
+#mlgm .gm-request-row > .gm-inline > select, #mlgm .gm-request-row > .gm-inline > input { flex:1 1 auto; width:0; min-width:4.5rem; }
+#mlgm .gm-request-row > .ml-check { display:flex; flex:0 0 auto; align-items:center; width:auto; min-width:max-content; margin:0; }
+#mlgm .gm-request-row > .ml-icon-button { flex:0 0 auto; }
 
 #mlgm .gm-roll-column { min-width:0; align-self:start; }
 
-#mlgm .gm-trigger-card { align-self:stretch; }
-#mlgm .gm-trigger-actions { margin-top:auto; }
-#mlgm .gm-trigger-actions > .gm-trigger-status { margin-right:auto; }
+#mlgm .gm-triggers { align-items:start; gap:var(--ml-space-2); }
+#mlgm .gm-trigger-card { align-self:start; height:auto; display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-trigger-header { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); min-width:0; overflow-x:auto; }
+#mlgm .gm-trigger-name, #mlgm .gm-trigger-scope { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#mlgm .gm-trigger-name { flex:1 1 40%; }
+#mlgm .gm-trigger-scope { flex:1 1 60%; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); }
+#mlgm .gm-trigger-header > .gm-trigger-status, #mlgm .gm-trigger-header > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-trigger-rule { display:grid; gap:var(--ml-space-1); margin:0; }
+#mlgm .gm-trigger-rule > div { display:grid; grid-template-columns:3.25rem minmax(0,1fr); gap:var(--ml-space-2); align-items:baseline; }
+#mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
+#mlgm .gm-trigger-rule dd { margin:0; }

@@ -1,8 +1,39 @@
 import {ID, escapeHTML as e} from './core.mjs';
 import {core, activeGM, createRequest} from './requests.mjs';
 
-import {triggerMacroUuid} from './trigger-catalog.mjs';
+import {triggerMacroUuid, TRIGGER_MACROS, managedTriggerCommand, rollOfFateCommand} from './trigger-catalog.mjs';
 export {triggerMacroUuid} from './trigger-catalog.mjs';
+
+// Open worlds keep the previous pasted macro until LevelDB can be rebuilt. Replace only those copies.
+export async function replacePastedTriggerMacros() {
+  if (!game.user?.isGM) return false;
+  const pack = game.packs?.get(`${ID}.macros`);
+  if (!pack?.getDocuments) return false;
+  let documents;
+  try { documents = await pack.getDocuments(); }
+  catch (error) { ui.notifications.error(error.message); return false; }
+  const pending = [];
+  for (const doc of documents) {
+    const kind = doc.getFlag?.(ID, 'triggerKind') ?? Object.entries(TRIGGER_MACROS).find(([, macroId]) => macroId === doc.id)?.[0];
+    const command = kind ? managedTriggerCommand(kind) : (doc.id === 'RollOfFate000001' || doc.name === 'Roll of Fate' ? rollOfFateCommand() : null);
+    if (!command || doc.command?.includes('api.installTrigger') || doc.command?.includes('api.rollOfFate')) continue;
+    pending.push({doc, kind, command});
+  }
+  if (!pending.length) return false;
+  const locked = Boolean(pack.locked);
+  try {
+    if (locked) await pack.configure({locked: false});
+    for (const {doc, kind, command} of pending) {
+      const update = {command};
+      if (kind) { update[`flags.${ID}.triggerKind`] = kind; update[`flags.${ID}.schemaVersion`] = 2; }
+      await doc.update(update);
+    }
+    return true;
+  } catch (error) {
+    ui.notifications.error(error.message);
+    return false;
+  } finally { if (locked) await pack.configure({locked: true}).catch(error => ui.notifications.error(error.message)); }
+}
 
 // The manager owns hook/timer disposal; executable conditions and actions live in Macro documents.
 export function createTriggerRuntime({resolve = uuid => fromUuid(uuid), hooks = Hooks,
