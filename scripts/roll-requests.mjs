@@ -12,8 +12,24 @@ export const SPECIALTIES = [
   {id: "fate", setting: "showFate", label: "Roll of Fate"}
 ];
 
-export function visibleSpecialties(settings = {}) {
-  return SPECIALTIES.filter(specialty => settings[specialty.setting] !== false).map(specialty => specialty.id);
+export function specialtyOrder(order = []) {
+  const known = SPECIALTIES.map(specialty => specialty.id);
+  const saved = [];
+  for (const id of order ?? []) if (known.includes(id) && !saved.includes(id)) saved.push(id);
+  return [...saved, ...known.filter(id => !saved.includes(id))];
+}
+
+export function moveSpecialty(order, id, before) {
+  const current = specialtyOrder(order);
+  if (!current.includes(id) || before === id) return current;
+  const next = current.filter(item => item !== id);
+  const index = next.indexOf(before);
+  next.splice(index < 0 ? next.length : index, 0, id);
+  return next;
+}
+
+export function visibleSpecialties(settings = {}, order = []) {
+  return specialtyOrder(order).filter(id => settings[SPECIALTIES.find(specialty => specialty.id === id).setting] !== false);
 }
 
 export function checkChoices(type, {skills = {}, abilities = {}} = {}) {

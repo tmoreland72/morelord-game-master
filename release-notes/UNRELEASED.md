@@ -1,5 +1,6 @@
 # Unreleased
 
+- GM Settings can reorder specialty requests by dragging them. The order is saved for this world and used on the Roll Requests grid. Hidden requests keep their place, and the check builder stays where it is.
 - Start Playlist opens its dialog above the tray, starts the chosen playlist at the chosen volume, and re-enables the button after success or failure. A playback error is shown as a Foundry notification.
 - Set All Track Volumes stores the level on every PlaylistSound in every playlist, including stopped tracks and ambience, and on saved playback buttons. The current song changes immediately, and a playlist started afterward plays at that level.
 - Roll Requests keeps the check builder on one row inside a card that matches the specialty cards. Each specialty card puts its selector, Blind roll, and dice button on one row under the title. Roll of Fate can choose the party or the selected tokens. GM Settings can hide each specialty for the current world.

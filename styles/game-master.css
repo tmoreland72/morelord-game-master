@@ -19,6 +19,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-request-rows { container: gm-rolls / inline-size; min-width:0; }
 #mlgm .gm-specialty-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; }
 #mlgm .gm-builder-card { min-width:0; }
+#mlgm [data-specialty] { cursor:grab; }
 #mlgm .gm-specialty-card { display:flex; flex-direction:column; gap:var(--ml-space-3); height:100%; min-width:0; }
 #mlgm .gm-specialty-title { margin:0; }
 #mlgm .gm-specialty-row { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); min-width:0; }

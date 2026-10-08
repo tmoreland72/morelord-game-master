@@ -6,7 +6,7 @@ import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs
 import {initializeTriggers,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
-import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, resolveRollActors, visibleSpecialties } from "./roll-requests.mjs";
+import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 
 const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve(), status = "Ready. Choose an action to configure it.";
@@ -16,6 +16,7 @@ let campaignSelection = 0;
 let terrainOptions = [];
 let settingTrackVolumes = false;
 let suppressMacroClick = false;
+let suppressSpecialtyToggle = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
@@ -66,6 +67,7 @@ Hooks.once("init", () => {
   game.settings.register(ID, "board", { scope: "world", config: false, type: Object,
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
   game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
+  game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "A folder in Foundry's user data containing audio files.", scope: "world", config: false, type: String, default: "Ambience" });
   game.settings.register(ID, "companion", { name: "Campaign AI companion URL", hint: "The local Morelord companion service. Provider keys stay on the service.", scope: "client", config: false, type: String, default: "http://127.0.0.1:31401" });
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: true, type: Boolean, default: true });
@@ -92,10 +94,15 @@ Hooks.once("ready", async () => {
   new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',[{name:"Remove",icon:'<i class="fa-solid fa-trash"></i>',callback:element=>act("unpin-macro",element.dataset.macroUuid).catch(fail)}],{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
   root.addEventListener("change", event => onChange(event).catch(fail));
-  root.addEventListener("dragover",event=>{if(tab === "macros")event.preventDefault();});
-  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}});
-  root.addEventListener("dragstart",event=>{const tile=event.target.closest('[data-macro-uuid]');if(!tile)return;suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";});
-  root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;});});
+  root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
+  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropSpecialty(event).catch(fail);}});
+  root.addEventListener("dragstart",event=>{
+    const tile=event.target.closest('[data-macro-uuid]');
+    const row=event.target.closest('[data-specialty]');
+    if(tile){suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";return;}
+    if(row && tab === "settings"){suppressSpecialtyToggle=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Specialty',id:row.dataset.specialty}));event.dataTransfer.effectAllowed="move";}
+  });
+  root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;suppressSpecialtyToggle=false;});});
   root.addEventListener("keydown", event => {
     if (event.key === "Escape") { toggle(false); event.stopPropagation(); }
     const current = event.target.closest('[role="tab"]');
@@ -139,7 +146,7 @@ function render() {
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
-  if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Every request starts visible, and this world remembers each choice.</p>${SPECIALTIES.map(specialty=>`<label class="ml-check"><input type="checkbox" name="specialty" value="${specialty.id}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`).join("")}</div>`;
+  if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
@@ -177,7 +184,7 @@ function checkBuilder() {
 }
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
-  const cards = visibleSpecialties(settings).map(id => specialtyCard(id)).join("");
+  const cards = visibleSpecialties(settings, get("specialtyOrder")).map(id => specialtyCard(id)).join("");
   return cards ? `<div class="gm-specialty-grid">${cards}</div>` : "";
 }
 function specialtyCard(id) {
@@ -238,6 +245,23 @@ async function sendFate() {
 function macroButtons() {
   return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span></button>`;}).join("");
 }
+function specialtySettings() {
+  return specialtyOrder(get("specialtyOrder")).map(id => {
+    const specialty = SPECIALTIES.find(item => item.id === id);
+    return `<label class="ml-check" draggable="true" data-specialty="${e(specialty.id)}"><input type="checkbox" name="specialty" value="${e(specialty.id)}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`;
+  }).join("");
+}
+async function dropSpecialty(event) {
+  gm();
+  let data = {};
+  try { data = JSON.parse(event.dataTransfer.getData("text/plain") || "{}"); } catch { data = {}; }
+  if (data.type !== "Specialty") return;
+  const before = event.target.closest("[data-specialty]")?.dataset.specialty;
+  const order = moveSpecialty(get("specialtyOrder"), data.id, before);
+  if (JSON.stringify(order) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
+  await game.settings.set(ID, "specialtyOrder", order);
+  render();
+}
 async function dropMacro(event) {
   gm();
   const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
@@ -290,6 +314,7 @@ async function onChange(event) {
     await persist(n=>{n.partyActorIds=ids;});return;
   }
   if (tab === "settings" && el.name === "specialty") {
+    if (suppressSpecialtyToggle) { el.checked = !el.checked; return; }
     const specialty = SPECIALTIES.find(item => item.id === el.value);
     if (specialty) await game.settings.set(ID, specialty.setting, el.checked);
     return;
@@ -444,7 +469,7 @@ export async function requestCheck(config) {
 for (const hook of ["morelordGameMasterTriggersChanged","createChatMessage","deleteChatMessage","updateChatMessage","updatePlaylist","updatePlaylistSound","createMacro","updateMacro","deleteMacro","updateUser"]) Hooks.on(hook, () => { if (open && tab !== "ai") render(); });
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
-  if (setting.key === `${ID}.macros`) render();
+  if (setting.key === `${ID}.macros` || setting.key === `${ID}.specialtyOrder`) render();
   if (setting.key === `${ID}.board`) { state = foundry.utils.deepClone(get("board")); render(); }
   if (open && tab === "rolls" && SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) render();
 });
