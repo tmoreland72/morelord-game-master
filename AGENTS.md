@@ -13,7 +13,8 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Preserve the bottom tray. Tabs are Roll Requests, Macros, Sound, Triggers, Campaign AI, GM Settings, and Player Settings. Roll Requests is the check builder followed by one specialty row per enabled request, with no section or column headers.
 - Every roll request in the tray uses one shared row and stays on one line: its selector or selectors, the Blind roll toggle when the request can be private, and the dice request button. The builder's selectors are type, skill or ability, optional DC, and who rolls.
 - Roll Requests, Macros, and Triggers have no outer surface frame.
-- Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Ambience, the Campaign AI companion, and other module configuration stay in Foundry Game Settings.
+- Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Campaign AI relay URL, relay token, and campaign are world settings on that same tab. The token is never written to the log. Ambience stays in Foundry Game Settings.
+- Campaign AI talks only to the Campaign AI relay. The tray polls the thread while it is open on that tab, shows a spinner until an answer arrives, and renders answers as safe markdown. Players do not get the tray, the tab, or the settings. An HTTPS Foundry page shows a clear message instead of calling an HTTP relay.
 - Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
 - Starting music stops other music first and uses native shuffle; ambience remains separate.
 - Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
