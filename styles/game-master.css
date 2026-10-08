@@ -27,6 +27,14 @@ body.mlgm-open #hotbar { display:none!important; }
 
 #mlgm .gm-roll-column { min-width:0; align-self:start; }
 
-#mlgm .gm-trigger-card { align-self:stretch; }
-#mlgm .gm-trigger-actions { margin-top:auto; }
-#mlgm .gm-trigger-actions > .gm-trigger-status { margin-right:auto; }
+#mlgm .gm-triggers { align-items:start; gap:var(--ml-space-2); }
+#mlgm .gm-trigger-card { align-self:start; height:auto; display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-trigger-header { display:flex; flex-flow:row nowrap; align-items:center; gap:var(--ml-space-2); min-width:0; overflow-x:auto; }
+#mlgm .gm-trigger-name, #mlgm .gm-trigger-scope { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#mlgm .gm-trigger-name { flex:1 1 40%; }
+#mlgm .gm-trigger-scope { flex:1 1 60%; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); }
+#mlgm .gm-trigger-header > .gm-trigger-status, #mlgm .gm-trigger-header > .ml-icon-button { flex:0 0 auto; }
+#mlgm .gm-trigger-rule { display:grid; gap:var(--ml-space-1); margin:0; }
+#mlgm .gm-trigger-rule > div { display:grid; grid-template-columns:3.25rem minmax(0,1fr); gap:var(--ml-space-2); align-items:baseline; }
+#mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
+#mlgm .gm-trigger-rule dd { margin:0; }

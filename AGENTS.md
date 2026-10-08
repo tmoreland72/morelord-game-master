@@ -39,7 +39,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 
 Roll Requests uses one check builder and one row for each enabled specialty request: Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. Encounter uses the die dropdown. Blind roll defaults off for unconfigured rows; saved choices remain sticky.
 
-Trigger cards place status, enable/pause, edit, and delete icons in a bottom-aligned footer. Icons have tooltips and accessible labels.
+Trigger cards are only as tall as their content. The header is one row: name, scope, status icon, and play/pause. When and Then sit tightly under that row. The status icon shows Running or Stopped; the card does not repeat that word. Icons have tooltips and accessible labels. Edit and Delete stay hidden.
 
 All roll-request cards are public, including Wild Magic d20 requests; assigned-player/GM roll permissions still apply. Blind results and summaries remain private. Pending legacy request cards are made public when their active GM loads the module. Wild Magic never waits for optional damage; Sneak Attack still waits for weapon damage.
 

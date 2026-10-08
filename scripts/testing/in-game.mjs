@@ -160,9 +160,17 @@ export const gameMasterChecks=[{
       assert(!document.querySelector('#mlgm [data-action="new-trigger"]').closest('#mlgm-panel'),"New Trigger is outside the content section.");
       const triggerCards=[...document.querySelectorAll('.gm-trigger-card')];
       for(const card of triggerCards) {
-        const footer=card.querySelector('.gm-trigger-actions');
-        assert(footer.textContent.trim()===''&&footer.querySelectorAll('button[aria-label]').length===3,"Trigger status and actions are accessible icons only.");
-        assert(Math.abs(footer.getBoundingClientRect().bottom-(card.getBoundingClientRect().bottom-parseFloat(getComputedStyle(card).paddingBottom)-parseFloat(getComputedStyle(card).borderBottomWidth)))<2,"Trigger controls align with the bottom of their card.");
+        const header=card.querySelector('.gm-trigger-header');
+        const parts=[header.querySelector('.gm-trigger-name'),header.querySelector('.gm-trigger-scope'),header.querySelector('.gm-trigger-status'),header.querySelector('[data-action="trigger-toggle"]')];
+        assert(parts.every(Boolean),"Trigger header has name, scope, status, and play/pause.");
+        const mids=parts.map(part=>{const box=part.getBoundingClientRect();return (box.top+box.bottom)/2;});
+        assert(Math.max(...mids)-Math.min(...mids)<4,"Name, scope, status, and play/pause share one row.");
+        assert(!/\b(Running|Stopped|Unavailable)\b/.test(card.innerText),"The status icon replaces the Running or Stopped line.");
+        assert(card.querySelectorAll('.gm-trigger-rule > div').length===2,"When and Then sit under the header.");
+        const style=getComputedStyle(card),children=[...card.children];
+        const gap=parseFloat(style.rowGap||style.gap)||0;
+        const content=children.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0)+gap*Math.max(0,children.length-1)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth);
+        assert(Math.abs(card.getBoundingClientRect().height-content)<3,"Trigger card height fits its header and rule.");
       }
 
       macro=await Macro.create({name:'MLGM macro fixture',type:'script',img:'icons/svg/dice-target.svg',command:'globalThis.mlgmMacroTestRuns=(globalThis.mlgmMacroTestRuns ?? 0)+1;'});

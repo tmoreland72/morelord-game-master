@@ -136,7 +136,7 @@ function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="2">${checkBuilder()}${quickRequests()}</div>`;
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Every request starts visible, and this world remembers each choice.</p>${SPECIALTIES.map(specialty=>`<label class="ml-check"><input type="checkbox" name="specialty" value="${specialty.id}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`).join("")}</div>`;
-  if (tab === "triggers") return `<div class="ml-stack" data-gap="4"><div class="ml-grid" data-columns="3">${triggerCards()}</div></div>`;
+  if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>`<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${s.volume}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume">${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`).join("");
@@ -434,8 +434,47 @@ export async function addTrigger({name,actorId,itemId,tableId,tableUuid,kind="it
   await persist(n=>{const existing=n.triggers.find(t=>id ? t.id===id : t.kind===kind && (kind !== "item" || (t.actorId===actorId && t.itemId===itemId && t.tableUuid===trigger.tableUuid)));if(existing){trigger.id=existing.id;trigger.enabled=existing.enabled;Object.assign(existing,trigger);}else n.triggers.push(trigger);});
   render();return trigger;
 }
+function triggerScope(trigger) {
+  if (["critical-hit","critical-fumble"].includes(trigger.kind)) return "Any character or NPC";
+  if (trigger.kind === "ammo-recovery") return "Characters in combat";
+  if (trigger.kind === "world-clock") return "World time";
+  if (trigger.kind === "lucky-find") return "Combat completed";
+  if (trigger.kind === "hunters-mark") return "Any character with Hunter's Mark";
+  if (trigger.kind === "sneak") return "Any rogue";
+  if (trigger.kind === "volatile") return "Any character";
+  if (trigger.kind === "sorcerer") return "Any Wild Magic sorcerer";
+  return game.actors.get(trigger.actorId)?.name ?? trigger.actorName;
+}
+function triggerWhen(trigger) {
+  if (trigger.kind === "critical-hit") return "An attack roll is a native critical hit";
+  if (trigger.kind === "critical-fumble") return "An attack roll is a native critical fumble";
+  if (trigger.kind === "ammo-recovery" || trigger.kind === "lucky-find") return "A started combat ends";
+  if (trigger.kind === "world-clock") return "Game unpaused and no started combat";
+  if (trigger.kind === "volatile") return "A character rolls a spell attack, or completes any spell without an attack";
+  if (trigger.kind === "sorcerer") return "A Wild Magic sorcerer rolls a spell attack, or casts a Sorcerer spell without an attack";
+  if (trigger.kind === "hunters-mark") return "A character completes attack damage against their marked target";
+  if (trigger.kind === "sneak") return "A rogue completes weapon damage for a qualifying Sneak Attack hit";
+  return `Uses ${trigger.itemName}`;
+}
+function triggerThen(trigger) {
+  if (["critical-hit","critical-fumble"].includes(trigger.kind)) return "Roll the matching melee, ranged, or magic table privately in chat";
+  if (trigger.kind === "ammo-recovery") return "Return half the ammunition spent, rounded down per character and ammunition stack";
+  if (trigger.kind === "world-clock") return `Add ${trigger.gameMinutes ?? 10} game minutes every ${trigger.realMinutes ?? 1} real minutes. Combat adds 6 seconds per round when it ends.`;
+  if (trigger.kind === "lucky-find") return "Roll the world Lucky Finds table for the GM, once per combat";
+  if (trigger.kind === "hunters-mark") return "Roll Hunter's Mark damage, including critical damage on a natural 20";
+  if (trigger.kind === "sneak") return "Roll Sneak Attack damage (once per turn)";
+  if (trigger.kind === "volatile") return `Request d4; only a 1 rolls ${trigger.tableName}. No progression.`;
+  if (trigger.kind === "sorcerer") return `Request d20; start at 1 or lower to roll ${trigger.tableName}. Increase on a miss; reset after a surge. Tracked separately for each character and trigger.`;
+  return `Roll ${trigger.tableName}`;
+}
 function triggerCards() {
-  return state.triggers.map(t=>`<article class="ml-card ml-stack gm-trigger-card"><div class="ml-item-row"><div class="ml-stack"><strong>${e(["critical-hit","critical-fumble"].includes(t.kind) ? "Any character or NPC" : t.kind === "ammo-recovery" ? "Characters in combat" : t.kind === "world-clock" ? "World time" : t.kind === "lucky-find" ? "Combat completed" : t.kind === "hunters-mark" ? "Any character with Hunter's Mark" : t.kind === "sneak" ? "Any rogue" : t.kind === "volatile" ? "Any character" : t.kind === "sorcerer" ? "Any Wild Magic sorcerer" : game.actors.get(t.actorId)?.name ?? t.actorName)}</strong><span>${e(t.name)}</span><small>${e(triggerStatus(t.id))}</small></div></div><p>When: ${e(t.kind === "critical-hit" ? "An attack roll is a native critical hit" : t.kind === "critical-fumble" ? "An attack roll is a native critical fumble" : t.kind === "ammo-recovery" ? "A started combat ends" : t.kind === "world-clock" ? "Game unpaused and no started combat" : t.kind === "lucky-find" ? "A started combat ends" : t.kind === "volatile" ? "A character rolls a spell attack, or completes any spell without an attack" : t.kind === "sorcerer" ? "A Wild Magic sorcerer rolls a spell attack, or casts a Sorcerer spell without an attack" : t.kind === "hunters-mark" ? "A character completes attack damage against their marked target" : t.kind === "sneak" ? "A rogue completes weapon damage for a qualifying Sneak Attack hit" : `Uses ${t.itemName}`)}</p><p>Then: ${e(["critical-hit","critical-fumble"].includes(t.kind) ? "Roll the matching melee, ranged, or magic table privately in chat" : t.kind === "ammo-recovery" ? "Return half the ammunition spent, rounded down per character and ammunition stack" : t.kind === "world-clock" ? `Add ${t.gameMinutes ?? 10} game minutes every ${t.realMinutes ?? 1} real minutes. Combat adds 6 seconds per round when it ends.` : t.kind === "lucky-find" ? "Roll the world Lucky Finds table for the GM, once per combat" : t.kind === "hunters-mark" ? "Roll Hunter's Mark damage, including critical damage on a natural 20" : t.kind === "sneak" ? "Roll Sneak Attack damage (once per turn)" : t.kind === "volatile" ? `Request d4; only a 1 rolls ${t.tableName}. No progression.` : t.kind === "sorcerer" ? `Request d20; start at 1 or lower to roll ${t.tableName}. Increase on a miss; reset after a surge. Tracked separately for each character and trigger.` : `Roll ${t.tableName}`)}</p><footer class="ml-card__footer ml-actions gm-trigger-actions"><span class="ml-status gm-trigger-status" data-tone="${t.enabled ? "success" : "muted"}" role="img" title="${e(triggerStatus(t.id))}" aria-label="${e(triggerStatus(t.id))}"><i class="fa-solid ${t.enabled ? "fa-circle-check" : "fa-circle-pause"}" aria-hidden="true"></i></span><button type="button" class="ml-icon-button" data-action="trigger-toggle" data-id="${e(t.id)}" aria-pressed="${Boolean(t.enabled)}" title="${t.enabled ? "Pause trigger" : "Enable trigger"}" aria-label="${t.enabled ? "Pause trigger" : "Enable trigger"}"><i class="fa-solid ${t.enabled ? "fa-pause" : "fa-play"}" aria-hidden="true"></i></button></footer></article>`).join("");
+  return state.triggers.map(trigger => {
+    const status = triggerStatus(trigger.id);
+    const running = Boolean(trigger.enabled);
+    const name = trigger.name ?? "";
+    const scope = triggerScope(trigger) ?? "";
+    return `<article class="ml-card gm-trigger-card"><header class="gm-trigger-header"><strong class="gm-trigger-name" title="${e(name)}">${e(name)}</strong><span class="gm-trigger-scope" title="${e(scope)}">${e(scope)}</span><span class="ml-status gm-trigger-status" data-tone="${running ? "success" : "muted"}" role="img" title="${e(status)}" aria-label="${e(status)}"><i class="fa-solid ${running ? "fa-circle-check" : "fa-circle-pause"}" aria-hidden="true"></i></span><button type="button" class="ml-icon-button" data-action="trigger-toggle" data-id="${e(trigger.id)}" aria-pressed="${running}" title="${running ? "Pause trigger" : "Enable trigger"}" aria-label="${running ? "Pause trigger" : "Enable trigger"}"><i class="fa-solid ${running ? "fa-pause" : "fa-play"}" aria-hidden="true"></i></button></header><dl class="gm-trigger-rule"><div><dt>When</dt><dd>${e(triggerWhen(trigger))}</dd></div><div><dt>Then</dt><dd>${e(triggerThen(trigger))}</dd></div></dl></article>`;
+  }).join("");
 }
 
 async function settings() {

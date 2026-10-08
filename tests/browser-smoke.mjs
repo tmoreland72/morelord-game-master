@@ -97,8 +97,27 @@ try {
   assert.equal(await evaluate('game.playlists.get("music").mode'),1);assert.equal(await evaluate('oldSound.playing'),false);
   assert.equal(await evaluate('document.querySelector("[data-action=stop-music]").closest(".gm-column").querySelector("strong").textContent'),'Now Playing');
   await click('[data-action="stop-music"]');assert.equal(await evaluate('!!document.querySelector("[data-action=stop-music]")'),false);
+  await evaluate('var board=game.settings.get("morelord-game-master","board");board.triggers=[{id:"sneak",name:"Sneak Attack",kind:"sneak",enabled:false},{id:"clock",name:"World Clock",kind:"world-clock",enabled:false,gameMinutes:10,realMinutes:1}];game.settings.set("morelord-game-master","board",board)');
   await click('[data-action="tab"][data-id="triggers"]');
   assert.equal(await evaluate('document.querySelector("[data-action=new-trigger]").disabled'),true);
+  await wait('document.querySelectorAll(".gm-trigger-card").length===2');
+  assert.equal(await evaluate(`(()=>{
+    const cards=[...document.querySelectorAll(".gm-trigger-card")];
+    const headerOk=cards.every(card=>{
+      const header=card.querySelector(".gm-trigger-header");
+      const parts=[header.querySelector(".gm-trigger-name"),header.querySelector(".gm-trigger-scope"),header.querySelector(".gm-trigger-status"),header.querySelector("[data-action=trigger-toggle]")];
+      if(parts.some(part=>!part)) return false;
+      const mids=parts.map(part=>{const box=part.getBoundingClientRect();return (box.top+box.bottom)/2;});
+      const style=getComputedStyle(card), children=[...card.children];
+      const gap=parseFloat(style.rowGap||style.gap)||0;
+      const content=children.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0)+gap*Math.max(0,children.length-1)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth);
+      return Math.max(...mids)-Math.min(...mids)<4 && getComputedStyle(header).flexWrap==="nowrap" && !/\\b(Running|Stopped|Unavailable)\\b/.test(card.innerText) && card.querySelectorAll(".gm-trigger-rule > div").length===2 && Math.abs(card.getBoundingClientRect().height-content)<3 && getComputedStyle(card).alignSelf==="start";
+    });
+    const heights=cards.map(card=>card.getBoundingClientRect().height);
+    return headerOk && heights[1] > heights[0] + 8;
+  })()`),true);
+  await mkdir(path.join(root,'test-results'),{recursive:true});
+  const triggerShot=await command('Page.captureScreenshot',{format:'png'});await writeFile(path.join(root,'test-results','triggers.png'),Buffer.from(triggerShot.data,'base64'));
   await click('[data-action="tab"][data-id="ai"]');assert.equal(await evaluate('document.querySelector("[data-action=ai-send]").disabled'),true);
   await evaluate('new (game.settings.menus.get("morelord-game-master.configure").type)().render()');
   await evaluate(`document.querySelector('dialog input[name=url]').value='http://127.0.0.1:${companion.server.address().port}';document.querySelector('dialog input[name=token]').value='${companion.token}'`);
@@ -135,7 +154,7 @@ try {
   await click('[data-action="toggle"]');assert.notEqual(await evaluate('testState().hotbar'),'none');
   await evaluate('document.querySelector("#hotbar").style.display="none"');await click('[data-action="toggle"]');await click('[data-action="toggle"]');assert.equal(await evaluate('testState().hotbar'),'none');
   assert.deepEqual(errors,[]);assert.equal(await evaluate('window.lastError'),undefined);
-  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macro pins and reorder, playlist controls, disabled trigger authoring, authenticated companion, campaign creation/switching, draft isolation, file upload/removal, chat, narrow layout, and hotbar restoration.');
+  console.log('Browser checks passed: compact request builder, ability dropdown, party skill summary, encounter quick request, specialty settings, macro pins and reorder, compact trigger cards, playlist controls, disabled trigger authoring, authenticated companion, campaign creation/switching, draft isolation, file upload/removal, chat, narrow layout, and hotbar restoration.');
   console.log('Screenshots: test-results/tray-desktop.png and tray-mobile.png. Foundry APIs are mocked in this harness.');
 } finally {
   socket?.close();chrome.kill();await new Promise(r=>server.close(r));await new Promise(r=>companion.server.close(r));
