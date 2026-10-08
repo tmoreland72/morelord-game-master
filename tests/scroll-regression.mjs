@@ -4,13 +4,18 @@ export async function checkScrollPreservation() {
   const {renderPreservingScroll}=await import('/modules/morelord-core/scripts/ui/scroll-preservation.js');
   const assert=(ok,message)=>{if(!ok)throw Error(message);};
   const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const style=document.createElement('style');
+  style.textContent='#mlgm #mlgm-panel::after{content:"";display:block;height:900px;}';
+  document.head.append(style);
+  let root;
+  try {
   const body=document.querySelector('#mlgm .ml-page-body');
   body.scrollTop=180;body.dispatchEvent(new Event('scroll'));await settle();
   assert(body.scrollTop===180,'Tray fixture must be scrollable.');
   document.querySelector('[data-roll-card="encounter"] input[name=blind]').click();
   await new Promise(resolve=>setTimeout(resolve,150));
   assert(document.querySelector('#mlgm .ml-page-body').scrollTop===180,'Changing a card must retain tray scroll.');
-  let root=document.createElement('div');root.className='ml-window';root.id='scroll-fixture';
+  root=document.createElement('div');root.className='ml-window';root.id='scroll-fixture';
   root.style.cssText='position:fixed;left:0;top:0;width:340px;height:260px;z-index:9999';
   const panel=(key)=>`<div ${key ? `data-ml-scroll-key="${key}"` : ''} class="scroll-test-panel" style="height:90px;width:260px;overflow:auto;flex:none"><div style="width:700px;height:1000px">Content</div></div>`;
   const markup=(reverse=false)=>`<div class="window-content" style="height:240px;overflow:auto">${reverse?panel('second')+panel('first'):panel('first')+panel('second')}</div>`;
@@ -35,5 +40,6 @@ export async function checkScrollPreservation() {
     root.innerHTML=markup();await settle();
     assert(root.querySelector('[data-ml-scroll-key="first"]').scrollTop===0,'Reset remains reset on subsequent redraws.');
     return {tray:true,nested:true,horizontal:true,reorder:true,frameReplacement:true,newPanels:true,explicitReset:true};
-  } finally {root.remove();}
+  } finally {root?.remove();}
+  } finally {style.remove();}
 }

@@ -147,5 +147,27 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   await settle();
   assert.equal(game.messages.filter(m=>m.getFlag(ID,"summary")?.requestId===immediate.id).length,1);
 
-
+  holdAnimations=false;
+  CONFIG.DND5E.abilities={str:{label:"Strength"},dex:{label:"Dexterity"},wis:{label:"Wisdom"}};
+  const abilityConfigs=[];
+  const rollAbility=async(config,_dialog,message)=>{assert.equal(message.create,false);abilityConfigs.push(config);return [{total:18,dice:[{faces:20,results:[{result:18}]}]}];};
+  actor.rollAbilityCheck=rollAbility;second.rollAbilityCheck=rollAbility;
+  actor.rollSavingThrow=async(config,_dialog,message)=>{assert.equal(message.create,false);assert.equal(config.ability,"dex");assert.equal(config.target,12);return [{total:9,dice:[{faces:20,results:[{result:9}]}]}];};
+  const ability=await createRequest({kind:"ability",ability:"wis",dc:15,blind:false,actorIds:[actor.id,second.id]});
+  assert.match(ability.content,/Wisdom check/);assert.match(ability.content,/DC 15/);assert.match(ability.content,/data-mlgm-mode="adv"/);
+  await resolve(ability,gm);
+  assert.equal(game.messages.some(m=>m.getFlag(ID,"summary")?.requestId===ability.id),false);
+  await dispatch({namespace:ID,type:"roll",data:{requestId:ability.id,actorId:second.id,mode:"adv"},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  await settle();
+  const abilitySummary=game.messages.find(m=>m.getFlag(ID,"summary")?.requestId===ability.id);
+  assert.match(abilitySummary.content,/Average: 18.00/);assert.match(abilitySummary.content,/Pass/);
+  assert.equal(abilitySummary.blind,false);assert.deepEqual(abilitySummary.whisper,[]);
+  assert.equal(abilityConfigs.at(-1).advantage,true);assert.equal(abilityConfigs.at(-1).ability,"wis");
+  const save=await createRequest({kind:"save",ability:"dex",dc:12,actorIds:[actor.id]});
+  assert.match(save.content,/Dexterity saving throw/);
+  await resolve(save,gm);
+  const saveSummary=game.messages.find(m=>m.getFlag(ID,"summary")?.requestId===save.id);
+  assert.match(saveSummary.content,/Fail/);assert.match(saveSummary.content,/Average: 9.00/);
+  assert.equal(saveSummary.blind,true);assert.deepEqual(saveSummary.whisper,["gm","assistant"]);
+  await assert.rejects(()=>createRequest({kind:"ability",ability:"luck",actorIds:[actor.id]}),/ability/);
 });

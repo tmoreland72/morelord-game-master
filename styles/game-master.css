@@ -14,6 +14,10 @@ body.mlgm-open #hotbar { display:none!important; }
 
 #mlgm .gm-roll-actions { margin-top:auto; justify-content:flex-end; }
 #mlgm .gm-roll-card { min-width:0; }
+#mlgm .gm-request-builder, #mlgm .gm-quick-row, #mlgm .gm-quick { display:flex; flex-wrap:wrap; align-items:end; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-quick { margin:0; padding:0; border:0; }
+#mlgm .gm-request-builder > label, #mlgm .gm-quick > label { min-width:0; }
+#mlgm .gm-request-builder input[type="number"] { width:5rem; }
 
 #mlgm .gm-roll-column { min-width:0; align-self:start; }
 
