@@ -22,6 +22,8 @@ const savedButton = (action, name, id, remove) => `<div class="ml-item-row"><div
 const option = (id, name, selected) => `<option value="${e(id)}" ${id === selected ? "selected" : ""}>${e(name)}</option>`;
 const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}" data-gap="4"><strong>${e(title)}</strong>${body}</div>`;
 const label = (name, content) => `<label><span>${e(name)}</span>${content}</label>`;
+const inlineField = (name, content) => `<label class="gm-inline"><span>${e(name)}</span>${content}</label>`;
+const requestButton = (action, id, name, extra = "") => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="${e(name)}" aria-label="${e(name)}" ${extra}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i></button>`;
 const input = (name, value = "", attrs = "") => `<input name="${name}" value="${e(value)}" ${attrs}>`;
 const select = (name, options) => `<select name="${name}">${options}</select>`;
 const gm = () => { if (!game.user.isGM) throw new Error("Only the GM can use this action."); };
@@ -155,7 +157,7 @@ function checkBuilder() {
   const actors = partyActorIds().map(id => game.actors.get(id)).filter(Boolean);
   const actorId = actors.some(actor => actor.id === c.actorId) ? c.actorId : actors[0]?.id ?? "";
   const checkLabel = checkType === "skill" ? "Skill" : "Ability";
-  return `<form class="gm-request-builder" data-roll-card="check">${label("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join("")))}${label(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("")))}${label("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"'))}${label("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join("")))}${scope === "player" ? label("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""}<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>${button("send-check", "Send", "", scope === "tokens" || actors.length ? "" : "disabled")}</form>`;
+  return `<form class="gm-request-builder" data-roll-card="check">${inlineField("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join("")))}${inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("")))}${inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"'))}${inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join("")))}${scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""}<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>${requestButton("send-check", "", "Send check", scope === "tokens" || actors.length ? "" : "disabled")}</form>`;
 }
 function quickRequests() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
@@ -163,14 +165,15 @@ function quickRequests() {
 }
 function quickControl(id) {
   const c = state.last[id] ?? {};
-  const blind = `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind</span></label>`;
+  const blind = `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
   const actors = partyActorIds().map(actorId => game.actors.get(actorId)).filter(Boolean);
-  if (id === "fate") return button("quick-request", "Roll of Fate", "fate");
-  if (id === "encounter") return `<form class="gm-quick" data-roll-card="encounter">${label("Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join("")))}${blind}${button("quick-request", "Encounter", "encounter")}</form>`;
-  if (id === "foraging") return `<form class="gm-quick" data-roll-card="foraging">${label("Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join("")))}${blind}${button("quick-request", "Foraging", "foraging")}</form>`;
-  if (id === "death") return `<form class="gm-quick" data-roll-card="death">${label("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join("")))}${blind}${button("quick-request", "Death Save", "death")}</form>`;
+  const names = {encounter: "Encounter Check", search: "Delerium Search", foraging: "Foraging Check", death: "Death Save", fate: "Roll of Fate"};
+  if (id === "fate") return `<div class="gm-quick">${requestButton("quick-request", "fate", names.fate)}</div>`;
+  if (id === "encounter") return `<form class="gm-quick" data-roll-card="encounter">${inlineField("Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join("")))}${blind}${requestButton("quick-request", "encounter", names.encounter)}</form>`;
+  if (id === "foraging") return `<form class="gm-quick" data-roll-card="foraging">${inlineField("Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join("")))}${blind}${requestButton("quick-request", "foraging", names.foraging)}</form>`;
+  if (id === "death") return `<form class="gm-quick" data-roll-card="death">${inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join("")))}${blind}${requestButton("quick-request", "death", names.death)}</form>`;
   let zones = []; try { zones = craftworks().deleriumSearch.getZones(); } catch { /* Craftworks reports its own error when the request is sent. */ }
-  return `<form class="gm-quick" data-roll-card="search">${label("Area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join("")))}${blind}${button("quick-request", "Delerium Search", "search")}</form>`;
+  return `<form class="gm-quick" data-roll-card="search">${inlineField("Area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join("")))}${blind}${requestButton("quick-request", "search", names.search)}</form>`;
 }
 function readBuilder() {
   const data = new FormData(root.querySelector('[data-roll-card="check"]'));

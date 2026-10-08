@@ -45,6 +45,7 @@ try {
   await evaluate('var blind=document.querySelector("[data-roll-card=check] input[name=blind]");blind.checked=true;blind.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('testState().board.last.check?.blind===true');
   assert.equal(await evaluate('!!document.querySelector("[data-action=quick-request][data-id=fate]")'),true);
+  assert.equal(await evaluate(`(() => { const sameRow = root => { const tops = [...root.children].map(el => el.getBoundingClientRect().top); return Math.max(...tops) - Math.min(...tops) < 8; }; return sameRow(document.querySelector("[data-roll-card=check]")) && [...document.querySelectorAll(".gm-quick")].every(sameRow); })()`), true);
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="ability";type.dispatchEvent(new Event("change",{bubbles:true}))');
   await wait('document.querySelector("[data-roll-card=check] select[name=checkId]").value==="wis" && [...document.querySelectorAll("[data-roll-card=check] label>span")].some(s=>s.textContent==="Ability")');
   await evaluate('var type=document.querySelector("[data-roll-card=check] select[name=checkType]");type.value="skill";type.dispatchEvent(new Event("change",{bubbles:true}))');
