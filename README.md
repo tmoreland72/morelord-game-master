@@ -209,3 +209,5 @@ October 5 verification: all 37 Node tests and Core's Game Master design-system s
 Critical-result chat cards use Core's shared success/danger callout and attacker portrait/name. The heading says Critical Hit or Critical Fumble; the card identifies the melee/ranged/magic attack, weapon or spell, and kept attack die that caused it. The native table die and drawn result stay below this explanation. This applies to newly created results. Existing cards remain as posted. Dice So Nice settings are unchanged. Run the live check with --capture-cards to capture both result-card styles.
 
 The critical-card follow-up passed all six Dev1 checks with no browser errors, including native rendering and completed optional dice animations. Both result-card styles were visually inspected; see tests/critical-result-cards-live.png.
+
+October 8 verification for 0.1.11: all 50 module tests, the browser smoke harness, five release-synchronizer tests, and Core's design-system boundary check passed. In-Foundry Dev1 tests were skipped for this release by Troy's explicit approval, because Foundry was not running. Compatibility remains the previously verified Foundry VTT 14.368.
