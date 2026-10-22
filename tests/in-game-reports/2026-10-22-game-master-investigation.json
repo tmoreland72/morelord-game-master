@@ -1,0 +1,64 @@
+{
+  "suite": "game-master-release-investigation",
+  "startedAt": "2026-10-22T20:37:14.207Z",
+  "authorization": "User explicitly authorized current world and Chuck account on October 22, 2026.",
+  "environment": {
+    "world": "dod-baseline",
+    "foundry": "14.369",
+    "system": "6.0.6",
+    "user": "Chuck"
+  },
+  "excluded": [
+    "Delerium Search and foraging integration portion of broad private-roll check; Craftworks inactive."
+  ],
+  "results": [
+    {
+      "id": "morelord-game-master.core-chat-private-rolls",
+      "status": "pass",
+      "durationMs": 6328
+    },
+    {
+      "id": "morelord-game-master.native-character-triggers",
+      "status": "pass",
+      "durationMs": 14560
+    },
+    {
+      "id": "morelord-game-master.soundboard-macro-menu",
+      "status": "pass",
+      "durationMs": 987
+    },
+    {
+      "id": "morelord-game-master.party-cards-window-sizes",
+      "status": "pass",
+      "durationMs": 4729
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "fail": 0
+  },
+  "cleanup": {
+    "actors": [],
+    "messages": [
+      {
+        "id": "4SfeATw4gjE1T8te"
+      }
+    ],
+    "boardRestored": true,
+    "macrosRestored": true,
+    "followup": {
+      "removed": {
+        "id": "4SfeATw4gjE1T8te",
+        "author": "Chuck",
+        "speaker": {
+          "scene": null,
+          "actor": null,
+          "token": null
+        },
+        "content": "<div>\n\t\t\t\t<p>Welcome to Plutonium!</p>\n\t\t\t\t<p>We would like to remind you that neither Foundry nor Forge support piracy in any shape or form, and that <b>all</b> discussion related to the use of Plutonium should be done in our <a target=\"_blank\" href=\"https://discord.gg/nGvRCDs\" rel=\"noopener noreferrer\">Discord</a>.</p>\n\t\t\t\t<p>Additionally, if you wish to screenshot or stream your game, we recomm"
+      },
+      "remainingFixtureActors": [],
+      "temporaryPlayerPresent": false
+    }
+  }
+}

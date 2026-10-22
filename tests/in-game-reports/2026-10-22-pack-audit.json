@@ -1,0 +1,12 @@
+[
+  {
+    "pack": "macros",
+    "checked": 11,
+    "canonicalSourceMatchesReleasePack": true
+  },
+  {
+    "pack": "roll-tables",
+    "checked": 8,
+    "canonicalSourceMatchesReleasePack": true
+  }
+]

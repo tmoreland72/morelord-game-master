@@ -1,0 +1,167 @@
+{
+  "world": "dev1",
+  "foundry": "14.369",
+  "dnd5e": "6.0.6",
+  "sourceFilesMatchedServedCheckout": true,
+  "coordinatorFollowup": "Ammunition Recovery and World Clock rerun as coordinating active GM.",
+  "results": [
+    {
+      "id": "core.ready",
+      "status": "pass",
+      "durationMs": 0,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "core.users",
+      "status": "pass",
+      "durationMs": 0,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "core.character-routing",
+      "status": "pass",
+      "durationMs": 1,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "core.ignored-users-window",
+      "status": "pass",
+      "durationMs": 378,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "morelord-game-master.core-chat-private-rolls",
+      "status": "pass",
+      "durationMs": 16248,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.native-character-triggers",
+      "status": "pass",
+      "durationMs": 13587,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.soundboard-macro-menu",
+      "status": "pass",
+      "durationMs": 1333,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.party-cards-window-sizes",
+      "status": "pass",
+      "durationMs": 6565,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.completed-roll-presentation",
+      "status": "pass",
+      "durationMs": 1262,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.compiled-macro-lifecycle-and-independent-surges",
+      "status": "pass",
+      "durationMs": 8082,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.selected-token-fate",
+      "status": "pass",
+      "durationMs": 1151,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.ammunition-recovery",
+      "status": "pass",
+      "durationMs": 1840,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "game-master.critical-hit-and-fumble-tables",
+      "status": "pass",
+      "durationMs": 27552,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.trigger-footer",
+      "status": "pass",
+      "durationMs": 26,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.panel-layout",
+      "status": "pass",
+      "durationMs": 42,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.fresh-global-triggers-stopped",
+      "status": "pass",
+      "durationMs": 377,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.empty-global-catalog-recovery",
+      "status": "pass",
+      "durationMs": 908,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-game-master.combat-end-lucky-find",
+      "status": "pass",
+      "durationMs": 846,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.world-clock",
+      "status": "pass",
+      "durationMs": 1001,
+      "report": "2026-10-22-release-dev1.json"
+    },
+    {
+      "id": "game-master.mass-combat-native-preview-apply",
+      "status": "pass",
+      "durationMs": 3015,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "game-master.smithy-native-waves-and-safe-word",
+      "status": "pass",
+      "durationMs": 10488,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-encounters.activity-selection-and-native-saves",
+      "status": "pass",
+      "durationMs": 5526,
+      "report": "2026-10-22-release-dev1-full.json"
+    },
+    {
+      "id": "morelord-encounters.combined-on-hit-save-and-multiattack",
+      "status": "pass",
+      "durationMs": 1901,
+      "report": "2026-10-22-release-dev1-full.json"
+    }
+  ],
+  "summary": {
+    "pass": 23,
+    "fail": 0
+  },
+  "cleanup": {
+    "actors": [],
+    "scenes": [],
+    "messages": [],
+    "macros": [],
+    "tables": [],
+    "boardRestored": true
+  },
+  "automated": {
+    "moduleTests": 50,
+    "releaseSynchronizerTests": 5,
+    "browserSmoke": "pass",
+    "designSystem": "pass"
+  },
+  "scope": "Game Master release, plus two reused shared-combat checks.",
+  "browserLimitations": "Raw reports retain Foundry/D&D5e asynchronous fixture-rendering and cleanup errors; no zero-browser-error or complete visual certification claimed."
+}

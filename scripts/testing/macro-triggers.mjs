@@ -39,6 +39,7 @@ export const macroTriggerCheck={id:'game-master.compiled-macro-lifecycle-and-ind
     await wait(()=>requests().every(m=>m.getFlag(ID,'request')?.completed?.includes(actor.id)),'completed surge responses');
     const volatileRequest=requests().find(m=>m.getFlag(ID,'request').surgeName==='Volatile Magic');
     const volatileResult=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===volatileRequest.id);
+    await wait(()=>requests().every(request=>game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id)?.getFlag(ID,'surge')?.resolved),'both surge outcomes after dice animation');
     assert(volatileResult.rolls[0].formula==='1d4','Volatile Magic must roll a d4.');
     assert(volatileResult.getFlag(ID,'surge').triggered===(volatileResult.rolls[0].total===1),'Volatile Magic only triggers on one.');
     assert(actor.getFlag(ID,'surges.macro-test-volatile').threshold===20,'Volatile Magic must not change an old progression counter.');
@@ -91,7 +92,7 @@ export const fateCheck={id:'game-master.selected-token-fate',async run(){
     const two=await wait(()=>game.messages.find(m=>!before.has(m.id)&&m.id!==one.id&&m.getFlag(ID,'fate')));messages.push(two.id);
     assert(tokens.some(t=>t.uuid===two.getFlag(ID,'fate').tokenUuid),'Fate must choose a selected character token.');
     assert(two.rolls[0].formula==='1d2'&&!two.blind&&!two.whisper.length,'Fate must be uniformly random and public.');
-    assert(two.content.includes('Fate has decided that')&&two.content.includes('shall be targeted!')&&two.content.includes('ml-actor-identity'),'Fate card must use Core identity and requested wording.');
+    assert(two.content.includes('has been chosen by fate!')&&two.content.includes('ml-actor-identity'),'Fate card must use Core identity and requested wording.');
   } finally {
     const created=game.messages.filter(m=>!before.has(m.id)&&m.getFlag(ID,'fate')&&tokens.some(t=>t.uuid===m.getFlag(ID,'fate').tokenUuid)).map(m=>m.id);
     if(created.length)await ChatMessage.deleteDocuments(created);

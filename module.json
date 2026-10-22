@@ -2,7 +2,7 @@
   "id": "morelord-game-master",
   "title": "Morelord Game Master",
   "description": "A GM tray for roll requests, sound, macros, triggers, and campaign assistance.",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "authors": [
     {
       "name": "Morelord Gaming"
@@ -10,7 +10,7 @@
   ],
   "compatibility": {
     "minimum": "14",
-    "verified": "14.368"
+    "verified": "14.369"
   },
   "esmodules": [
     "scripts/main.mjs"
@@ -24,7 +24,7 @@
         "id": "morelord-core",
         "type": "module",
         "compatibility": {
-          "minimum": "0.4.1"
+          "minimum": "0.5.0"
         },
         "manifest": "https://raw.githubusercontent.com/tmoreland72/morelord-core/main/module.json"
       }
@@ -51,7 +51,7 @@
         "type": "system",
         "compatibility": {
           "minimum": "6.0.3",
-          "verified": "6.0.3"
+          "verified": "6.0.6"
         }
       }
     ]

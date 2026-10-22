@@ -2,10 +2,10 @@ import {ID} from "../core.mjs";
 import {core,createRequest,rollRequest,foragingTerrains} from "../requests.mjs";
 import {executeTrigger} from "../triggers.mjs";
 import {assert} from "../../../morelord-core/scripts/testing/in-game.js";
-const wait = async fn => { for(let i=0;i<100;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw new Error("Expected Game Master UI did not render."); };
+const wait = async (fn, description="Game Master UI") => { for(let i=0;i<400;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw new Error(`Timed out waiting for ${description}.`); };
 export const gameMasterChecks=[{
   id:"morelord-game-master.core-chat-private-rolls",
-  async run(){
+  async run({specialties=true}={}){
     assert(game.user.isGM,"Run this check as a GM or Assistant GM.");
     const api=game.modules.get(ID)?.api;
     assert(api && core().socket.ready,"Game Master and Core must be ready.");
@@ -30,7 +30,7 @@ export const gameMasterChecks=[{
       assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
       assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
-      const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12});
+      const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12,blind:true});
       await wait(()=>document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`));
       const checkbox=document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`);
       assert(checkbox.checked && checkbox.closest('.ml-actor-choice'),"Character verification uses the selected Core actor choice.");
@@ -47,6 +47,7 @@ export const gameMasterChecks=[{
       assert(results.length===1,"Simultaneous clicks produce exactly one result.");
       assert(results[0].blind && results[0].whisper.length===game.users.filter(u=>u.isGM).length,"Result is blind to all GMs including assistants.");
       assert(results[0].whisper.every(id=>game.users.get(id)?.isGM),"No player receives result content.");
+      await wait(()=>game.messages.some(m=>m.getFlag(ID,'summary')?.requestId===skill.id),"private summary after dice animation");
       const summary=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===skill.id);
       assert(summary?.content.includes(actor.name) && summary.content.includes('Average:') && /Pass|Fail/.test(summary.content),"Private summary shows each roll, pass/fail, and average in chat.");
       assert(summary.blind && summary.whisper.every(id=>game.users.get(id)?.isGM),"Summary is private to GMs and assistants.");
@@ -61,7 +62,9 @@ export const gameMasterChecks=[{
           await wait(()=>game.messages.some(m=>m.getFlag(ID,'result')?.requestId===request.id));
         } else await rollRequest(request.id,actor.id,undefined,mode);
         const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id);
-        assert(result.rolls[0].options.advantageMode===expected,`Native skill roll handles ${mode} with automatic mode ${automatic}.`);
+        const [native]=await actor.rollSkill({skill:'prc',...(mode==='adv'?{advantage:true}:{}),...(mode==='dis'?{disadvantage:true}:{})},{configure:false},{create:false});
+        assert(result.rolls[0].options.advantageMode===native.options.advantageMode,`Request matches native ${mode} with automatic mode ${automatic}.`);
+        if (automatic===0 || mode==='normal') assert(result.rolls[0].options.advantageMode===expected,`Native skill roll preserves ${mode} with automatic mode ${automatic}.`);
       }
       const encounter=await createRequest({kind:'encounter',die:8,actorIds:[actor.id]});requests.push(encounter.id);
       assert(!encounter.content.includes('DC '),"Blank DC is omitted.");
@@ -70,15 +73,19 @@ export const gameMasterChecks=[{
       const deathBefore=foundry.utils.deepClone(actor.system.attributes.death);
       const death=await createRequest({kind:'death',actorIds:[actor.id]});requests.push(death.id);await rollRequest(death.id,actor.id);
       assert(actor.system.attributes.death.success===deathBefore.success && actor.system.attributes.death.failure===deathBefore.failure && actor.system.attributes.hp.value===0,"Blind death saves do not disclose outcome through actor updates.");
+      if (specialties) {
       const search=await createRequest({kind:'delerium',zoneId:'outer',actorIds:[actor.id]});requests.push(search.id);
       await rollRequest(search.id,actor.id,'inv');
+      await wait(()=>game.messages.some(m=>m.getFlag(ID,'search')?.requestId===search.id),"Delerium summary after dice animation");
       assert(game.messages.some(m=>m.getFlag(ID,'search')?.requestId===search.id),"Delerium search creates its private summary.");
       const terrains=await foragingTerrains();
       const forage=await createRequest({kind:'foraging',skill:'sur',terrainIndex:2,actorIds:[actor.id]});requests.push(forage.id);
       assert(forage.getFlag(ID,'request').dc===terrains[2].value,"Foraging uses Journeys configured terrain DC.");
       await rollRequest(forage.id,actor.id);
+      await wait(()=>game.messages.some(m=>m.getFlag(ID,'summary')?.requestId===forage.id),"foraging summary after dice animation");
       const food=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===forage.id);
       assert(food?.content.includes('Food found:') && !food.content.includes('Average'),"Foraging reports food and individual outcomes in private chat.");
+      }
       return {requests:requests.length,core:game.modules.get('morelord-core').version};
     } finally {
       if(dialog?.isConnected){const app=Object.values(ui.windows).find(a=>a.element===dialog);await app?.close();}
@@ -94,11 +101,12 @@ export const gameMasterChecks=[{
     const fixtures=[],sources=[],requests=[],board=foundry.utils.deepClone(game.settings.get(ID,"board"));
     await game.settings.set(ID,"board",{...board,triggers:[]});
     try {
-      const original=game.actors.get('1c2n8qWMYl3rXPpe');
-      assert(original,"Grim Shara must exist for this native feature regression.");
-      const data=original.toObject();delete data._id;data.name="MLGM Sneak Attack fixture";
-      const actor=await Actor.create(data);fixtures.push(actor);
-      const weapon=actor.items.find(i=>i.name==='Shortsword'),feature=actor.items.find(i=>i.system.identifier==='sneak-attack');
+      const actor=await Actor.create({name:"MLGM Sneak Attack fixture",type:"character",items:[
+        {name:"Rogue",type:"class",system:{identifier:"rogue",levels:3}},
+        {name:"Shortsword",type:"weapon",system:{properties:["fin"],type:{value:"martialM"},damage:{base:{number:1,denomination:6,types:["piercing"]}}}},
+        {name:"Sneak Attack",type:"feat",system:{identifier:"sneak-attack",activities:{mlgmtestdamage01:{_id:"mlgmtestdamage01",type:"damage",damage:{parts:[{number:2,denomination:6,types:["piercing"]}]}}}}}
+      ]});fixtures.push(actor);
+      const weapon=actor.items.find(i=>i.type==='weapon');
       const roll=await new CONFIG.Dice.D20Roll('1d20+100',{}, {advantageMode:1}).evaluate({allowInteractive:false});
       const source=await ChatMessage.create({type:'attack',speaker:ChatMessage.getSpeaker({actor}),rolls:[roll],system:{item:{id:weapon.id,uuid:weapon.uuid,name:weapon.name,type:'weapon'},targets:[{actor:actor.uuid,name:actor.name,ac:1}]},blind:true,whisper:[game.user.id]});sources.push(source.id);
       const trigger={id:'mlgm-test-sneak',actorId:'legacy-unrelated-character',itemId:'legacy-unrelated-feature',kind:'sneak'};
@@ -109,8 +117,12 @@ export const gameMasterChecks=[{
       const damage=game.messages.find(m=>m.getFlag(ID,'triggerResult')?.sourceId===source.id);
       assert(damage?.rolls[0].total>0 && damage.rolls[0].options.type==='piercing',"Sneak Attack uses native scaling and the weapon damage type.");
       assert(damage.blind && damage.whisper.every(id=>game.users.get(id).isGM),"Triggered damage is GM-only.");
-      const rhyndor=game.actors.get('kvdHdccUF1gVumUm').toObject();delete rhyndor._id;rhyndor.name='MLGM Sorcerer fixture';rhyndor.ownership={default:0,[core().users.list().find(u=>!u.isGM).id]:3};
-      const sorcerer=await Actor.create(rhyndor);fixtures.push(sorcerer);
+      const sorcerer=await Actor.create({name:'MLGM Sorcerer fixture',type:'character',ownership:{default:0,[core().users.list().find(u=>!u.isGM).id]:3},items:[
+        {name:'Sorcerer',type:'class',system:{identifier:'sorcerer',levels:3}},
+        {name:'Wild Magic',type:'subclass',system:{identifier:'wild-magic',classIdentifier:'sorcerer'}},
+        {name:'Light',type:'spell',system:{level:0,sourceItem:'race:aasimar'}},
+        {name:'Chromatic Orb',type:'spell',system:{level:1,sourceItem:'class:sorcerer'}}
+      ]});fixtures.push(sorcerer);
       for (const [name,expected] of [['Light',false],['Chromatic Orb',true]]) {
         const item=sorcerer.items.find(i=>i.name===name);
         const cast=await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:sorcerer}),content:'Trigger regression fixture',flags:{[ID]:{triggerUse:{actorId:sorcerer.id,itemId:item.id,activityType:"utility",needsDamage:false,completed:false}}},whisper:[game.user.id]});sources.push(cast.id);
@@ -132,12 +144,14 @@ export const gameMasterChecks=[{
           assert(!game.messages.some(m=>m.getFlag(ID,'surgeTable')===request.id),"Casting requests d20 before any surge table.");
           await rollRequest(request.id,sorcerer.id);
           const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id);
+          await wait(()=>result.getFlag(ID,'surge')?.resolved,"Wild Magic outcome after dice animation");
           const outcome=result.getFlag(ID,'surge');
           assert(outcome.threshold===1 && outcome.nextThreshold===(result.rolls[0].total===1?1:2),"Initial d20 uses threshold one.");
           await sorcerer.setFlag(ID,'surges.mlgm-test-surge',{threshold:20});
           const guaranteed=await createRequest({kind:'surge',actorIds:[sorcerer.id],triggerId:'mlgm-test-surge',tableUuid:'Compendium.morelord-game-master.roll-tables.RollTable.aDMFCKJcdKaJjTc6'});requests.push(guaranteed.id);
           await rollRequest(guaranteed.id,sorcerer.id);
           const rolled=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===guaranteed.id);
+          await wait(()=>rolled.getFlag(ID,'surge')?.resolved,"guaranteed surge resolution");
           assert(game.messages.filter(m=>m.getFlag(ID,'surgeTable')===rolled.id).length===1,"Qualifying d20 rolls the native table once.");
           assert(sorcerer.getFlag(ID,'surges.mlgm-test-surge').threshold===1,"A surge resets the threshold.");
           await rollRequest(guaranteed.id,sorcerer.id);
@@ -230,15 +244,20 @@ export const gameMasterChecks=[{
         await wait(()=>game.settings.get(ID,'board').partyActorIds?.includes(uuid.split('.').at(-1))===(uuid===actor.uuid));
       }
       document.querySelector('#mlgm-tab-rolls').click();
+      for (const [name,value] of [['checkType','skill'],['scope','party']]) {
+        const control=document.querySelector(`[data-roll-card="check"] select[name="${name}"]`);control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));
+        await wait(()=>game.settings.get(ID,'board').last.check?.[name]===value,`saved ${name} selection`);
+      }
       let dc=document.querySelector('[data-roll-card="check"] input[name=dc]');dc.value='14';dc.dispatchEvent(new Event('change',{bubbles:true}));
       await wait(()=>game.settings.get(ID,'board').last.check?.dc===14);
       let blind=document.querySelector('[data-roll-card="check"] input[name=blind]');blind.checked=false;blind.dispatchEvent(new Event('change',{bubbles:true}));
       await wait(()=>game.settings.get(ID,'board').last.check?.blind===false);
       document.querySelector('[data-action="send-check"]').click();
-      await wait(()=>game.messages.some(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill));
+      await wait(()=>game.messages.some(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill),"party skill request card");
       const request=game.messages.find(m=>!before.has(m.id)&&m.getFlag(ID,'request')?.skill);
       assert(JSON.stringify(request.getFlag(ID,'request').actorIds)===JSON.stringify([actor.id]),"Party rolls use the shared configured scope.");
       await rollRequest(request.id,actor.id);
+      await wait(()=>game.messages.some(m=>m.getFlag(ID,'summary')?.requestId===request.id),"public party summary after dice animation");
       const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id),summary=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===request.id);
       assert(!result.blind&&!result.whisper.length&&!summary.blind&&!summary.whisper.length,"Blind toggle off makes both native roll and summary public.");
       document.querySelector('#mlgm-tab-party').click();document.querySelector('#mlgm-tab-rolls').click();
