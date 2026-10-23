@@ -1,0 +1,241 @@
+{
+  "suite": "morelord-core-smoke",
+  "schemaVersion": 1,
+  "startedAt": "2026-10-22T22:59:40.513Z",
+  "environment": {
+    "foundry": "14.369",
+    "system": {
+      "id": "dnd5e",
+      "version": "6.0.6"
+    },
+    "role": "gm",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1280,
+      "height": 850
+    },
+    "modules": [
+      {
+        "id": "3ds-atlas",
+        "version": "1.5.1"
+      },
+      {
+        "id": "asset-librarian",
+        "version": "1.4.6"
+      },
+      {
+        "id": "campaign-codex",
+        "version": "6.9.97"
+      },
+      {
+        "id": "demon-queen-awakens",
+        "version": "6.0.0"
+      },
+      {
+        "id": "dice-so-nice",
+        "version": "6.4.4"
+      },
+      {
+        "id": "dnd-arcana-unleashed",
+        "version": "1.0.2"
+      },
+      {
+        "id": "dnd-dungeon-masters-guide",
+        "version": "2.0.0"
+      },
+      {
+        "id": "dnd-monster-manual",
+        "version": "1.4.0"
+      },
+      {
+        "id": "dnd-players-handbook",
+        "version": "2.2.0"
+      },
+      {
+        "id": "dnd-ravenloft-horrors-within",
+        "version": "2.0.0"
+      },
+      {
+        "id": "drakkenheim-core",
+        "version": "3.0.0"
+      },
+      {
+        "id": "drakkenheim-monsters",
+        "version": "2.0.1"
+      },
+      {
+        "id": "drakkenheim-scgd",
+        "version": "3.0.0"
+      },
+      {
+        "id": "fa-battlemaps",
+        "version": "1.2.29"
+      },
+      {
+        "id": "gm-vision",
+        "version": "2.0.5"
+      },
+      {
+        "id": "grim-hollow-core",
+        "version": "2.0.1"
+      },
+      {
+        "id": "grim-hollow-players-guide",
+        "version": "2.0.2"
+      },
+      {
+        "id": "heliana-core",
+        "version": "2.4.2"
+      },
+      {
+        "id": "hero-mancer",
+        "version": "3.3.1"
+      },
+      {
+        "id": "house-divided",
+        "version": "5.0.2"
+      },
+      {
+        "id": "mage-hand-press-core",
+        "version": "2.0.1"
+      },
+      {
+        "id": "mage-hand-press-valdas-spire-of-secrets",
+        "version": "2.0.0"
+      },
+      {
+        "id": "mini-rolltable",
+        "version": "0.2.6"
+      },
+      {
+        "id": "mini-scene-navigation",
+        "version": "0.5.0"
+      },
+      {
+        "id": "mini-spell-picker",
+        "version": "0.3.8"
+      },
+      {
+        "id": "mini-stats",
+        "version": "0.6.2"
+      },
+      {
+        "id": "mini-tweaks",
+        "version": "0.2.6"
+      },
+      {
+        "id": "mini-uploader",
+        "version": "3.5"
+      },
+      {
+        "id": "monks-active-tiles",
+        "version": "14.01"
+      },
+      {
+        "id": "morelord-character-export",
+        "version": "0.3.6"
+      },
+      {
+        "id": "morelord-compendium",
+        "version": "1.0.11"
+      },
+      {
+        "id": "morelord-core",
+        "version": "0.5.1"
+      },
+      {
+        "id": "morelord-craftworks",
+        "version": "0.4.18"
+      },
+      {
+        "id": "morelord-downtime",
+        "version": "0.1.2"
+      },
+      {
+        "id": "morelord-encounters",
+        "version": "0.2.1"
+      },
+      {
+        "id": "morelord-game-master",
+        "version": "0.1.12"
+      },
+      {
+        "id": "morelord-journeys",
+        "version": "0.4.0"
+      },
+      {
+        "id": "morelord-marketplace",
+        "version": "0.10.3"
+      },
+      {
+        "id": "quick-insert",
+        "version": "3.7.8"
+      },
+      {
+        "id": "reaction-tracker",
+        "version": "0.1.0"
+      },
+      {
+        "id": "socketlib",
+        "version": "v1.1.4"
+      },
+      {
+        "id": "tagger",
+        "version": "1.6.0"
+      },
+      {
+        "id": "tidy5e-sheet",
+        "version": "14.2.0"
+      },
+      {
+        "id": "vision-5e",
+        "version": "3.2.3"
+      },
+      {
+        "id": "vtta-tokenizer",
+        "version": "5.0.3"
+      },
+      {
+        "id": "wgtngm-light-switch",
+        "version": "1.2.1"
+      },
+      {
+        "id": "wgtngm-mini-edit",
+        "version": "0.7.7"
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "core.ready",
+      "status": "pass",
+      "durationMs": 0
+    },
+    {
+      "id": "core.users",
+      "status": "pass",
+      "durationMs": 0
+    },
+    {
+      "id": "core.character-routing",
+      "status": "pass",
+      "durationMs": 1
+    },
+    {
+      "id": "core.ignored-users-window",
+      "status": "pass",
+      "durationMs": 11370
+    },
+    {
+      "id": "morelord-game-master.panel-layout",
+      "status": "pass",
+      "durationMs": 298
+    }
+  ],
+  "summary": {
+    "pass": 5,
+    "fail": 0,
+    "skip": 0
+  },
+  "ok": true
+}

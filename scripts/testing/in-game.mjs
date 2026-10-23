@@ -28,7 +28,7 @@ export const gameMasterChecks=[{
       assert([...document.querySelectorAll('[data-roll-card="fate"] select[name="scope"] option')].map(option=>option.textContent).join('|')==="Party|Selected tokens","Roll of Fate chooses party or selected tokens.");
       assert([...document.querySelectorAll('.gm-specialty-card:not([data-roll-card="fate"])')].every(card=>card.querySelector('input[name="blind"]')),"Private specialty cards include a blind toggle.");
       assert(!document.querySelector('[data-roll-card="fate"] input[name="blind"]'),"Roll of Fate stays public.");
-      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
+      assert([...document.querySelectorAll('#mlgm [role=tab]')].map(el=>el.textContent).join('|')==='Roll Requests|Bulk Actions|Macros|Sound|Triggers|Campaign AI|GM Settings|Player Settings',"Tabs use the requested names and order.");
       assert(document.querySelector('#mlgm .ml-page-body'),"Core page layout is initialized.");
       const pending=api.requestCheck({actorIds:[actor.id],skill:"prc",dc:12,blind:true});
       await wait(()=>document.querySelector(`input[name="actorUuids"][value="${actor.uuid}"]`));

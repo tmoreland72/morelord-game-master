@@ -3,6 +3,8 @@ import {assert} from '../../../morelord-core/scripts/testing/in-game.js';
 export const panelChecks=[{
   id:'morelord-game-master.panel-layout',
   async run() {
+    assert(game.world.id === 'dev1', 'Dev1 required.');
+    let dialog;
     const api=game.modules.get('morelord-game-master').api;
     const wasOpen=document.body.classList.contains('mlgm-open');
     const style=getComputedStyle(document.documentElement);
@@ -23,11 +25,19 @@ export const panelChecks=[{
       assert(root.contains(point),'Tray stays above the canvas and sidebars.');
       document.body.append(above);
       const covered=document.elementFromPoint(bounds.left+5,bounds.top+5);
-      assert(covered===above,'Foundry windows open above the tray and receive clicks.');
+      assert(root.contains(covered),'Tray remains above the Foundry window layer.');
+      dialog = new foundry.applications.api.DialogV2({window:{title:'Game Master stacking fixture'},content:'<p>Disposable foreground regression window.</p>',buttons:[{action:'close',label:'Close'}]});
+      await dialog.render({force:true});
+      for (let index=0;index<3;index++) {
+        dialog.bringToFront();
+        const rect=dialog.element.getBoundingClientRect();
+        dialog.setPosition({left:bounds.left,top:bounds.top,width:Math.min(rect.width,bounds.width),height:Math.min(rect.height,bounds.height)});
+        assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Opened and refocused native windows cannot cover the tray.');
+      }
       for(const element of [tray,root.querySelector('.gm-handle')]) {
         const color=getComputedStyle(element).backgroundColor;
         assert(!/rgba\(|\/\s*(?:0\.|\d{1,2}%)/.test(color),'Panel and handle backgrounds are fully opaque.');
       }
-    } finally { below.remove();above.remove();api.toggle(wasOpen); }
+    } finally { await dialog?.close();below.remove();above.remove();api.toggle(wasOpen); }
   }
 }];

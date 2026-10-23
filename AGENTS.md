@@ -10,12 +10,12 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
   roll their characters. Any GM may roll for anyone, including inactive players.
 - The check builder and each private specialty request have a saved Blind roll toggle. Roll of Fate stays public and has no blind toggle. Blind results and summaries are GM/Assistant-only; non-blind results are public. Never return private totals in request flags or acknowledgements.
 - Show check results only as chat cards, never in the Game Master tray.
-- Preserve the bottom tray. Tabs are Roll Requests, Macros, Sound, Triggers, Campaign AI, GM Settings, and Player Settings. Roll Requests keeps the check builder on one row, then shows enabled specialty requests as compact cards in a grid. There are no section or column headers.
+- Preserve the bottom tray. Tabs are Roll Requests, Bulk Actions, Macros, Sound, Triggers, Campaign AI, GM Settings, and Player Settings. Roll Requests keeps the check builder on one row, then shows enabled specialty requests as compact cards in a grid. There are no section or column headers.
 - The check builder stays on one line inside a card with the same border, background, and padding as the specialty cards: type, skill or ability, optional DC, who rolls, Blind roll when it can be private, and the dice button. Specialty cards place the request name above one row: the selector fills the remaining space, then Blind roll, then the dice button. Roll of Fate has no blind toggle, so its row is Who rolls and the dice button. Delerium Search keeps the Craftworks search-area selector and the showDeleriumSearch world toggle.
 - Roll Requests, Macros, and Triggers have no outer surface frame.
 - Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Dragging a GM Settings row saves that world's card order; hidden requests keep their place. Ambience, the Campaign AI companion, and other module configuration stay in Foundry Game Settings.
 - Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
-- Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays above the canvas and below Foundry windows, and a rebuild keeps in-progress fields. Sound levels use Foundry's volume curve.
+- Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays above the canvas and Foundry windows, and a rebuild keeps in-progress fields. Sound levels use Foundry's volume curve.
 - Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
 - Delerium Search reuses Craftworks rules and rewards with Game Master's chat UI.
 - Blind death saves keep sheet counters unchanged; public death saves retain native updates.
@@ -24,7 +24,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Call for Roll actions are not saved buttons; save all control changes immediately for next time. Encounter dice use a dropdown.
 - Create skill summaries only after every roll card exists; retain averages for single-player checks.
 - Delerium summaries have no average; reuse Craftworks rewards/encounters and expose their actions.
-- Macros follows Roll Requests, starts empty, and accepts dragged macros without a ten-slot limit.
+- Macros follows Bulk Actions, starts empty, and accepts dragged macros without a ten-slot limit.
 - Triggers use native spell provenance and qualifying Sneak Attack hits, with once-per-turn damage. Managed macros call the module API. Sneak Attack adjacency is measured on the target token's scene.
 
 - Foraging reuses Journeys terrain/DC configuration and food rules, with chat requests and complete-only summaries respecting visibility.
@@ -49,3 +49,5 @@ All roll-request cards are public, including Wild Magic d20 requests; assigned-p
 - World Clock defaults to 10 game minutes per real minute; game pause and started combat suspend its timer. Defer combat time and add 6 seconds per round on combat end without double-counting native advancement. Preserve manual calendar adjustments. Hex-map timing is future work.
 
 - Keep release notes and changelogs in `release-notes/`. Put temporary scripts, staging folders, browser profiles, and other working files in the owning module's `/tmp/` directory; ignore `/tmp/` in Git and exclude it from release archives. Preserve permanent source, documentation, and regression evidence.
+
+- Bulk Actions uses the Player Settings scope for coin additions and removals. Split each denomination separately and distribute remainders in party order. Removal spends personal currency first, then the shared D&D5e Party/Group purse; report any unpaid deficit without negative balances. Every applied operation posts a standard public Core chat card.

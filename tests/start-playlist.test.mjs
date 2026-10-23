@@ -5,9 +5,9 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
 
-test('the tray stays below Foundry dialogs and notifications', () => {
+test('the tray stays above Foundry dialogs and below notifications', () => {
   const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
-  assert.match(css, /z-index:\s*calc\(var\(--z-index-ui\) \+ 1\)/);
+  assert.match(css, /z-index:\s*calc\(var\(--z-index-tooltip\) - 1\)/);
   assert.doesNotMatch(css, /z-index:\s*2147483647/);
 });
 

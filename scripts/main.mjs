@@ -7,14 +7,16 @@ import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.
 import { ID, escapeHTML as e, companionURL } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import {applyBulkCoins, bulkCoinsContent, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 
-const tabs = { rolls: "Roll Requests", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
+const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
 let campaign, campaigns = [], connection, aiBusy = false;
 const drafts = new Map();
 let campaignSelection = 0;
 let terrainOptions = [];
 let settingTrackVolumes = false;
+let bulkCoinsBusy = false;
 let suppressMacroClick = false;
 let suppressSpecialtyToggle = false;
 const get = key => game.settings.get(ID, key);
@@ -78,7 +80,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", async () => {
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
-  try { initializeRequests(); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
+  try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
   state = foundry.utils.deepClone(get("board"));
@@ -177,14 +179,15 @@ function render() {
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
-    <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
+    <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
   core().ui.applyPageLayout({element:root});
   if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests.</p>${characterChoices(partyActorIds())}</div>`;
+  if (tab === "bulk") return bulkCoinsContent(partyActorIds(), state.last.bulkCoins, bulkCoinsBusy, state.last.bulkCoinAction);
+  if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "sound") {
@@ -267,6 +270,22 @@ async function sendCheck() {
   await persist(n => { n.last.check = draft; });
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
 }
+async function sendBulkCoins(operation) {
+  if (bulkCoinsBusy) return;
+  await saving;
+  if (bulkCoinsBusy) return;
+  const form = root.querySelector('[data-mlgm-bulk-coins]');
+  if (!form?.reportValidity()) return;
+  const coins = readCoins(Object.fromEntries(new FormData(form)));
+  bulkCoinsBusy = true; render();
+  try {
+    const result = await applyBulkCoins(operation, coins);
+    if (!result?.messageId) throw Error('The coordinating GM must refresh Game Master before using party coins.');
+    for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
+    await persist(n => { n.last.bulkCoins = readCoins(); });
+    notify('Party coins updated. See the chat card for changes and deficits.');
+  } finally { bulkCoinsBusy = false; render(); }
+}
 async function sendQuick(id) {
   await saving;
   if (id === "fate") return sendFate();
@@ -322,6 +341,21 @@ async function act(action, id) {
   if (action === "tab") { tab = id; render(); return; }
   if (action === "send-check") return sendCheck();
   if (action === "quick-request") return sendQuick(id);
+  if (action === "bulk-coins") return sendBulkCoins(root.querySelector('[name="bulkCoinAction"]')?.value);
+  if (action === "bulk-coins-clear") {
+    if (bulkCoinsBusy) return;
+    for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
+    await persist(n => { n.last.bulkCoins = readCoins(); });
+    return;
+  }
+  if (action === "bulk-coin-step") {
+    const [key, direction] = id.split(':');
+    const input = root.querySelector(`[data-mlgm-bulk-coins] input[name="${key}"]`);
+    if (!input) return;
+    if (Number(direction) > 0) input.stepUp(); else input.stepDown();
+    input.dispatchEvent(new Event('change', {bubbles:true}));
+    return;
+  }
   if (action === "settings") return settings();
   if (action === "trigger-edit" || action === "trigger-remove") return;
   if (action === "fate") return sendFate();
@@ -343,6 +377,13 @@ async function act(action, id) {
 }
 async function onChange(event) {
   const el = event.target;
+  if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : 'Send'; await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
+  const bulkForm = el.closest('[data-mlgm-bulk-coins]');
+  if (bulkForm) {
+    if (el.value !== '' && Number(el.value) < 0) el.value = '0';
+    if (bulkForm.checkValidity()) await persist(n => { n.last.bulkCoins = readCoins(Object.fromEntries(new FormData(bulkForm))); });
+    return;
+  }
   if (el.id === "ml-game-master-track-volume" && el.checkValidity()) {
     gm();
     const percent = Number(el.value);
@@ -534,14 +575,15 @@ function refreshTray(tabs) {
 Hooks.on("morelordGameMasterTriggersChanged", () => refreshTray(["triggers"]));
 for (const hook of ["updatePlaylist", "updatePlaylistSound"]) Hooks.on(hook, () => refreshTray(["sound"]));
 for (const hook of ["createMacro", "updateMacro", "deleteMacro"]) Hooks.on(hook, () => refreshTray(["macros"]));
-Hooks.on("updateUser", () => refreshTray(["party", "rolls"]));
+Hooks.on("updateUser", () => refreshTray(["party", "rolls", "bulk"]));
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
   if (setting.key === `${ID}.macros`) refreshTray(["macros"]);
   if (setting.key === `${ID}.specialtyOrder`) refreshTray(["settings", "rolls"]);
+  if (setting.key === 'dnd5e.primaryParty') refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
-    if (open && ["rolls", "sound", "triggers", "party", "settings", "macros"].includes(tab)) render();
+    if (open && ["rolls", "sound", "triggers", "party", "settings", "macros", "bulk"].includes(tab)) render();
   }
   if (SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) refreshTray(["rolls", "settings"]);
 });

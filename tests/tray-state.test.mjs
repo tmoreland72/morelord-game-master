@@ -16,13 +16,13 @@ function field(partial) {
   };
 }
 
-test('the tray stacks above the HUD and below Foundry windows', () => {
-  assert.match(css, /z-index:\s*calc\(var\(--z-index-ui\)\s*\+\s*1\)/);
+test('the tray stacks above Foundry windows', () => {
+  assert.match(css, /z-index:\s*calc\(var\(--z-index-tooltip\)\s*-\s*1\)/);
   assert.doesNotMatch(css, /2147483647/);
   assert.match(source, /const notify = text => ui\.notifications\.info\(text\)/);
   assert.doesNotMatch(source, /createChatMessage|deleteChatMessage|updateChatMessage/);
   assert.match(source, /refreshTray\(\["sound"\]\)/);
-  assert.match(source, /refreshTray\(\["party", "rolls"\]\)/);
+  assert.match(source, /refreshTray\(\["party", "rolls", "bulk"\]\)/);
 });
 
 test('in-progress tray fields survive a rebuild and untouched fields take the new value', () => {
