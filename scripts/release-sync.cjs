@@ -1,5 +1,10 @@
 // Compendium distributes master directly; releases record its manifest version.
-module.exports = async function syncRelease({ github, context, core }) {
+const path = require('node:path');
+const { assertChangelogCurrent } = require('./changelog.cjs');
+
+module.exports = async function syncRelease({ github, context, core, root }) {
+  // Installed copies read root CHANGELOG.md. Refuse a tag when it is stale.
+  assertChangelogCurrent(root || path.resolve(__dirname, '..'));
   const repo = context.repo;
   async function optional(call) {
     try { return (await call()).data; }

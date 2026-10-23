@@ -22,7 +22,11 @@ jobs:
           sparse-checkout: |
             scripts
             tests
-      - run: node --test tests/release-sync.test.cjs
+            release-notes
+            module.json
+            CHANGELOG.md
+      - run: node scripts/changelog.cjs --check
+      - run: node --test tests/release-sync.test.cjs tests/changelog.test.mjs
       - uses: actions/github-script@v8
         with:
           script: |

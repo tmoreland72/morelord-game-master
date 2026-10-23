@@ -48,6 +48,12 @@ All roll-request cards are public, including Wild Magic d20 requests; assigned-p
 - Trigger definitions are global across worlds on the same Foundry installation. Macros, saved roll requests, sound buttons, and remembered options are world-specific.
 - World Clock defaults to 10 game minutes per real minute; game pause and started combat suspend its timer. Defer combat time and add 6 seconds per round on combat end without double-counting native advancement. Preserve manual calendar adjustments. Hex-map timing is future work.
 
-- Keep release notes and changelogs in `release-notes/`. Put temporary scripts, staging folders, browser profiles, and other working files in the owning module's `/tmp/` directory; ignore `/tmp/` in Git and exclude it from release archives. Preserve permanent source, documentation, and regression evidence.
+- Keep per-version release notes in `release-notes/`. Put temporary scripts, staging folders, browser profiles, and other working files in the owning module's `/tmp/` directory; ignore `/tmp/` in Git and exclude it from release archives. Preserve permanent source, documentation, and regression evidence.
 
 - Bulk Actions uses the Player Settings scope for coin additions and removals. Split each denomination separately and distribute remainders in party order. Removal spends personal currency first, then the shared D&D5e Party/Group purse; report any unpaid deficit without negative balances. Every applied operation posts a standard public Core chat card.
+
+## Releases and documentation
+
+- Every release maintains the cumulative root `CHANGELOG.md` (newest version first, `#`/`##`/`###` headings with spaces after `#`, `- ` bullets, no `---` horizontal rules) alongside `release-notes/RELEASE-NOTES-<version>.md`.
+- `release-notes/` is export-ignored, so the installed module gets the changelog from `./CHANGELOG.md`. Keep that file at the repository root. A legacy `release-notes/<version>.md` note is included when `RELEASE-NOTES-<version>.md` is absent.
+- Regenerate `CHANGELOG.md` with `node scripts/changelog.cjs` after editing release notes. `node scripts/changelog.cjs --check` verifies it. The manifest release sync refuses to publish when those notes exist and `CHANGELOG.md` is stale. Omit `## Verification` and other internal test sections from the cumulative file.
