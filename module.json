@@ -99,7 +99,7 @@
     }
   ],
   "url": "https://github.com/tmoreland72/morelord-game-master",
-  "changelog": "https://github.com/tmoreland72/morelord-game-master/tree/master/release-notes",
+  "changelog": "https://github.com/tmoreland72/morelord-game-master/blob/master/CHANGELOG.md",
   "manifest": "https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json",
   "download": "https://github.com/tmoreland72/morelord-game-master/archive/refs/heads/master.zip"
 }
