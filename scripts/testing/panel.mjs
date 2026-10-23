@@ -4,7 +4,8 @@ export const panelChecks=[{
   id:'morelord-game-master.panel-layout',
   async run() {
     assert(game.world.id === 'dev1', 'Dev1 required.');
-    let dialog;
+    let dialog, playlistDialog;
+    let previousTab;
     const api=game.modules.get('morelord-game-master').api;
     const wasOpen=document.body.classList.contains('mlgm-open');
     const style=getComputedStyle(document.documentElement);
@@ -34,10 +35,29 @@ export const panelChecks=[{
         dialog.setPosition({left:bounds.left,top:bounds.top,width:Math.min(rect.width,bounds.width),height:Math.min(rect.height,bounds.height)});
         assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Opened and refocused native windows cannot cover the tray.');
       }
+      previousTab=root.querySelector('[data-action="tab"][aria-selected="true"]')?.dataset.id;
+      root.querySelector('[data-action="tab"][data-id="sound"]').click();
+      root.querySelector('[data-action="playlist"]').click();
+      for(let attempt=0;attempt<100;attempt++) {
+        playlistDialog=document.getElementById('morelord-game-master-start-playlist');
+        if(playlistDialog?.matches(':modal')) break;
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      assert(playlistDialog?.matches(':modal'),'Start Playlist opens in the native foreground modal layer.');
+      const playlistBounds=playlistDialog.getBoundingClientRect();
+      assert(playlistDialog.contains(document.elementFromPoint(playlistBounds.left+20,playlistBounds.top+20)),'Start Playlist is visible and receives clicks above the tray.');
+      playlistDialog.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
       for(const element of [tray,root.querySelector('.gm-handle')]) {
         const color=getComputedStyle(element).backgroundColor;
         assert(!/rgba\(|\/\s*(?:0\.|\d{1,2}%)/.test(color),'Panel and handle backgrounds are fully opaque.');
       }
-    } finally { await dialog?.close();below.remove();above.remove();api.toggle(wasOpen); }
+    } finally {
+      if(playlistDialog?.isConnected) {
+        const app=Object.values(ui.windows).find(app=>app.element===playlistDialog);
+        if(app) await app.close();
+        else playlistDialog.querySelector('[data-action="close"]')?.click();
+      }
+      if(previousTab) document.querySelector(`#mlgm [data-action="tab"][data-id="${previousTab}"]`)?.click();
+      await dialog?.close();below.remove();above.remove();api.toggle(wasOpen); }
   }
 }];

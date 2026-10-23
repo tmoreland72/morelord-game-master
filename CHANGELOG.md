@@ -1,5 +1,11 @@
 # Morelord Game Master Changelog
 
+## 0.1.14
+
+### What Changed
+
+- Fixed Game Master forms, including Start Playlist, opening behind the tray. Forms now use the native Foundry modal dialog layer above the tray while retaining shared Core styling.
+
 ## 0.1.13
 
 ### What Changed

@@ -171,7 +171,7 @@ Regression: run defaultTriggersCheck from scripts/testing/default-triggers.mjs t
 
 Version 0.1.3 requires Core 0.3.12 or newer. Core 0.3.11 omitted the public runSerialized export and can save a roll without displaying its outcome. Update Core and refresh connected clients to use the corrected API.
 
-The Game Master panel and tray tab use Core’s shared window surface with a fully opaque background. Its chevron points up when closed and down when open; the button also exposes its expanded state to assistive technology.
+The Game Master panel and tray tab use Core’s shared window surface with a fully opaque background. Forms opened by the tray, including Start Playlist, open above it as native modal dialogs. Close or cancel the form to return to the tray. Its chevron points up when closed and down when open; the button also exposes its expanded state to assistive technology.
 
 Version 0.1.4 requires Core 0.3.13 for the shared tray-handle styling.
 

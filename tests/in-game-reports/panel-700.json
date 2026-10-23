@@ -1,7 +1,7 @@
 {
   "suite": "morelord-core-smoke",
   "schemaVersion": 1,
-  "startedAt": "2026-10-22T22:59:54.753Z",
+  "startedAt": "2026-10-23T20:25:42.225Z",
   "environment": {
     "foundry": "14.369",
     "system": {
@@ -141,7 +141,7 @@
       },
       {
         "id": "morelord-core",
-        "version": "0.5.1"
+        "version": "0.5.3"
       },
       {
         "id": "morelord-craftworks",
@@ -157,11 +157,11 @@
       },
       {
         "id": "morelord-game-master",
-        "version": "0.1.12"
+        "version": "0.1.13"
       },
       {
         "id": "morelord-journeys",
-        "version": "0.4.0"
+        "version": "0.4.1"
       },
       {
         "id": "morelord-marketplace",
@@ -170,10 +170,6 @@
       {
         "id": "quick-insert",
         "version": "3.7.8"
-      },
-      {
-        "id": "reaction-tracker",
-        "version": "0.1.0"
       },
       {
         "id": "socketlib",
@@ -229,7 +225,7 @@
     {
       "id": "morelord-game-master.panel-layout",
       "status": "pass",
-      "durationMs": 270
+      "durationMs": 332
     }
   ],
   "summary": {

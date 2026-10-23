@@ -55,7 +55,7 @@ function persist(change) {
   return saving;
 }
 async function form(title, content, actions = [["ok", "Save"]]) {
-  return foundry.applications.api.DialogV2.wait({ id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|campaign|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
+  return foundry.applications.api.DialogV2.wait({ modal: true, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|campaign|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
     content: `<div><div class="ml-app ml-app-shell ml-dialog-shell">${content}</div></div>`, rejectClose: false,
     buttons: actions.map(([action, text], i) => ({ action, label: text, default: i === 0,
       callback: (_event, btn) => ({ action, data: new FormData(btn.form) }) })) });
