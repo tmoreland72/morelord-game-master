@@ -22,24 +22,24 @@ export function rememberCheatSheet(root) {
 
 function linesHTML(id, lines = []) {
   if (!lines.length) return "";
-  return `<ul>${lines.map((_, index) => `<li>${e(cheatText(`item.${id}.line.${index}`))}</li>`).join("")}</ul>`;
+  return `<ul>${lines.map((_, index) => `<li>${e(cheatText(`item.${id}.lines.${index}`))}</li>`).join("")}</ul>`;
 }
 
 function tableHTML(id, table) {
   if (!table) return "";
-  const headers = table.headers.map((_, index) => `<th scope="col">${e(cheatText(`item.${id}.table.header.${index}`))}</th>`).join("");
-  const rows = table.rows.map((row, rowIndex) => `<tr>${row.map((_, column) => `<td>${e(cheatText(`item.${id}.table.${rowIndex}.${column}`))}</td>`).join("")}</tr>`).join("");
-  return `<table><caption>${e(cheatText(`item.${id}.table`))}</caption><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+  const headers = table.headers.map((_, index) => `<th scope="col">${e(cheatText(`item.${id}.table.headers.${index}`))}</th>`).join("");
+  const rows = table.rows.map((row, rowIndex) => `<tr>${row.map((_, column) => `<td>${e(cheatText(`item.${id}.table.rows.${rowIndex}.${column}`))}</td>`).join("")}</tr>`).join("");
+  return `<table><caption>${e(cheatText(`item.${id}.table.caption`))}</caption><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 export function cheatTooltipHTML(item) {
-  return `<div class="mlgm-cheat-tip__body"><p><strong>${e(cheatText(`item.${item.id}`))}</strong></p>${linesHTML(item.id, item.lines)}${tableHTML(item.id, item.table)}</div>`;
+  return `<div class="mlgm-cheat-tip__body"><p><strong>${e(cheatText(`item.${item.id}.label`))}</strong></p>${linesHTML(item.id, item.lines)}${tableHTML(item.id, item.table)}</div>`;
 }
 
 export function renderCheatSheet() {
   const sections = CHEAT_SECTIONS.map(section => {
     const chips = section.items.map(item => {
-      const label = cheatText(`item.${item.id}`);
+      const label = cheatText(`item.${item.id}.label`);
       const tip = cheatTooltipHTML(item);
       return `<button type="button" class="gm-cheat-chip" data-mlgm-cheat="${e(item.id)}" data-tooltip="${e(label)}" data-tooltip-html="${e(tip)}" data-tooltip-class="mlgm-cheat-tip">${e(label)}</button>`;
     }).join("");

@@ -68,6 +68,44 @@ test('attribution names SRD 5.2.1 and CC-BY-4.0, and the sheet has no rules-vers
   assert.doesNotMatch(source, /rulesVersion|\b2014\b|\blegacy\b|SRD 5\.1/);
 });
 
+function setProperty(object, key, value) {
+  let target = object;
+  if (key.includes('.')) {
+    const parts = key.split('.');
+    key = parts.pop();
+    target = parts.reduce((node, part) => {
+      if (!node.hasOwnProperty(part)) node[part] = {};
+      return node[part];
+    }, object);
+  }
+  target[key] = value;
+}
+
+function expandLocalization(flat) {
+  const expanded = {};
+  for (const [key, value] of Object.entries(flat)) {
+    const nested = value instanceof Object && !Array.isArray(value) ? expandLocalization(value) : value;
+    setProperty(expanded, key, nested);
+  }
+  return expanded;
+}
+
+function localizationCollisions(flat) {
+  const collisions = [];
+  const keys = Object.keys(flat);
+  const present = new Set(keys);
+  for (const key of keys) {
+    const parts = key.split('.');
+    for (let index = 1; index < parts.length; index += 1) {
+      const prefix = parts.slice(0, index).join('.');
+      if (!present.has(prefix)) continue;
+      const value = flat[prefix];
+      if (typeof value !== 'object' || value === null) collisions.push(`${prefix} is ${JSON.stringify(value)} and also a parent of ${key}`);
+    }
+  }
+  return collisions;
+}
+
 test('language strings match the data module', () => {
   const english = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
   const entries = cheatStringEntries();
@@ -75,6 +113,20 @@ test('language strings match the data module', () => {
   for (const [key, value] of entries) assert.equal(english[`morelord-game-master.cheat.${key}`], value, key);
   const cheatKeys = Object.keys(english).filter(key => key.startsWith('morelord-game-master.cheat.'));
   assert.equal(cheatKeys.length, entries.length);
+  assert.equal(english['morelord-game-master.cheat.item.blinded'], undefined);
+  assert.equal(english['morelord-game-master.cheat.item.blinded.label'], 'Blinded');
+  assert.match(english['morelord-game-master.cheat.item.blinded.lines.0'], /automatically fail any ability check that requires sight/);
+});
+
+test('localization keys expand without a string also being a parent', () => {
+  const reported = {'morelord-game-master.cheat.item.blinded': 'Blinded', 'morelord-game-master.cheat.item.blinded.line.0': 'You can\'t see.'};
+  assert.throws(() => expandLocalization(reported), /Cannot create property 'line' on string 'Blinded'/);
+  assert.ok(localizationCollisions(reported).length > 0);
+  const reversed = {'morelord-game-master.cheat.item.blinded.line.0': 'You can\'t see.', 'morelord-game-master.cheat.item.blinded': 'Blinded'};
+  assert.ok(localizationCollisions(reversed).length > 0);
+  const english = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
+  assert.deepEqual(localizationCollisions(english), []);
+  assert.doesNotThrow(() => expandLocalization(english));
 });
 
 test('chips expose Foundry HTML tooltips and keyboard focus activates them', () => {

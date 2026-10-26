@@ -336,13 +336,13 @@ export function cheatStringEntries(sections = CHEAT_SECTIONS) {
   for (const section of sections) {
     entries.push([`section.${section.id}`, section.title]);
     for (const item of section.items) {
-      entries.push([`item.${item.id}`, item.label]);
-      for (const [index, line] of (item.lines ?? []).entries()) entries.push([`item.${item.id}.line.${index}`, line]);
+      entries.push([`item.${item.id}.label`, item.label]);
+      for (const [index, line] of (item.lines ?? []).entries()) entries.push([`item.${item.id}.lines.${index}`, line]);
       if (item.table) {
-        entries.push([`item.${item.id}.table`, item.table.caption]);
-        for (const [index, header] of item.table.headers.entries()) entries.push([`item.${item.id}.table.header.${index}`, header]);
+        entries.push([`item.${item.id}.table.caption`, item.table.caption]);
+        for (const [index, header] of item.table.headers.entries()) entries.push([`item.${item.id}.table.headers.${index}`, header]);
         for (const [rowIndex, row] of item.table.rows.entries()) {
-          for (const [column, cell] of row.entries()) entries.push([`item.${item.id}.table.${rowIndex}.${column}`, cell]);
+          for (const [column, cell] of row.entries()) entries.push([`item.${item.id}.table.rows.${rowIndex}.${column}`, cell]);
         }
       }
     }
