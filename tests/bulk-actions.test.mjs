@@ -108,7 +108,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
-    assert.match(html, new RegExp(tokenFieldList().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    const tokensCard = html.slice(html.indexOf('data-mlgm-bulk="tokens"'), html.indexOf('data-mlgm-bulk="undo"'));
+    assert.match(tokensCard, /data-action="bulk-tokens-help"/);
+    assert.match(tokensCard, /fa-circle-question/);
+    assert.match(tokensCard, /aria-label="Copied token settings"/);
+    assert.match(tokensCard, /A selected token is used when several are placed/);
+    assert.doesNotMatch(tokensCard, /image and scale/);
     assert.doesNotMatch(html, /not copied|left off|omits/i);
     assert.match(html, /data-action="bulk-coins"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-xp"[^>]*>Apply</);
@@ -118,6 +123,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(removal, /data-action="bulk-coins"[^>]*>Take</);
     const tray = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
     assert.match(tray, /endsWith\('-remove'\) \? 'Take' : bulkText\('coins\.apply'\)/);
+    assert.match(tray, /bulk-tokens-help"\) return form\(bulkText\('tokens\.help'\), `<p>\$\{bulkHTML\('tokens\.copied', \{fields: tokenFieldList\(\)\}\)\}<\/p>`/);
     const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
     assert.match(undo, /disabled/);
     assert.match(undo, /Nothing to undo/);

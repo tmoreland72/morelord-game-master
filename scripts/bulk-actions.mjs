@@ -219,7 +219,8 @@ function inspirationContent(action, busy, actorIds) {
 }
 
 function tokenContent(busy, actorIds) {
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><p>${bulkHTML('tokens.hint', {fields: tokenFieldList()})}</p><button type="button" data-action="bulk-tokens" ${busy || !actorIds.length ? 'disabled' : ''}>${bulkHTML('tokens.sync')}</button></section>`;
+  const help = bulkHTML('tokens.help');
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><div class="gm-specialty-row"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><button type="button" class="ml-icon-button ml-help-button gm-row-action" data-action="bulk-tokens-help" title="${help}" aria-label="${help}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></div><p>${bulkHTML('tokens.hint')}</p><button type="button" data-action="bulk-tokens" ${busy || !actorIds.length ? 'disabled' : ''}>${bulkHTML('tokens.sync')}</button></section>`;
 }
 
 function undoContent(snapshot, busy) {
