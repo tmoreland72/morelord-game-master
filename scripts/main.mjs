@@ -302,7 +302,7 @@ async function sendBulkXp(operation) {
   if (bulkBusy) return;
   const form = root.querySelector('[data-mlgm-bulk-xp]');
   if (!form?.reportValidity()) return;
-  const amount = readXp(new FormData(form).get('xp'));
+  const amount = readXp(new FormData(form).get('xp'), {allowZero: operation === 'set'});
   bulkBusy = true; render();
   try {
     const result = await applyBulkXp(operation, amount);

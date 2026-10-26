@@ -211,7 +211,7 @@ In Bulk Actions, Clear resets all five coin fields to zero and saves them withou
 
 ### XP
 
-XP sits under Coins. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. The action updates `system.details.xp.value`. A successful Send clears the amount.
+XP sits under Coins. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. **Set all party XP to this amount** replaces each member's experience with that non-negative whole number. The action updates `system.details.xp.value`. Undo restores the previous values. A successful Send clears the amount.
 
 ### Inspiration
 

@@ -4,7 +4,7 @@ import {bulkCoinsContent, COIN_ACTIONS} from './bulk-coins.mjs';
 import {BULK_QUEUE, readBulkUndo, writeBulkUndo} from './bulk-undo.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 
-export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each'};
+export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
 export const TOKEN_EXCLUDE = ['_id', 'actorId', 'x', 'y', 'elevation', 'position', 'delta', '_movementHistory', '_regions'];
 const excluded = new Set(TOKEN_EXCLUDE);
 let channel;
@@ -28,13 +28,15 @@ export function xpShares(amount, count, split) {
 
 export function planXp(actors, operation, amount) {
   if (!Object.hasOwn(XP_ACTIONS, operation)) throw Error(bulkText('xp.invalidAction'));
-  const shares = xpShares(amount, actors.length, operation === 'split');
+  const value = readXp(amount, {allowZero: operation === 'set'});
+  if (!Number.isInteger(actors.length) || actors.length < 1) throw Error(bulkText('error.party'));
+  const shares = operation === 'set' ? null : xpShares(value, actors.length, operation === 'split');
   return actors.map((actor, index) => {
     if (actor?.type !== 'character') throw Error(bulkText('error.character'));
     const before = Number(actor.system?.details?.xp?.value ?? 0);
     if (!Number.isSafeInteger(before) || before < 0) throw Error(bulkText('xp.invalid'));
-    const added = shares[index];
-    const after = before + added;
+    const added = operation === 'set' ? value : shares[index];
+    const after = operation === 'set' ? value : before + added;
     if (!Number.isSafeInteger(after)) throw Error(bulkText('xp.tooLarge'));
     return {actorId: actor.id, before, after, added};
   });
@@ -186,7 +188,8 @@ export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 
 
 function xpCard(operation, rows) {
   const title = bulkHTML('xp.card', {action: bulkText(XP_ACTIONS[operation])});
-  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML('xp.added', {amount: row.added.toLocaleString()}))).join(''));
+  const line = operation === 'set' ? 'xp.setTo' : 'xp.added';
+  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML(line, {amount: row.added.toLocaleString()}))).join(''));
 }
 
 function inspirationCard(action, rows) {
@@ -321,7 +324,7 @@ async function executeBulk(type, data) {
 const operation = id => id ?? foundry.utils.randomID(24);
 
 export function applyBulkXp(operationName, amount, operationId) {
-  return executeBulk('xp', {operation: operationName, amount: readXp(amount), operationId: operation(operationId)});
+  return executeBulk('xp', {operation: operationName, amount: readXp(amount, {allowZero: operationName === 'set'}), operationId: operation(operationId)});
 }
 export function applyBulkInspiration(action, operationId) {
   return executeBulk('inspiration', {action, operationId: operation(operationId)});

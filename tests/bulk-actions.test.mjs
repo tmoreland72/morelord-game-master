@@ -30,7 +30,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     for (const value of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, 'no', true, null]) assert.throws(() => readXp(value));
     const actors = [{id: 'a', type: 'character', system: {details: {xp: {value: 5}}}}, {id: 'b', type: 'character', system: {}}];
     assert.deepEqual(planXp(actors, 'each', 2).map(row => [row.before, row.after, row.added]), [[5, 7, 2], [0, 2, 2]]);
+    assert.deepEqual(planXp(actors, 'set', 4).map(row => [row.before, row.after, row.added]), [[5, 4, 4], [0, 4, 4]]);
+    assert.deepEqual(planXp(actors, 'set', 0).map(row => row.after), [0, 0]);
     assert.equal(actors[0].system.details.xp.value, 5);
+    assert.throws(() => planXp(actors, 'set', -1), /whole number/);
+    assert.throws(() => planXp(actors, 'set', 1.5), /whole number/);
+    assert.throws(() => planXp(actors, 'set', 'no'), /whole number/);
     assert.throws(() => planXp(actors, 'nope', 1), /valid XP/);
     assert.throws(() => planXp([{id: 'a', type: 'npc'}], 'each', 1), /character/);
     assert.throws(() => xpShares(1, 0, true), /Player Settings/);
@@ -67,6 +72,10 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(css, /#mlgm \.gm-bulk-pair \{[^}]*grid-template-columns:minmax\(0,1fr\)/);
     assert.match(css, /@container gm-bulk \(min-width: 24rem\) \{ #mlgm \.gm-bulk-pair \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\); \} \}/);
     assert.match(html, /Give amount to each party member/);
+    assert.match(html, /Set all party XP to this amount/);
+    const xpStart = html.indexOf('name="bulkXpAction"');
+    const xpSelect = html.slice(xpStart, html.indexOf('</select>', xpStart));
+    assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
     const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
@@ -157,6 +166,25 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.match(messages.at(-1).content, /Restored/);
       assert.equal(readBulkUndo(), null);
       await assert.rejects(applyBulkUndo('undo-operation-0002'), /no bulk action/);
+
+      await applyBulkXp('set', 7, 'xp-set-operation-0001');
+      assert.deepEqual([actors.get('a').system.details.xp.value, actors.get('b').system.details.xp.value, actors.get('c').system.details.xp.value], [7, 7, 7]);
+      assert.equal(messages.at(-1).blind, false);
+      assert.deepEqual(messages.at(-1).whisper, []);
+      assert.match(messages.at(-1).content, /Party XP: Set all party XP to this amount/);
+      assert.match(messages.at(-1).content, /Set to: 7 XP/);
+      assert.deepEqual(readBulkUndo().actors.map(row => [row.id, row.before]), [['a', 10], ['b', 20], ['c', 30]]);
+      await applyBulkUndo('undo-operation-0006');
+      assert.deepEqual([actors.get('a').system.details.xp.value, actors.get('b').system.details.xp.value, actors.get('c').system.details.xp.value], [10, 20, 30]);
+      assert.match(messages.at(-1).content, /Undid Set all party XP to this amount/);
+      assert.equal(readBulkUndo(), null);
+      await applyBulkXp('set', 0, 'xp-set-operation-0002');
+      assert.deepEqual([actors.get('a').system.details.xp.value, actors.get('b').system.details.xp.value, actors.get('c').system.details.xp.value], [0, 0, 0]);
+      await applyBulkUndo('undo-operation-0007');
+      assert.deepEqual([actors.get('a').system.details.xp.value, actors.get('b').system.details.xp.value, actors.get('c').system.details.xp.value], [10, 20, 30]);
+      assert.throws(() => applyBulkXp('set', -3, 'xp-set-operation-0003'), /whole number/);
+      assert.throws(() => applyBulkXp('set', 2.5, 'xp-set-operation-0004'), /whole number/);
+      assert.equal(readBulkUndo(), null);
 
       await applyBulkInspiration('grant', 'inspiration-grant-0001');
       assert.equal(actors.get('b').system.attributes.inspiration, true);
