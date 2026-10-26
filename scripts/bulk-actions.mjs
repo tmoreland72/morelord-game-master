@@ -164,7 +164,15 @@ async function rememberUndo(snapshot) {
 async function updateActors(updates) {
   if (!updates.length) return;
   const updated = await Actor.updateDocuments(updates);
-  if (updated.length !== updates.length) throw Error(bulkText('error.cancelled'));
+  if (updated.length === updates.length) return;
+  const returned = new Set(updated.map(document => document?.id).filter(Boolean));
+  for (const update of updates) {
+    if (returned.has(update._id)) continue;
+    // Foundry omits a prototype write whose cleaned diff is empty. That is not
+    // a cancelled update. Any other short result still is.
+    if (update.prototypeToken && !prototypeTokenDiff(prototypeBefore(game.actors.get(update._id)), update.prototypeToken)) continue;
+    throw Error(bulkText('error.cancelled'));
+  }
 }
 
 function actorCard(actorId, line) {
@@ -272,9 +280,39 @@ function sameData(left, right) {
   return true;
 }
 
+// Foundry merges the update into the current prototype and drops the document
+// when that diff is empty. Comparing both sides' keys treats a prototype that
+// merely has more nested defaults as a change, and the shorter result was
+// reported as a cancelled character update.
+function changedData(original, incoming) {
+  if (Array.isArray(incoming) || Array.isArray(original)) return sameData(original, incoming) ? undefined : incoming;
+  if (!incoming || typeof incoming !== 'object') return Object.is(original, incoming) ? undefined : incoming;
+  if (!original || typeof original !== 'object') return incoming;
+  const diff = {};
+  for (const key of Object.keys(incoming)) {
+    const inner = changedData(original[key], incoming[key]);
+    if (inner !== undefined) diff[key] = inner;
+  }
+  return Object.keys(diff).length ? diff : undefined;
+}
+
+export function prototypeTokenDiff(before, changes) {
+  if (!changes || typeof changes !== 'object') return null;
+  const original = before && typeof before === 'object' ? before : {};
+  const utils = globalThis.foundry?.utils;
+  if (utils?.mergeObject && utils?.diffObject && utils?.isEmpty) {
+    const merged = utils.mergeObject(original, changes, {inplace: false, performDeletions: true});
+    const diff = utils.diffObject(original, merged);
+    return utils.isEmpty(diff) ? null : diff;
+  }
+  return changedData(original, changes) ?? null;
+}
+
 function prototypeBefore(actor) {
-  try { return cloneData(prototypeTokenChanges(actor?.prototypeToken) ?? {}); }
-  catch { return {}; }
+  try {
+    const source = actor?.toObject?.()?.prototypeToken ?? actor?.prototypeToken;
+    return cloneData(prototypeTokenChanges(source) ?? {});
+  } catch { return {}; }
 }
 
 export function initializeBulkActions(getActorIds) {
@@ -329,8 +367,9 @@ export function initializeBulkActions(getActorIds) {
       catch { return {actorId: actor.id, skipped: true}; }
       if (!changes) return {actorId: actor.id, skipped: true};
       const before = prototypeBefore(actor);
-      if (sameData(before, changes)) return {actorId: actor.id, unchanged: true};
-      return {actorId: actor.id, before, changes};
+      const diff = prototypeTokenDiff(before, changes);
+      if (!diff) return {actorId: actor.id, unchanged: true};
+      return {actorId: actor.id, before, changes: diff};
     });
     const updates = rows.filter(row => row.changes);
     const result = await runBulk({

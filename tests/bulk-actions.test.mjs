@@ -6,7 +6,7 @@ import {BULK_UNDO, readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
 import {applyBulkCoins, initializeBulkCoins} from '../scripts/bulk-coins.mjs';
 import {
   TOKEN_FIELDS, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice,
-  chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, readXp, tokenFieldList, xpShares
+  chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, prototypeTokenDiff, readXp, tokenFieldList, xpShares
 } from '../scripts/bulk-actions.mjs';
 
 const ID = 'morelord-game-master';
@@ -79,6 +79,9 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual(prototypeTokenChanges({toObject() { return {...ignored, actorLink: true, name: 'Linked'}; }}), {name: 'Linked', actorLink: true});
     assert.equal(prototypeTokenChanges(null), null);
     assert.equal(prototypeTokenChanges({toObject() { throw new Error('Unable to materialize ActorDelta'); }}), null);
+    const nested = {name: 'Hero', sight: {enabled: true, range: 30, angle: 360}, texture: {src: 'hero.webp', scaleX: 1, scaleY: 1}};
+    assert.equal(prototypeTokenDiff(nested, {name: 'Hero', sight: {enabled: true, range: 30}, texture: {src: 'hero.webp', scaleX: 1, scaleY: 1}}), null);
+    assert.deepEqual(prototypeTokenDiff(nested, {name: 'Placed', sight: {enabled: true, range: 60}}), {name: 'Placed', sight: {range: 60}});
     const listed = tokenFieldList();
     assert.equal(listed, TOKEN_FIELDS.map(([, key]) => BULK_STRINGS[key]).slice(0, -1).join(', ') + ', and ' + BULK_STRINGS[TOKEN_FIELDS.at(-1)[1]]);
     for (const file of ['../README.md', '../AGENTS.md', '../release-notes/RELEASE-NOTES-0.2.0.md']) {
@@ -587,5 +590,86 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.deepEqual(readBulkUndo(), kept);
       assert.equal(writes.length, 4);
     } finally { Math.random = random; }
+  });
+
+  test('prototype sync from a second GM skips Foundry no-op diffs instead of cancelling the update', async () => {
+    const primary = {id: 'gm-primary', isGM: true, active: true};
+    const assistant = {id: 'gm-assistant', isGM: true, active: true};
+    const character = (id, prototypeToken) => ({
+      id, uuid: `Actor.${id}`, name: id, type: 'character', tokens: [],
+      system: {details: {xp: {value: 0}}, attributes: {inspiration: false}},
+      prototypeToken,
+      getDependentTokens() { return this.tokens; }
+    });
+    const actors = new Map([
+      ['a', character('a', {name: 'Hero', actorLink: false, texture: {src: 'hero.webp', scaleX: 1, scaleY: 1}, sight: {enabled: true, range: 30, angle: 360}})],
+      ['b', character('b', {name: 'Old', texture: {src: 'old.webp'}, x: 4, _id: 'proto'})]
+    ]);
+    const messages = [], registrations = new Map(), stored = new Map(), writes = [];
+    const channel = {on(type, handler) { registrations.set(type, handler); }, async executeAsUser(type, data, userId) {
+      assert.equal(userId, primary.id);
+      const caller = game.user;
+      game.user = primary;
+      try { return await registrations.get(type)(data, {senderUserId: caller.id}); }
+      finally { game.user = caller; }
+    }};
+    globalThis.game = {
+      user: assistant, actors, users: new Map([[primary.id, primary], [assistant.id, assistant]]), messages,
+      settings: {
+        get: (namespace, key) => stored.get(`${namespace}.${key}`),
+        set: async (namespace, key, value) => stored.set(`${namespace}.${key}`, value)
+      },
+      modules: new Map([['morelord-core', {active: true}]])
+    };
+    globalThis.MorelordCore = {
+      users: {list: () => [primary, assistant]},
+      socket: {createChannel: () => channel},
+      ui: {participation: {}, actorIdentity: ({actorUuid}) => '<span class="ml-actor-identity">' + actorUuid + '</span>'},
+      rolls: {skill() { return null; }}
+    };
+    globalThis.foundry = {utils: {randomID: () => 'test-operation-0001', deepClone: value => structuredClone(value)}};
+    globalThis.ui = {notifications: {warn() {}}};
+    globalThis.canvas = {scene: {id: 'scene'}, tokens: {controlled: []}};
+    globalThis.Actor = {async updateDocuments(updates) {
+      writes.push(updates);
+      const applied = [];
+      for (const update of updates) {
+        rejectSceneTokenFields(update);
+        const actor = actors.get(update._id);
+        if (update.prototypeToken && !prototypeTokenDiff(prototypeTokenChanges(actor.prototypeToken), update.prototypeToken)) continue;
+        if (update.prototypeToken) actor.prototypeToken = {...actor.prototypeToken, ...update.prototypeToken};
+        applied.push(actor);
+      }
+      return applied;
+    }};
+    globalThis.ChatMessage = {async create(data) {
+      const message = {id: String(messages.length), author: game.user, content: data.content, flags: structuredClone(data.flags), getFlag: (_namespace, flag) => message.flags[ID][flag], async update(change) {
+        if (change.content) message.content = change.content;
+        for (const [path, value] of Object.entries(change)) {
+          if (!path.startsWith('flags.')) continue;
+          const parts = path.split('.');
+          let target = message;
+          for (const part of parts.slice(0, -1)) target = target[part] ??= {};
+          target[parts.at(-1)] = value;
+        }
+      }};
+      messages.push(message);
+      return message;
+    }};
+    actors.get('a').tokens = [{id: 'token-a', toObject() { return {name: 'Hero', texture: {src: 'hero.webp', scaleX: 1, scaleY: 1}, sight: {enabled: true, range: 30}, actorLink: false, sort: 3, hidden: false, delta: {items: []}}; }}];
+    actors.get('b').tokens = [{id: 'token-b', toObject() { return {name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, actorLink: false, sort: 8, shape: 1, hidden: false, locked: true, x: 1, y: 2}; }}];
+    initializeBulkActions(() => ['a', 'b']);
+    const result = await applyBulkTokens('token-two-gm-0000001');
+    assert.equal(result.unchanged, undefined);
+    assert.equal(writes.length, 1);
+    assert.deepEqual(writes[0].map(update => update._id), ['b']);
+    assert.equal(writes[0][0].prototypeToken.name, 'Placed');
+    assert.equal(writes[0][0].prototypeToken.sort, undefined);
+    assert.equal(actors.get('b').prototypeToken.name, 'Placed');
+    assert.equal(actors.get('a').prototypeToken.sight.angle, 360);
+    assert.match(messages.at(-1).content, /Prototype token updated/);
+    assert.match(messages.at(-1).content, /Skipped 1 whose prototype already matched/);
+    assert.equal(messages.at(-1).content.includes('A character update was cancelled'), false);
+    assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b']);
   });
 });
