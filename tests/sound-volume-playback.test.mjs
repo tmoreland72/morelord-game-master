@@ -62,7 +62,7 @@ test('set all track volumes is stored on every playlist sound and kept when anot
   assert.ok(writes.every(write => write.type === 'PlaylistSound' && write.options?.diff === false));
   assert.deepEqual(writes.flatMap(write => write.updates.map(update => update._id)), ['playing', 'stopped', 'one', 'two', 'rain']);
   assert.ok(writes.flatMap(write => write.updates).every(update => update.volume === 0.125));
-  assert.equal(live.volume, 0.125);
+  assert.equal(live.volume, 0.5);
   assert.equal(state.last.allTrackVolume, 25);
   assert.equal(state.last.playlist.volume, 0.125);
   assert.equal(state.last.ambience.files[0].volume, 0.125);

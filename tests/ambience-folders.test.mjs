@@ -262,7 +262,8 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   assert.match(settings, /data-mlgm-add-ambience/);
   assert.match(settings, /data-mlgm-remove-ambience/);
   assert.match(settings, /FilePicker\.implementation/);
-  assert.match(settings, /resolveAmbiencePickerPath/);
+  assert.doesNotMatch(settings, /resolveAmbiencePickerPath/);
+  assert.doesNotMatch(settings, /!current\?\.path/);
   assert.match(settings, /new Picker\(ambiencePickerOptions/);
   assert.match(settings, /LAST_BROWSED_DIRECTORY = ""/);
   assert.match(settings, /await picker\.browse\(""\)/);
@@ -518,8 +519,8 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   assert.equal(constructed[0].front, undefined);
   assert.equal(typeof constructed[0].options.callback, 'function');
   assert.deepEqual(Object.keys(constructed[0].options).sort(), ['callback', 'current', 'type']);
-  assert.deepEqual(browsed, [{source: 'data', target: 'Ambience'}]);
-  assert.equal(warnings.length, 1);
+  assert.deepEqual(browsed, []);
+  assert.equal(warnings.length, 0);
   assert.equal(renders.length, 1);
   assert.equal(renders[0].force, true);
   assert.deepEqual(Object.keys(renders[0]), ['force']);
@@ -565,6 +566,9 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   releaseRender();
   await fallback;
   assert.equal(constructed.at(-1).constructor, FilePicker);
+  assert.equal(constructed.at(-1).options.current, '');
+  assert.equal(constructed.at(-1).lastAtConstruct, '');
+  assert.equal(constructed.at(-1).browsedTarget, '');
   constructed.at(-1).activeSource = 'public';
   constructed.at(-1).options.callback('library/rain');
   assert.deepEqual(normalizeAmbienceFolders(folderRows(fieldset)), [

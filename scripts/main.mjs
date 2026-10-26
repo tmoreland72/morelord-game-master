@@ -11,7 +11,7 @@ import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList} from './bulk-actions.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
-import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan, resolveAmbiencePickerPath} from './ambience-folders.mjs';
+import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
@@ -514,7 +514,11 @@ async function onChange(event) {
     await persist(n => { n.last[card.dataset.rollCard] = config; if (card.dataset.rollCard === "encounter") n.last.die = config.die; });
     return;
   }
-  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Math.round(Number(el.value) * 100)) }); }
+  if (el.dataset.sound) {
+    if (settingTrackVolumes) return;
+    gm();
+    await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Math.round(Number(el.value) * 100)) });
+  }
 }
 function volumeFromPercent(value) {
   const n = Number(value);
@@ -539,12 +543,30 @@ function percentFromVolume(volume) {
   return Math.round(foundry.audio.AudioHelper.volumeToInput(Math.min(1, Math.max(0, level))) * 100);
 }
 function keepPlaylistVolumePrecision() {
-  const models = [foundry.documents?.BasePlaylistSound, globalThis.PlaylistSound];
-  for (const model of models) {
-    const field = model?.schema?.fields?.volume;
-    const step = Number(field?.options?.step);
-    // A 0.01 gain step turns slider 37 into 38 and slider 30 into 29.
-    if (field?.options && Number.isFinite(step) && step > 0.001) field.options.step = 0.001;
+  const seen = new Set();
+  const widen = field => {
+    if (!field || seen.has(field)) return;
+    seen.add(field);
+    // Hundredths turn 37 into 0.23 (reads 38) and 30 into 0.16 (reads 29).
+    if (field.options) field.options.step = 0.001;
+    try { field.step = 0.001; } catch { /* Some fields expose step as a getter. */ }
+    if (field._mlgmVolumeClean) return;
+    field._mlgmVolumeClean = true;
+    field._cleanType = function(value) {
+      const requested = Number(value);
+      if (!Number.isFinite(requested)) return value;
+      return Math.min(1, Math.max(0, Math.round(requested * 1000) / 1000));
+    };
+  };
+  const consider = model => widen(model?.schema?.fields?.volume);
+  consider(foundry.documents?.BasePlaylistSound);
+  consider(foundry.documents?.PlaylistSound);
+  consider(globalThis.PlaylistSound);
+  consider(globalThis.CONFIG?.PlaylistSound?.documentClass);
+  for (const playlist of game?.playlists?.contents ?? game?.playlists ?? []) {
+    consider(playlist?.sounds?.documentClass);
+    consider(playlist?.documentClass);
+    for (const sound of playlist?.sounds?.contents ?? playlist?.sounds ?? []) consider(sound);
   }
 }
 function migrateSoundVolumes(board) {
@@ -567,6 +589,48 @@ async function setTrackVolumes() {
   if (!field?.reportValidity()) return;
   const percent = Number(field.value);
   const volume = volumeFromPercent(percent);
+  const volumeKey = value => Number(Number(value).toFixed(3));
+  const sameVolume = value => Number.isFinite(Number(value)) && volumeKey(value) === volumeKey(volume);
+  const storedVolume = sound => {
+    const sourceVolume = sound?._source?.volume;
+    if (Number.isFinite(Number(sourceVolume))) return Number(sourceVolume);
+    const current = Number(sound?.volume);
+    return Number.isFinite(current) ? current : undefined;
+  };
+  // PlaylistSound#debounceVolume writes the live gain back into the document.
+  // A playing track was keeping that second value while a stopped track kept the
+  // field's hundredths rounding, so one click left both 0.23 and 0.16.
+  const holdWriteback = sounds => {
+    const held = [];
+    for (const sound of sounds) {
+      if (typeof sound?.debounceVolume !== "function" || sound.debounceVolume.mlgmHeld) continue;
+      const original = sound.debounceVolume;
+      const paused = () => {};
+      paused.mlgmHeld = true;
+      sound.debounceVolume = paused;
+      held.push([sound, original]);
+    }
+    return () => {
+      for (const [sound, original] of held) if (sound.debounceVolume?.mlgmHeld) sound.debounceVolume = original;
+    };
+  };
+  const writePlaylist = async playlist => {
+    const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])];
+    const updates = sounds.filter(sound => sound?.id).map(sound => ({_id: sound.id, volume}));
+    if (!updates.length) return 0;
+    const release = holdWriteback(sounds);
+    try {
+      await playlist.updateEmbeddedDocuments("PlaylistSound", updates, {diff: false});
+      const drifted = sounds.filter(sound => {
+        const stored = storedVolume(sound);
+        return stored !== undefined && !sameVolume(stored);
+      });
+      if (drifted.length) await playlist.updateEmbeddedDocuments("PlaylistSound", drifted.map(sound => ({_id: sound.id, volume})), {diff: false});
+    } finally {
+      release();
+    }
+    return updates.length;
+  };
   settingTrackVolumes = true;
   try {
     await persist(n=>{
@@ -580,15 +644,15 @@ async function setTrackVolumes() {
         if (saved.type==="ambience") for (const file of saved.config?.files ?? []) file.volume=volume;
       }
     });
-    render();
     let count = 0;
-    for (const playlist of [...(game.playlists.contents ?? game.playlists)]) {
-      const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])];
-      const updates = sounds.filter(sound=>sound?.id).map(sound=>({_id:sound.id,volume}));
-      if (!updates.length) continue;
-      await playlist.updateEmbeddedDocuments("PlaylistSound",updates,{diff:false});
-      for (const sound of sounds) if (sound.playing && sound.sound) sound.sound.volume=volume;
-      count += updates.length;
+    const playlists = [...(game.playlists.contents ?? game.playlists)];
+    for (const playlist of playlists) count += await writePlaylist(playlist);
+    const stored = [...new Set(playlists.flatMap(playlist => [...(playlist.sounds?.contents ?? playlist.sounds ?? [])].map(storedVolume).filter(value => value !== undefined)).map(volumeKey))];
+    const record = {percent, passed: volume, stored};
+    if (typeof console !== "undefined") {
+      const label = `${typeof ID === "string" ? ID : "morelord-game-master"} | Set All Track Volumes`;
+      console.info(label, record);
+      if (stored.some(value => !sameVolume(value))) console.warn(label, record);
     }
     ui.notifications.info(`Set ${count} playlist tracks to ${percent}%.`);
   } finally {
@@ -703,7 +767,7 @@ function refreshTray(tabs) {
   render();
 }
 Hooks.on("morelordGameMasterTriggersChanged", () => refreshTray(["triggers"]));
-for (const hook of ["updatePlaylist", "updatePlaylistSound"]) Hooks.on(hook, () => refreshTray(["sound"]));
+for (const hook of ["updatePlaylist", "updatePlaylistSound"]) Hooks.on(hook, () => { if (settingTrackVolumes) return; refreshTray(["sound"]); });
 for (const hook of ["createMacro", "updateMacro", "deleteMacro"]) Hooks.on(hook, () => refreshTray(["macros"]));
 Hooks.on("updateUser", () => refreshTray(["party", "rolls", "bulk"]));
 Hooks.on("updateSetting", setting => {
@@ -799,12 +863,7 @@ function bindAmbienceFolderEditor(dialog) {
     event.preventDefault();
     event.stopPropagation();
     try {
-      const source = [...fieldset.querySelectorAll('[name="ambienceSource"]')].at(-1)?.value ?? "data";
-      const path = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
       const Picker = foundry.applications.apps.FilePicker.implementation ?? foundry.applications.apps.FilePicker;
-      const browse = Picker.browse ?? foundry.applications.apps.FilePicker.browse;
-      const target = await resolveAmbiencePickerPath({source, path}, (nextSource, nextTarget, options) => browse.call(Picker, nextSource, nextTarget, options));
-      if (target.error) console.warn(`${ID} |`, target.error);
       let activePicker;
       const callback = (selected, instance) => {
         const folder = folderFromFilePicker(selected, instance ?? activePicker);
@@ -813,29 +872,20 @@ function bindAmbienceFolderEditor(dialog) {
         if (duplicate) return;
         add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
       };
-      const show = async current => {
-        const atRoot = !current?.path;
-        const previousDirectory = atRoot ? Picker.LAST_BROWSED_DIRECTORY : undefined;
-        if (atRoot) Picker.LAST_BROWSED_DIRECTORY = "";
-        const picker = new Picker(ambiencePickerOptions(current, callback));
-        activePicker = picker;
-        try {
-          if (atRoot && picker.browse) {
-            try { await picker.browse(""); }
-            catch (error) { console.warn(`${ID} |`, error); }
-          }
-          await picker.render({force: true});
-          picker.bringToFront?.();
-        } finally {
-          if (atRoot) Picker.LAST_BROWSED_DIRECTORY = previousDirectory ?? "";
+      // A new row starts at the data root even when other rows already have folders.
+      const previousDirectory = Picker.LAST_BROWSED_DIRECTORY;
+      Picker.LAST_BROWSED_DIRECTORY = "";
+      const picker = new Picker(ambiencePickerOptions({source: "data", path: ""}, callback));
+      activePicker = picker;
+      try {
+        if (picker.browse) {
+          try { await picker.browse(""); }
+          catch (error) { console.warn(`${ID} |`, error); }
         }
-      };
-      try { await show(target); }
-      catch (error) {
-        console.warn(`${ID} |`, error);
-        try { await activePicker?.close?.(); } catch { /* A failed window is replaced by the data-root picker. */ }
-        if (!target.path) throw error;
-        await show({source: "data", path: ""});
+        await picker.render({force: true});
+        picker.bringToFront?.();
+      } finally {
+        Picker.LAST_BROWSED_DIRECTORY = previousDirectory ?? "";
       }
     } catch (error) { fail(error); }
   });

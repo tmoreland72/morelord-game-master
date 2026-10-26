@@ -77,4 +77,84 @@ test('bulk volume covers playing and stopped tracks, skips empty playlists, and 
   assert.equal(volumeField.options.step, 0.001);
   assert.equal(writes.at(-1).updates[0].volume, 0.225);
   assert.equal(vm.runInContext('percentFromVolume(0.225)', context), 37);
+  assert.doesNotMatch(fn, /sound\.sound\.volume/);
+});
+
+test('set all track volumes keeps one three-decimal gain through the document update', async () => {
+  const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const fn = source.slice(source.indexOf('function volumeFromPercent(value)'), source.indexOf('async function run(type, config)'));
+  const logs = [];
+  const writes = [];
+  const roundToStep = (value, step) => Number((Math.round(Number(value) / step) * step).toFixed(step >= 0.01 ? 2 : 3));
+  const volumeField = {
+    options: {step: 0.01},
+    step: 0.01,
+    _cleanType(value) { return roundToStep(value, this.step ?? this.options.step ?? 0.01); }
+  };
+  const decoy = {options: {step: 0.01}, step: 0.01, _cleanType(value) { return roundToStep(value, 0.01); }};
+  const track = (id, playing) => ({
+    id, playing, volume: 0.5, _source: {volume: 0.5},
+    schema: {fields: {volume: volumeField}},
+    debounceVolume(volume) {
+      this.volume = volume;
+      this._source.volume = volume;
+    }
+  });
+  const playlist = sounds => ({
+    sounds,
+    async updateEmbeddedDocuments(type, updates, options) {
+      writes.push({type, updates: updates.map(update => ({...update})), options});
+      for (const update of updates) {
+        const sound = sounds.find(item => item.id === update._id);
+        const cleaned = sound.schema.fields.volume._cleanType(update.volume);
+        sound.volume = cleaned;
+        sound._source.volume = cleaned;
+        if (sound.playing) sound.debounceVolume(Math.round(cleaned * 0.7 * 100) / 100);
+      }
+    }
+  });
+  const playing = track('playing', true);
+  const stopped = track('stopped', false);
+  const other = track('other', true);
+  const field = {reportValidity: () => true, value: '37'};
+  const context = vm.createContext({
+    gm() {}, render() {},
+    root: {querySelector: () => field},
+    persist: async change => change(state),
+    foundry: {
+      audio: {AudioHelper: {inputToVolume: n => n ** 1.5, volumeToInput: n => n ** (1 / 1.5)}},
+      documents: {BasePlaylistSound: {schema: {fields: {volume: decoy}}}}
+    },
+    game: {playlists: [playlist([playing, stopped]), playlist([other])]},
+    ui: {notifications: {info() {}}},
+    console: {
+      info(message, record) { logs.push({message, record}); },
+      warn(message, record) { logs.push({warn: true, message, record}); }
+    }
+  });
+  const state = {last: {}};
+  context.state = state;
+  vm.runInContext(`let settingTrackVolumes=false; ${fn}`, context);
+  assert.equal(volumeField._cleanType(0.225), 0.23);
+  assert.equal(volumeField._cleanType(0.164), 0.16);
+  await vm.runInContext('setTrackVolumes()', context);
+  assert.equal(volumeField.step, 0.001);
+  assert.equal(volumeField._cleanType(0.225), 0.225);
+  assert.equal(decoy.step, 0.001);
+  assert.deepEqual(writes.map(write => [...write.updates].map(update => update.volume)), [[0.225, 0.225], [0.225]]);
+  assert.ok(writes.every(write => write.type === 'PlaylistSound' && write.options?.diff === false));
+  assert.deepEqual([playing, stopped, other].map(sound => sound.volume), [0.225, 0.225, 0.225]);
+  assert.deepEqual([playing, stopped, other].map(sound => sound._source.volume), [0.225, 0.225, 0.225]);
+  assert.equal(logs.at(-1).record.percent, 37);
+  assert.equal(logs.at(-1).record.passed, 0.225);
+  assert.deepEqual([...logs.at(-1).record.stored], [0.225]);
+  assert.equal(logs.some(entry => entry.warn), false);
+  field.value = '30';
+  await vm.runInContext('setTrackVolumes()', context);
+  assert.deepEqual([playing, stopped, other].map(sound => sound.volume), [0.164, 0.164, 0.164]);
+  assert.equal(logs.at(-1).record.percent, 30);
+  assert.equal(logs.at(-1).record.passed, 0.164);
+  assert.deepEqual([...logs.at(-1).record.stored], [0.164]);
+  assert.equal(vm.runInContext('percentFromVolume(0.164)', context), 30);
+  assert.equal(vm.runInContext('percentFromVolume(0.225)', context), 37);
 });
