@@ -11,6 +11,7 @@ import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, initializeBulkActions, readXp} from './bulk-actions.mjs';
 import {bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
+import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders} from './ambience-folders.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -65,12 +66,14 @@ Hooks.once("init", () => {
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { settings().catch(fail); return this; }
   }
-  game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience settings.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
+  game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience folders.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
   game.settings.register(ID, "board", { scope: "world", config: false, type: Object,
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
   game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
-  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "A folder in Foundry's user data containing audio files.", scope: "world", config: false, type: String, default: "Ambience" });
+  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders.", scope: "world", config: false, type: String, default: "Ambience" });
+  game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Each folder keeps its FilePicker source.", scope: "world", config: false, type: Array, default: [{source: "data", path: "Ambience"}] });
+  game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, type: Boolean, default: false });
   game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: Object, default: {empty: true}});
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
@@ -83,6 +86,7 @@ Hooks.once("ready", async () => {
   try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeBulkActions(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
+  try { await ensureAmbienceFolders(game.settings, ID); } catch (error) { console.error(`${ID} |`, error); }
   state = foundry.utils.deepClone(get("board"));
   if (migrateSoundVolumes(state)) await game.settings.set(ID, "board", state);
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
@@ -569,7 +573,11 @@ function characterDropdown(actorId) {
   const actors = core().ui.participation.listCharacterActors();
   return label("Player / character",`<select name="actorUuids" data-mlgm-character>${actors.map(a=>option(a.uuid,`${a.name} - ${recipient(a)?.name ?? "GM"}`,game.actors.get(actorId)?.uuid ?? actors[0]?.uuid)).join("")}</select>`);
 }
-Hooks.on("renderDialogV2",(app,html)=>{for(const field of html.querySelectorAll?.('[data-mlgm-character]') ?? [])core().ui.decorateActorSelect(field);});
+Hooks.on("renderDialogV2", (_app, html) => {
+  const dialog = html?.jquery ? html[0] : html;
+  for (const field of dialog?.querySelectorAll?.("[data-mlgm-character]") ?? []) core().ui.decorateActorSelect(field);
+  bindAmbienceFolderEditor(dialog);
+});
 function parseDC(value) { if (value === null || String(value).trim() === "") return null; const dc = Number(value); if (!Number.isInteger(dc) || dc < 0) throw new Error("DC must be a non-negative whole number or blank."); return dc; }
 function characterChoices(actorIds, single = false) {
   const selectedUuids = actorIds ? actorIds.map(id => game.actors.get(id)?.uuid).filter(Boolean) : null;
@@ -608,15 +616,16 @@ async function playlistForm() {
   await run("playlist", config);
 }
 async function ambienceForm() {
-  const browser = await foundry.applications.apps.FilePicker.browse("data",get("ambienceFolder"));
-  const files = browser.files.filter(f => /\.(mp3|ogg|wav|flac|webm|m4a)$/i.test(f));
-  if (!files.length) throw new Error("No audio files found in the configured Ambience folder.");
+  const folders = normalizeAmbienceFolders(get(AMBIENCE_FOLDERS));
+  const {files, errors} = await collectAmbienceFiles(folders, (source, target, options) => foundry.applications.apps.FilePicker.browse(source, target, options));
+  for (const error of errors) console.warn(`${ID} |`, error);
+  if (!files.length) throw new Error("No audio files found in the configured Ambience folders.");
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Play Ambience",`<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((path,i) => { const prev = last.find(f => f.path === path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(path.split("/").pop())}</span></label>${label("Volume (%)",input(`volume${i}`,prev ? percentFromVolume(prev.volume) : 40,'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>` , [["save","Save button"]]);
+  const result = await form("Play Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((file, i) => { const prev = last.find(entry => entry.path === file.path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span title="${e(file.path)}">${e(file.label)}</span></label>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => ({path:files[Number(i)],volume:volumeFromPercent(result.data.get(`volume${i}`))}));
+  const selected = result.data.getAll("file").map(i => ({path: files[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
-  await saveAndRun("ambience",{files:selected},result);
+  await saveAndRun("ambience", {files: selected});
 }
 
 export async function requestCheck(config) {
@@ -704,9 +713,45 @@ function triggerCards() {
   }).join("");
 }
 
+function ambienceFolderRow(folder) {
+  const shown = folder.source === "data" ? folder.path : `${folder.source}: ${folder.path}`;
+  return `<div class="ml-item-row" data-mlgm-ambience-folder><div class="ml-stack"><span title="${e(`${folder.source}: ${folder.path}`)}">${e(shown)}</span></div><button type="button" class="ml-icon-button" data-mlgm-remove-ambience title="Remove ${e(folder.path)}" aria-label="Remove ${e(folder.path)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button><input type="hidden" name="ambienceSource" value="${e(folder.source)}"><input type="hidden" name="ambiencePath" value="${e(folder.path)}"></div>`;
+}
+function ambienceFolderEditor(folders) {
+  return `<fieldset class="ml-stack" data-mlgm-ambience-folders><legend>Ambience folders</legend>${folders.map(ambienceFolderRow).join("")}<button type="button" data-mlgm-add-ambience>Add folder</button></fieldset>`;
+}
+function bindAmbienceFolderEditor(dialog) {
+  const fieldset = dialog?.querySelector?.("[data-mlgm-ambience-folders]");
+  if (!fieldset || fieldset.dataset.mlgmAmbienceBound) return;
+  fieldset.dataset.mlgmAmbienceBound = "1";
+  const add = fieldset.querySelector("[data-mlgm-add-ambience]");
+  fieldset.addEventListener("click", event => {
+    const remove = event.target.closest?.("[data-mlgm-remove-ambience]");
+    if (remove) {
+      event.preventDefault();
+      remove.closest("[data-mlgm-ambience-folder]")?.remove();
+      return;
+    }
+    if (event.target.closest?.("[data-mlgm-add-ambience]") !== add) return;
+    event.preventDefault();
+    const current = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
+    const picker = new foundry.applications.apps.FilePicker({type: "folder", current, callback: (path, instance) => {
+      const folder = folderFromFilePicker(path, instance);
+      if (!folder) return;
+      const duplicate = [...fieldset.querySelectorAll("[data-mlgm-ambience-folder]")].some(row => row.querySelector('[name="ambienceSource"]').value === folder.source && row.querySelector('[name="ambiencePath"]').value === folder.path);
+      if (duplicate) return;
+      add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
+    }});
+    picker.render({force: true});
+  });
+}
 async function settings() {
-  const result = await form("Game Master settings",label("Ambience folder",input("folder",get("ambienceFolder"))));
+  await ensureAmbienceFolders(game.settings, ID);
+  const result = await form("Game Master settings", ambienceFolderEditor(normalizeAmbienceFolders(get(AMBIENCE_FOLDERS))));
   if (!result) return;
-  await game.settings.set(ID,"ambienceFolder",result.data.get("folder").trim());
+  const sources = result.data.getAll("ambienceSource");
+  const paths = result.data.getAll("ambiencePath");
+  await game.settings.set(ID, AMBIENCE_FOLDERS, normalizeAmbienceFolders(sources.map((source, index) => ({source, path: paths[index]}))));
+  await game.settings.set(ID, AMBIENCE_MIGRATED, true);
   render();
 }
