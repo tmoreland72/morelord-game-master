@@ -8,7 +8,7 @@ import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
-import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, initializeBulkActions, readXp} from './bulk-actions.mjs';
+import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp} from './bulk-actions.mjs';
 import {bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan, resolveAmbiencePickerPath} from './ambience-folders.mjs';
@@ -92,6 +92,10 @@ Hooks.once("ready", async () => {
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
+  root.addEventListener("pointerdown", beginTrayPointer, true);
+  const releaseTrayAfterClick = () => { setTimeout(releaseTrayPointer, 0); };
+  document.addEventListener("pointerup", releaseTrayAfterClick, true);
+  document.addEventListener("pointercancel", releaseTrayAfterClick, true);
   root.addEventListener("click", event => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
@@ -183,8 +187,25 @@ function restoreControls(container, drafts) {
     try { focus.el.setSelectionRange(focus.start, focus.end); } catch { /* number and select controls */ }
   }
 }
+let holdTrayRender = false;
+let trayRenderWaiting = false;
+function beginTrayPointer(event) {
+  // Blur saves the focused amount and rebuilds the tray. Hold that rebuild until
+  // after click, or the first press on Send removes the button before click fires.
+  if (event?.button !== 0) return;
+  const target = event.target?.closest?.("[data-action]");
+  if (!target || target.disabled) return;
+  holdTrayRender = true;
+}
+function releaseTrayPointer() {
+  if (!holdTrayRender) return;
+  holdTrayRender = false;
+  if (trayRenderWaiting) render();
+}
 function render() {
   if (!root) return;
+  if (holdTrayRender) { trayRenderWaiting = true; return; }
+  trayRenderWaiting = false;
   const controls = snapshotControls(root);
   root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
@@ -282,11 +303,11 @@ async function sendCheck() {
 }
 async function sendBulkCoins(operation) {
   if (bulkBusy) return;
-  await saving;
-  if (bulkBusy) return;
   const form = root.querySelector('[data-mlgm-bulk-coins]');
   if (!form?.reportValidity()) return;
   const coins = readCoins(Object.fromEntries(new FormData(form)));
+  await saving;
+  if (bulkBusy) return;
   bulkBusy = true; render();
   try {
     const result = await applyBulkCoins(operation, coins);
@@ -298,11 +319,11 @@ async function sendBulkCoins(operation) {
 }
 async function sendBulkXp(operation) {
   if (bulkBusy) return;
-  await saving;
-  if (bulkBusy) return;
   const form = root.querySelector('[data-mlgm-bulk-xp]');
   if (!form?.reportValidity()) return;
   const amount = readXp(new FormData(form).get('xp'), {allowZero: operation === 'set'});
+  await saving;
+  if (bulkBusy) return;
   bulkBusy = true; render();
   try {
     const result = await applyBulkXp(operation, amount);
@@ -448,7 +469,7 @@ async function act(action, id) {
 async function onChange(event) {
   const el = event.target;
   if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : 'Send'; await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
-  if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = el.value === 'each' ? 'each' : 'split'; }); return; }
+  if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = bulkXpChoice(el.value); }); return; }
   if (el.name === 'bulkInspirationAction') { await persist(n => { n.last.bulkInspiration = el.value === 'clear' ? 'clear' : 'grant'; }); return; }
   const bulkForm = el.closest('[data-mlgm-bulk-coins]');
   if (bulkForm) {

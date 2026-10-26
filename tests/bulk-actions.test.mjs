@@ -5,7 +5,7 @@ import {BULK_STRINGS} from '../scripts/bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
 import {applyBulkCoins, initializeBulkCoins} from '../scripts/bulk-coins.mjs';
 import {
-  TOKEN_EXCLUDE, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel,
+  TOKEN_EXCLUDE, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice,
   chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, readXp, xpShares
 } from '../scripts/bulk-actions.mjs';
 
@@ -38,6 +38,10 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.throws(() => planXp(actors, 'set', 1.5), /whole number/);
     assert.throws(() => planXp(actors, 'set', 'no'), /whole number/);
     assert.throws(() => planXp(actors, 'nope', 1), /valid XP/);
+    assert.equal(bulkXpChoice('set'), 'set');
+    assert.equal(bulkXpChoice('each'), 'each');
+    assert.equal(bulkXpChoice('split'), 'split');
+    assert.equal(bulkXpChoice('nope'), 'split');
     assert.throws(() => planXp([{id: 'a', type: 'npc'}], 'each', 1), /character/);
     assert.throws(() => xpShares(1, 0, true), /Player Settings/);
     assert.deepEqual(planInspiration(actors, 'grant').map(row => row.after), [true, true]);

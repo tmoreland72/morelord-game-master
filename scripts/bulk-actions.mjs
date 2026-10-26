@@ -5,6 +5,9 @@ import {BULK_QUEUE, readBulkUndo, writeBulkUndo} from './bulk-undo.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 
 export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
+export function bulkXpChoice(value) {
+  return Object.hasOwn(XP_ACTIONS, value) ? value : 'split';
+}
 export const TOKEN_EXCLUDE = ['_id', 'actorId', 'x', 'y', 'elevation', 'position', 'delta', '_movementHistory', '_regions'];
 const excluded = new Set(TOKEN_EXCLUDE);
 let channel;
