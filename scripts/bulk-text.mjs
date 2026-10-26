@@ -51,7 +51,7 @@ export const BULK_STRINGS = {
   'inspiration.noneClear': 'No one in the party has inspiration.',
   'inspiration.invalid': 'Choose whether to grant or clear inspiration.',
   'tokens.title': 'Prototype Token Sync',
-  'tokens.hint': "Copies each party character's token on the active GM's current scene onto that character's prototype token. A selected token is used when several are placed. Position, coordinates, elevation, and token identity are not copied.",
+  'tokens.hint': "Copies each party character's token on the active GM's current scene onto that character's prototype token. A selected token is used when several are placed. Position, coordinates, elevation, shape, sort, hidden, locked, token identity, and an unlinked token's actor delta are not copied.",
   'tokens.sync': 'Sync prototype tokens',
   'tokens.card': 'Prototype Token Sync',
   'tokens.updated': 'Prototype token updated.',

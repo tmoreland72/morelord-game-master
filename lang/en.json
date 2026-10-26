@@ -47,7 +47,7 @@
   "morelord-game-master.inspiration.noneClear": "No one in the party has inspiration.",
   "morelord-game-master.inspiration.invalid": "Choose whether to grant or clear inspiration.",
   "morelord-game-master.tokens.title": "Prototype Token Sync",
-  "morelord-game-master.tokens.hint": "Copies each party character's token on the active GM's current scene onto that character's prototype token. A selected token is used when several are placed. Position, coordinates, elevation, and token identity are not copied.",
+  "morelord-game-master.tokens.hint": "Copies each party character's token on the active GM's current scene onto that character's prototype token. A selected token is used when several are placed. Position, coordinates, elevation, shape, sort, hidden, locked, token identity, and an unlinked token's actor delta are not copied.",
   "morelord-game-master.tokens.sync": "Sync prototype tokens",
   "morelord-game-master.tokens.card": "Prototype Token Sync",
   "morelord-game-master.tokens.updated": "Prototype token updated.",

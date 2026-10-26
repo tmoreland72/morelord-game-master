@@ -219,7 +219,7 @@ Inspiration and Prototype Token Sync share one row of compact cards, in that ord
 
 ### Prototype Token Sync
 
-**Sync prototype tokens** copies each party character's placed token on the active GM's current scene onto that character's prototype token. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. Position, coordinates, elevation, token identity, and placed-token runtime state are not copied.
+**Sync prototype tokens** copies each party character's placed token on the active GM's current scene onto that character's prototype token, whether that token is linked or unlinked. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. Foundry 14's prototype token omits identity, actor id, the unlinked actor delta, coordinates, elevation, shape, sort, hidden, locked, movement history, and regions. Those fields are left off the update. Actor link and token flags are copied.
 
 ### Undo Last Action
 

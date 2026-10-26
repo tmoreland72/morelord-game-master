@@ -8,7 +8,11 @@ export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
 export function bulkXpChoice(value) {
   return Object.hasOwn(XP_ACTIONS, value) ? value : 'split';
 }
-export const TOKEN_EXCLUDE = ['_id', 'actorId', 'x', 'y', 'elevation', 'position', 'delta', '_movementHistory', '_regions'];
+// PrototypeTokenData is TokenData without these fields. A placed token's source
+// still has them, and Actor.updateDocuments throws if they are written onto the
+// prototype. position is canvas data and is not part of TokenData.
+// https://foundryvtt.com/api/v14/types/foundry.documents.types.PrototypeTokenData.html
+export const TOKEN_EXCLUDE = ['_id', 'actorId', 'delta', 'x', 'y', 'elevation', 'shape', 'sort', 'hidden', 'locked', '_movementHistory', '_regions', 'position'];
 const excluded = new Set(TOKEN_EXCLUDE);
 let channel;
 
@@ -58,10 +62,23 @@ export function planInspiration(actors, action) {
   });
 }
 
+function placedTokenSource(token) {
+  try {
+    if (typeof token?.toObject === 'function') return token.toObject();
+    if (token && typeof token === 'object' && !Array.isArray(token)) return token;
+  } catch { /* An unlinked token can fail while materializing its actor delta. */ }
+  return null;
+}
+
 export function prototypeTokenChanges(token) {
-  const source = typeof token?.toObject === 'function' ? token.toObject() : token;
-  if (!source || typeof source !== 'object') throw Error(bulkText('tokens.invalid'));
-  return Object.fromEntries(Object.entries(source).filter(([key]) => !excluded.has(key)));
+  const source = placedTokenSource(token);
+  if (!source) return null;
+  const changes = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (excluded.has(key) || key.startsWith('_') || value === undefined) continue;
+    changes[key] = value;
+  }
+  return Object.keys(changes).length ? changes : null;
 }
 
 export function chooseSceneToken(tokens, controlledIds = []) {
@@ -234,8 +251,8 @@ function sameData(left, right) {
 }
 
 function prototypeBefore(actor) {
-  const source = typeof actor.prototypeToken?.toObject === 'function' ? actor.prototypeToken.toObject() : (actor.prototypeToken ?? {});
-  return cloneData(Object.fromEntries(Object.entries(source).filter(([key]) => !excluded.has(key))));
+  try { return cloneData(prototypeTokenChanges(actor?.prototypeToken) ?? {}); }
+  catch { return {}; }
 }
 
 export function initializeBulkActions(getActorIds) {
@@ -285,8 +302,11 @@ export function initializeBulkActions(getActorIds) {
     const rows = actors.map(actor => {
       const token = chooseSceneToken(tokensForActor(actor, scene), controlled);
       if (!token) return {actorId: actor.id, skipped: true};
+      let changes;
+      try { changes = cloneData(prototypeTokenChanges(token)); }
+      catch { return {actorId: actor.id, skipped: true}; }
+      if (!changes) return {actorId: actor.id, skipped: true};
       const before = prototypeBefore(actor);
-      const changes = cloneData(prototypeTokenChanges(token));
       if (sameData(before, changes)) return {actorId: actor.id, unchanged: true};
       return {actorId: actor.id, before, changes};
     });

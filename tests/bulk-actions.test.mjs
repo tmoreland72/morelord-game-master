@@ -11,6 +11,12 @@ import {
 
 const ID = 'morelord-game-master';
 
+function rejectSceneTokenFields(update) {
+  if (!update.prototypeToken) return;
+  const illegal = Object.keys(update.prototypeToken).filter(key => TOKEN_EXCLUDE.includes(key) || key.startsWith('_'));
+  if (illegal.length) throw new Error(`PrototypeToken may not contain ${illegal.join(', ')}`);
+}
+
 describe('bulk actions', {concurrency: 1}, () => {
   test('English strings match the language file', () => {
     const english = JSON.parse(fs.readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
@@ -54,15 +60,19 @@ describe('bulk actions', {concurrency: 1}, () => {
   });
 
   test('prototype token copy keeps scene placement and identity off the prototype', () => {
-    const token = {toObject() { return {
+    const sceneOnly = {
       _id: 'token', actorId: 'a', x: 4, y: 8, elevation: 2, position: {x: 4, y: 8},
-      delta: {x: 1}, _movementHistory: [{x: 1}], _regions: ['region'],
-      name: 'Placed', texture: {src: 'icons/placed.webp'}, sight: {enabled: true}, width: 1, height: 1
-    }; }};
-    const changes = prototypeTokenChanges(token);
+      shape: 1, sort: 100, hidden: true, locked: true,
+      delta: {name: 'Synthetic', items: [{_id: 'item'}]}, _movementHistory: [{x: 1}], _regions: ['region'], _stats: {coreVersion: '14'}
+    };
+    const copied = {actorLink: false, flags: {dnd5e: {token: true}}, name: 'Placed', texture: {src: 'icons/placed.webp'}, sight: {enabled: true}, width: 1, height: 1};
+    const changes = prototypeTokenChanges({toObject() { return {...sceneOnly, ...copied}; }});
     for (const key of TOKEN_EXCLUDE) assert.equal(Object.hasOwn(changes, key), false);
-    assert.deepEqual(changes, {name: 'Placed', texture: {src: 'icons/placed.webp'}, sight: {enabled: true}, width: 1, height: 1});
-    assert.throws(() => prototypeTokenChanges(null), /no settings/);
+    assert.equal(Object.hasOwn(changes, '_stats'), false);
+    assert.deepEqual(changes, copied);
+    assert.deepEqual(prototypeTokenChanges({toObject() { return {...sceneOnly, actorLink: true, flags: {}, name: 'Linked'}; }}), {actorLink: true, flags: {}, name: 'Linked'});
+    assert.equal(prototypeTokenChanges(null), null);
+    assert.equal(prototypeTokenChanges({toObject() { throw new Error('Unable to materialize ActorDelta'); }}), null);
     const placed = [{id: 'b'}, {id: 'a'}, {id: 'c'}];
     assert.equal(chooseSceneToken(placed).id, 'a');
     assert.equal(chooseSceneToken(placed, ['c', 'b']).id, 'b');
@@ -139,6 +149,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.Actor = {async updateDocuments(updates) {
       writes.push(updates);
       return updates.map(update => {
+        rejectSceneTokenFields(update);
         const actor = actors.get(update._id);
         if (update['system.details.xp.value'] != null) actor.system.details.xp.value = update['system.details.xp.value'];
         if ('system.attributes.inspiration' in update) actor.system.attributes.inspiration = update['system.attributes.inspiration'];
@@ -212,7 +223,7 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.equal(actors.get('a').system.attributes.inspiration, true);
       assert.equal(readBulkUndo(), null);
 
-      const placed = {id: 'token-b', toObject() { return {_id: 'token-b', actorId: 'a', x: 3, y: 4, elevation: 5, position: {x: 3}, delta: {}, _movementHistory: [], _regions: [], name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, height: 2}; }};
+      const placed = {id: 'token-b', toObject() { return {_id: 'token-b', actorId: 'a', x: 3, y: 4, elevation: 5, position: {x: 3}, shape: 1, sort: 7, hidden: false, locked: true, delta: {name: 'Synthetic', items: [{_id: 'item'}]}, _movementHistory: [], _regions: ['region'], actorLink: false, flags: {world: {tint: '#fff'}}, name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, height: 2}; }};
       actors.get('a').tokens = [{id: 'token-a', toObject() { return {name: 'Other', x: 1}; }}, placed];
       globalThis.canvas.tokens.controlled = [{id: 'token-b'}];
       await applyBulkTokens('token-operation-0001');
@@ -220,6 +231,10 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.equal(tokenUpdate._id, 'a');
       for (const key of TOKEN_EXCLUDE) assert.equal(Object.hasOwn(tokenUpdate.prototypeToken, key), false);
       assert.equal(actors.get('a').prototypeToken.name, 'Placed');
+      assert.equal(actors.get('a').prototypeToken.actorLink, false);
+      assert.deepEqual(actors.get('a').prototypeToken.flags, {world: {tint: '#fff'}});
+      assert.equal(actors.get('a').prototypeToken.delta, undefined);
+      assert.equal(actors.get('a').prototypeToken.sort, undefined);
       assert.equal(actors.get('a').prototypeToken.x, 9);
       assert.match(messages.at(-1).content, /Prototype token updated/);
       assert.match(messages.at(-1).content, /No token on the current scene/);
@@ -301,6 +316,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.canvas = {scene: {id: 'scene'}, tokens: {controlled: []}};
     globalThis.Actor = {async updateDocuments(updates) {
       return updates.map(update => {
+        rejectSceneTokenFields(update);
         const actor = actors.get(update._id);
         if (update['system.details.xp.value'] != null) actor.system.details.xp.value = update['system.details.xp.value'];
         if ('system.attributes.inspiration' in update) actor.system.attributes.inspiration = update['system.attributes.inspiration'];
@@ -395,7 +411,7 @@ describe('bulk actions', {concurrency: 1}, () => {
           label: 'Prototype Token Sync',
           kind: 'tokens',
           async apply() {
-            const placed = {id: 'token-b', toObject() { return {_id: 'token-b', actorId: 'a', x: 3, y: 4, elevation: 5, position: {x: 3}, delta: {}, _movementHistory: [], _regions: [], name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, height: 2}; }};
+            const placed = {id: 'token-b', toObject() { return {_id: 'token-b', actorId: 'a', x: 3, y: 4, elevation: 5, position: {x: 3}, shape: 1, sort: 7, hidden: false, locked: true, delta: {name: 'Synthetic', items: [{_id: 'item'}]}, _movementHistory: [], _regions: ['region'], actorLink: false, flags: {world: {tint: '#fff'}}, name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, height: 2}; }};
             actors.get('a').tokens = [placed];
             globalThis.canvas.tokens.controlled = [{id: 'token-b'}];
             await applyBulkTokens('token-round-0000001');
@@ -467,6 +483,7 @@ describe('bulk actions', {concurrency: 1}, () => {
       writes.push(updates);
       const applied = [];
       for (const update of updates) {
+        rejectSceneTokenFields(update);
         const actor = actors.get(update._id);
         if ('system.attributes.inspiration' in update && Boolean(actor.system.attributes.inspiration) === Boolean(update['system.attributes.inspiration'])) continue;
         if (update['system.details.xp.value'] != null && actor.system.details.xp.value === update['system.details.xp.value']) continue;
@@ -539,7 +556,7 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['a']);
 
       const kept = readBulkUndo();
-      const placed = {id: 'token-a', toObject() { return {name: 'Old', texture: {src: 'old'}, x: 1, y: 2, _id: 'ignore', actorId: 'a'}; }};
+      const placed = {id: 'token-a', toObject() { return {name: 'Old', texture: {src: 'old'}, x: 1, y: 2, _id: 'ignore', actorId: 'a', sort: 4, shape: 1, hidden: false, locked: false, delta: {items: []}}; }};
       actors.get('a').tokens = [placed];
       const synced = await applyBulkTokens('token-same-00000001');
       assert.equal(synced.unchanged, true);
