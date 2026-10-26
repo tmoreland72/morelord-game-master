@@ -457,7 +457,7 @@ async function act(action, id) {
 }
 async function onChange(event) {
   const el = event.target;
-  if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : 'Send'; await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
+  if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : bulkText('coins.apply'); await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
   if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = bulkXpChoice(el.value); }); return; }
   if (el.name === 'bulkInspirationAction') { await persist(n => { n.last.bulkInspiration = el.value === 'clear' ? 'clear' : 'grant'; }); return; }
   const bulkForm = el.closest('[data-mlgm-bulk-coins]');

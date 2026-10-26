@@ -87,6 +87,14 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
+    assert.match(html, /data-action="bulk-coins"[^>]*>Apply</);
+    assert.match(html, /data-action="bulk-xp"[^>]*>Apply</);
+    assert.match(html, /data-action="bulk-inspiration"[^>]*>Apply</);
+    assert.doesNotMatch(html, />Send</);
+    const removal = bulkPanel({actorIds: ['a'], coinAction: 'each-remove', undo: null});
+    assert.match(removal, /data-action="bulk-coins"[^>]*>Take</);
+    const tray = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+    assert.match(tray, /endsWith\('-remove'\) \? 'Take' : bulkText\('coins\.apply'\)/);
     const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
     assert.match(undo, /disabled/);
     assert.match(undo, /Nothing to undo/);

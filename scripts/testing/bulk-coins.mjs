@@ -27,7 +27,7 @@ export const bulkCoinsCheck = {id:'game-master.bulk-coins-and-shared-purse', asy
     await game.settings.set(ID, 'board', {...board, partyActorIds:members.map(actor => actor.id), last:{...board.last, bulkCoins:{}}});
     api.toggle(true); document.querySelector('#mlgm-tab-bulk').click();
     assert(document.querySelectorAll('[data-mlgm-bulk-coins] input').length === 5, 'Five denomination fields render.');
-    assert(document.querySelectorAll('select[name=bulkCoinAction] option').length === 4 && document.querySelectorAll('[data-action=bulk-coins]').length === 1, 'Action dropdown has four options and one Send/Take button.');
+    assert(document.querySelectorAll('select[name=bulkCoinAction] option').length === 4 && document.querySelectorAll('[data-action=bulk-coins]').length === 1, 'Action dropdown has four options and one Apply/Take button.');
     assert(document.querySelector('#mlgm-tab-bulk').textContent === 'Bulk Actions' && document.querySelector('#mlgm-tab-bulk').nextElementSibling.id === 'mlgm-tab-macros', 'Bulk Actions precedes Macros.');
     assert(!document.querySelector('#mlgm-panel .ml-actor-identity'), 'Participants and party purse remain outside Bulk Actions.');
     const referenceLabel = document.createElement('label');
@@ -67,7 +67,7 @@ export const bulkCoinsCheck = {id:'game-master.bulk-coins-and-shared-purse', asy
       const choice = document.querySelector('[name=bulkCoinAction]');
       if (choice.value !== operation) { choice.value = operation; choice.dispatchEvent(new Event('change', {bubbles:true})); await until(() => game.settings.get(ID, 'board').last.bulkCoinAction === operation, 'saved action'); }
       const button = document.querySelector('[data-action=bulk-coins]');
-      assert(button.textContent === (operation.endsWith('-remove') ? 'Take' : 'Send'), 'Button label matches the selected operation.');
+      assert(button.textContent === (operation.endsWith('-remove') ? 'Take' : 'Apply'), 'Button label matches the selected operation.');
       assert(!button.disabled, 'An eligible party can use the action.');
       button.click(); if (doubleClick) button.click();
       const message = await until(() => game.messages.find(message => !before.has(message.id) && message.getFlag(ID, 'bulkCoins')?.actorIds.includes(members[0].id) && message.getFlag(ID, 'bulkCoins').stage === 'complete'), operation);
@@ -81,7 +81,7 @@ export const bulkCoinsCheck = {id:'game-master.bulk-coins-and-shared-purse', asy
         assert(!(character.textContent.includes('Deficit:') && character.textContent.includes('Paid by Party:')), 'Deficits replace party payment details when the cost remains unpaid.');
       }
       await until(() => [...document.querySelectorAll('[data-action=bulk-coins]')].every(button => !button.disabled), 'controls restored');
-      assert([...document.querySelectorAll('[data-mlgm-bulk-coins] input')].every(input => input.value === '0') && Object.values(game.settings.get(ID, 'board').last.bulkCoins).every(value => value === 0), 'Successful Send/Take clears and saves all amounts.');
+      assert([...document.querySelectorAll('[data-mlgm-bulk-coins] input')].every(input => input.value === '0') && Object.values(game.settings.get(ID, 'board').last.bulkCoins).every(value => value === 0), 'Successful Apply/Take clears and saves all amounts.');
       assert(game.messages.filter(message => !before.has(message.id) && message.getFlag(ID, 'bulkCoins')).length === 1, 'One action creates one receipt.');
       assert(!message.blind && message.whisper.length === 0 && message.content.includes('ml-chat-card'), 'Every action posts a standard public chat card.');
       assert(members.every(actor => message.content.includes(actor.name)), 'Every configured character appears in the card.');
@@ -125,7 +125,7 @@ export const bulkCoinsCheck = {id:'game-master.bulk-coins-and-shared-purse', asy
     document.querySelector('[data-action=bulk-coins-clear]').click();
     await until(() => Object.values(game.settings.get(ID, 'board').last.bulkCoins).every(value => value === 0), 'saved cleared coins');
     assert([...document.querySelectorAll('[data-mlgm-bulk-coins] input')].every(input => input.value === '0'), 'Clear resets every field to zero.');
-    assert(document.querySelector('[data-action=bulk-coins-clear]').nextElementSibling.dataset.action === 'bulk-coins', 'Clear is immediately left of Send/Take.');
+    assert(document.querySelector('[data-action=bulk-coins-clear]').nextElementSibling.dataset.action === 'bulk-coins', 'Clear is immediately left of Apply/Take.');
     document.querySelector('#mlgm-tab-rolls').click(); document.querySelector('#mlgm-tab-bulk').click();
     assert([...document.querySelectorAll('[data-mlgm-bulk-coins] input')].every(input => input.value === '0') && document.querySelector('[name=bulkCoinAction]').value === 'each-remove', 'Cleared amounts persist and the selected operation is retained.');
 
