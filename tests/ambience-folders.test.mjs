@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {escapeHTML} from '../scripts/core.mjs';
 import {
   browseLocation,
   collectAmbienceFiles,
@@ -210,7 +211,230 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   assert.match(settings, /type: "folder"/);
   assert.match(settings, /data-mlgm-add-ambience/);
   assert.match(settings, /data-mlgm-remove-ambience/);
-  assert.match(settings, /render\(\{force: true\}\)/);
+  assert.match(settings, /FilePicker\.implementation/);
+  assert.match(settings, /new Picker\(\{type: "folder", current, callback:/);
+  assert.match(settings, /instance \?\? picker/);
+  assert.match(settings, /await picker\.render\(\{force: true\}\)/);
+  assert.match(settings, /form\("Game Master settings",[\s\S]*\{modal: false\}\)/);
   assert.match(settings, /AMBIENCE_FOLDERS/);
   assert.doesNotMatch(settings, /set\(ID,\s*"ambienceFolder"/);
+  assert.doesNotMatch(settings, /new foundry\.applications\.apps\.FilePicker\(/);
+});
+
+const VOID_TAGS = new Set(['input', 'br', 'img', 'hr']);
+
+function dataName(attribute) {
+  return attribute.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function elementMatches(node, selector) {
+  if (!selector.startsWith('[')) return node.tag === selector;
+  const attr = selector.match(/^\[([^=\]]+)(?:="([^"]*)")?\]$/);
+  if (!attr) return false;
+  const [, name, expected] = attr;
+  if (name.startsWith('data-')) {
+    const actual = node.dataset[dataName(name)];
+    return expected === undefined ? actual != null : actual === expected;
+  }
+  return expected === undefined ? node.attrs[name] != null : node.attrs[name] === expected;
+}
+
+function createElement(tag, attrs = {}) {
+  const node = {
+    tag, attrs: {...attrs}, children: [], parent: null, listeners: {}, dataset: {},
+    value: attrs.value ?? ''
+  };
+  for (const [name, value] of Object.entries(attrs)) {
+    if (name.startsWith('data-')) node.dataset[dataName(name)] = value;
+  }
+  node.matches = selector => elementMatches(node, selector);
+  node.closest = selector => {
+    let current = node;
+    while (current) {
+      if (elementMatches(current, selector)) return current;
+      current = current.parent;
+    }
+    return null;
+  };
+  node.querySelectorAll = selector => {
+    const found = [];
+    for (const child of node.children) {
+      if (elementMatches(child, selector)) found.push(child);
+      found.push(...child.querySelectorAll(selector));
+    }
+    return found;
+  };
+  node.querySelector = selector => node.querySelectorAll(selector)[0] ?? null;
+  node.addEventListener = (type, listener) => { node.listeners[type] = listener; };
+  node.remove = () => {
+    if (!node.parent) return;
+    node.parent.children = node.parent.children.filter(child => child !== node);
+    node.parent = null;
+  };
+  node.insertAdjacentHTML = (position, html) => {
+    if (position !== 'beforebegin' || !node.parent) throw new Error(`unsupported insert ${position}`);
+    const index = node.parent.children.indexOf(node);
+    const parsed = parseNodes(html);
+    parsed.forEach((child, offset) => {
+      child.parent = node.parent;
+      node.parent.children.splice(index + offset, 0, child);
+    });
+  };
+  return node;
+}
+
+function parseNodes(html) {
+  const nodes = [];
+  let rest = html.trim();
+  while (rest) {
+    if (rest.startsWith('</')) break;
+    if (!rest.startsWith('<')) {
+      const next = rest.indexOf('<');
+      const text = next === -1 ? rest : rest.slice(0, next);
+      if (text.trim()) nodes.push(Object.assign(createElement('#text'), {text}));
+      rest = next === -1 ? '' : rest.slice(next);
+      continue;
+    }
+    const open = rest.match(/^<([a-z0-9-]+)([^>]*?)>/i);
+    if (!open) throw new Error(`bad html: ${rest.slice(0, 80)}`);
+    const tag = open[1].toLowerCase();
+    const attrs = {};
+    for (const attr of open[2].matchAll(/([^\s=]+)(?:="([^"]*)")?/g)) {
+      if (attr[1] !== '/') attrs[attr[1]] = attr[2] ?? '';
+    }
+    const node = createElement(tag, attrs);
+    if (VOID_TAGS.has(tag) || /\/\s*$/.test(open[2])) {
+      nodes.push(node);
+      rest = rest.slice(open[0].length).trimStart();
+      continue;
+    }
+    const token = new RegExp(`<${tag}(?:\\s[^>]*)?>|</${tag}>`, 'gi');
+    token.lastIndex = open[0].length;
+    let depth = 1;
+    let end = -1;
+    for (let match = token.exec(rest); match; match = token.exec(rest)) {
+      depth += match[0].toLowerCase().startsWith('</') ? -1 : 1;
+      if (depth === 0) { end = match.index; break; }
+    }
+    if (end < 0) throw new Error(`unclosed ${tag}`);
+    node.children = parseNodes(rest.slice(open[0].length, end));
+    for (const child of node.children) child.parent = node;
+    nodes.push(node);
+    rest = rest.slice(end + `</${tag}>`.length).trimStart();
+  }
+  return nodes;
+}
+
+function folderRows(fieldset) {
+  return [...fieldset.querySelectorAll('[data-mlgm-ambience-folder]')].map(row => ({
+    source: row.querySelector('[name="ambienceSource"]').value,
+    path: row.querySelector('[name="ambiencePath"]').value
+  }));
+}
+
+test('selecting a folder adds it to the list that Save persists', async () => {
+  const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const fn = source.slice(source.indexOf('function ambienceFolderRow'), source.indexOf('async function settings'));
+  const constructed = [];
+  const renders = [];
+  let releaseRender = () => {};
+  const renderGate = new Promise(resolve => { releaseRender = resolve; });
+  class FilePicker {
+    constructor(options) {
+      this.options = options;
+      this.activeSource = 'data';
+      constructed.push(this);
+    }
+    render(options) {
+      renders.push(options);
+      return renderGate.then(() => this);
+    }
+  }
+  class FilePickerImplementation extends FilePicker {}
+  const foundry = {applications: {apps: {FilePicker}}};
+  foundry.applications.apps.FilePicker.implementation = FilePickerImplementation;
+  const failures = [];
+  const context = vm.createContext({
+    e: escapeHTML,
+    folderFromFilePicker,
+    foundry,
+    fail(error) { failures.push(error); }
+  });
+  vm.runInContext(fn, context);
+  const html = vm.runInContext('ambienceFolderEditor([{source: "data", path: "Ambience"}])', context);
+  const fieldset = parseNodes(html)[0];
+  const dialog = createElement('div');
+  fieldset.parent = dialog;
+  dialog.children = [fieldset];
+  context.dialog = dialog;
+  vm.runInContext('bindAmbienceFolderEditor(dialog)', context);
+  vm.runInContext('bindAmbienceFolderEditor(dialog)', context);
+  const add = fieldset.querySelector('[data-mlgm-add-ambience]');
+  const flags = {prevented: false, stopped: false};
+  const pending = fieldset.listeners.click.call(fieldset, {
+    target: add,
+    preventDefault() { flags.prevented = true; },
+    stopPropagation() { flags.stopped = true; }
+  });
+  let opened = false;
+  pending.then(() => { opened = true; });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(opened, false);
+  assert.equal(constructed.length, 1);
+  assert.equal(constructed[0].constructor, FilePickerImplementation);
+  assert.equal(constructed[0].options.type, 'folder');
+  assert.equal(constructed[0].options.current, 'Ambience');
+  assert.equal(typeof constructed[0].options.callback, 'function');
+  assert.deepEqual(Object.keys(constructed[0].options).sort(), ['callback', 'current', 'type']);
+  assert.equal(renders.length, 1);
+  assert.equal(renders[0].force, true);
+  assert.deepEqual(Object.keys(renders[0]), ['force']);
+  releaseRender();
+  await pending;
+  assert.equal(opened, true);
+  assert.deepEqual(failures, []);
+  assert.equal(flags.prevented, true);
+  assert.equal(flags.stopped, true);
+
+  const picker = constructed[0];
+  picker.options.callback('Ambience');
+  picker.options.callback('');
+  picker.options.callback('Music/tavern');
+  picker.options.callback('Music/tavern');
+  picker.options.callback('tavern', {activeSource: 's3', source: {bucket: 'audio', target: 'tavern'}});
+  const saved = normalizeAmbienceFolders(folderRows(fieldset));
+  assert.deepEqual(saved, [
+    {source: 'data', path: 'Ambience'},
+    {source: 'data', path: 'Music/tavern'},
+    {source: 's3', path: 'audio/tavern'}
+  ]);
+
+  const added = fieldset.querySelectorAll('[data-mlgm-ambience-folder]').at(-1);
+  fieldset.listeners.click.call(fieldset, {
+    target: added.querySelector('i'),
+    preventDefault() {},
+    stopPropagation() {}
+  });
+  assert.deepEqual(normalizeAmbienceFolders(folderRows(fieldset)), [
+    {source: 'data', path: 'Ambience'},
+    {source: 'data', path: 'Music/tavern'}
+  ]);
+
+  foundry.applications.apps.FilePicker.implementation = undefined;
+  const fallback = fieldset.listeners.click.call(fieldset, {
+    target: add,
+    preventDefault() {},
+    stopPropagation() {}
+  });
+  releaseRender();
+  await fallback;
+  assert.equal(constructed.at(-1).constructor, FilePicker);
+  constructed.at(-1).activeSource = 'public';
+  constructed.at(-1).options.callback('library/rain');
+  assert.deepEqual(normalizeAmbienceFolders(folderRows(fieldset)), [
+    {source: 'data', path: 'Ambience'},
+    {source: 'data', path: 'Music/tavern'},
+    {source: 'public', path: 'library/rain'}
+  ]);
 });

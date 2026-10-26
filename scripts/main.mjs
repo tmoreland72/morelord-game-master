@@ -55,8 +55,8 @@ function persist(change) {
   });
   return saving;
 }
-async function form(title, content, actions = [["ok", "Save"]]) {
-  return foundry.applications.api.DialogV2.wait({ modal: true, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
+async function form(title, content, actions = [["ok", "Save"]], {modal = true} = {}) {
+  return foundry.applications.api.DialogV2.wait({ modal, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
     content: `<div><div class="ml-app ml-app-shell ml-dialog-shell">${content}</div></div>`, rejectClose: false,
     buttons: actions.map(([action, text], i) => ({ action, label: text, default: i === 0,
       callback: (_event, btn) => ({ action, data: new FormData(btn.form) }) })) });
@@ -733,29 +733,34 @@ function bindAmbienceFolderEditor(dialog) {
   if (!fieldset || fieldset.dataset.mlgmAmbienceBound) return;
   fieldset.dataset.mlgmAmbienceBound = "1";
   const add = fieldset.querySelector("[data-mlgm-add-ambience]");
-  fieldset.addEventListener("click", event => {
+  fieldset.addEventListener("click", async event => {
     const remove = event.target.closest?.("[data-mlgm-remove-ambience]");
     if (remove) {
       event.preventDefault();
+      event.stopPropagation();
       remove.closest("[data-mlgm-ambience-folder]")?.remove();
       return;
     }
     if (event.target.closest?.("[data-mlgm-add-ambience]") !== add) return;
     event.preventDefault();
-    const current = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
-    const picker = new foundry.applications.apps.FilePicker({type: "folder", current, callback: (path, instance) => {
-      const folder = folderFromFilePicker(path, instance);
-      if (!folder) return;
-      const duplicate = [...fieldset.querySelectorAll("[data-mlgm-ambience-folder]")].some(row => row.querySelector('[name="ambienceSource"]').value === folder.source && row.querySelector('[name="ambiencePath"]').value === folder.path);
-      if (duplicate) return;
-      add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
-    }});
-    picker.render({force: true});
+    event.stopPropagation();
+    try {
+      const current = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
+      const Picker = foundry.applications.apps.FilePicker.implementation ?? foundry.applications.apps.FilePicker;
+      const picker = new Picker({type: "folder", current, callback: (path, instance) => {
+        const folder = folderFromFilePicker(path, instance ?? picker);
+        if (!folder) return;
+        const duplicate = [...fieldset.querySelectorAll("[data-mlgm-ambience-folder]")].some(row => row.querySelector('[name="ambienceSource"]').value === folder.source && row.querySelector('[name="ambiencePath"]').value === folder.path);
+        if (duplicate) return;
+        add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
+      }});
+      await picker.render({force: true});
+    } catch (error) { fail(error); }
   });
 }
 async function settings() {
   await ensureAmbienceFolders(game.settings, ID);
-  const result = await form("Game Master settings", ambienceFolderEditor(normalizeAmbienceFolders(get(AMBIENCE_FOLDERS))));
+  const result = await form("Game Master settings", ambienceFolderEditor(normalizeAmbienceFolders(get(AMBIENCE_FOLDERS))), [["ok", "Save"]], {modal: false});
   if (!result) return;
   const sources = result.data.getAll("ambienceSource");
   const paths = result.data.getAll("ambiencePath");
