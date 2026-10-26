@@ -1,5 +1,11 @@
 # Morelord Game Master Changelog
 
+## 0.1.15
+
+### What Changed
+
+- Removed Campaign AI from the GM tray, including its tab, Foundry settings, local service, and provider configuration. The tray tabs are Roll Requests, Bulk Actions, Macros, Sound, Triggers, GM Settings, and Player Settings.
+
 ## 0.1.14
 
 ### What Changed
