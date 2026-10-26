@@ -296,6 +296,7 @@ async function sendBulkCoins(operation) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkCoins(operation, coins);
+    if (result?.unchanged) { notify(result.notice || 'No coin balances changed.'); return; }
     if (!result?.messageId) throw Error('The coordinating GM must refresh Game Master before using party coins.');
     for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
     await persist(n => { n.last.bulkCoins = readCoins(); });
@@ -312,6 +313,7 @@ async function sendBulkXp(operation) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkXp(operation, amount);
+    if (result?.unchanged) { notify(result.notice); return; }
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     const input = root.querySelector('[data-mlgm-bulk-xp] input[name="xp"]');
     if (input) input.value = '0';
@@ -326,6 +328,7 @@ async function sendBulkInspiration(action) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkInspiration(action);
+    if (result?.unchanged) { notify(result.notice); return; }
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     await persist(n => { n.last.bulkInspiration = action; });
     notify(bulkText('inspiration.updated'));
@@ -338,6 +341,7 @@ async function sendBulkTokens() {
   bulkBusy = true; render();
   try {
     const result = await applyBulkTokens();
+    if (result?.unchanged) { notify(result.notice); return; }
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     notify(bulkText('tokens.updatedNotice'));
   } finally { bulkBusy = false; render(); }

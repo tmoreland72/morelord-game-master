@@ -45,7 +45,11 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.throws(() => planXp([{id: 'a', type: 'npc'}], 'each', 1), /character/);
     assert.throws(() => xpShares(1, 0, true), /Player Settings/);
     assert.deepEqual(planInspiration(actors, 'grant').map(row => row.after), [true, true]);
-    assert.equal(planInspiration([{...actors[0], system: {attributes: {inspiration: true}}}], 'clear')[0].before, true);
+    const inspired = {...actors[0], system: {attributes: {inspiration: true}}};
+    const plain = actors[1];
+    assert.equal(planInspiration([inspired], 'clear')[0].before, true);
+    assert.deepEqual(planInspiration([inspired, plain], 'grant').map(row => row.skipped), [true, false]);
+    assert.equal(planInspiration([plain], 'clear')[0].skipped, true);
     assert.throws(() => planInspiration(actors, 'maybe'), /grant or clear/);
   });
 
@@ -408,6 +412,135 @@ describe('bulk actions', {concurrency: 1}, () => {
         assert.equal(savedSnapshot(), null);
         assertUndoEmpty();
       }
+    } finally { Math.random = random; }
+  });
+
+  test('unchanged party members are skipped and do not replace undo', async () => {
+    const source = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+    for (const action of ['applyBulkCoins', 'applyBulkXp', 'applyBulkInspiration', 'applyBulkTokens']) {
+      const sender = source.slice(source.indexOf(`await ${action}`), source.indexOf(`await ${action}`) + 220);
+      assert.match(sender, /result\?\.unchanged/);
+    }
+    const gm = {id: 'gm', isGM: true, active: true};
+    const character = (id, xp, inspiration) => ({
+      id, uuid: `Actor.${id}`, name: id, type: 'character', tokens: [],
+      system: {details: {xp: {value: xp}}, attributes: {inspiration}, currency: {gp: 0}},
+      prototypeToken: {name: 'Old', texture: {src: 'old'}, x: 9, _id: 'proto'},
+      getDependentTokens() { return this.tokens; }
+    });
+    const actors = new Map([
+      ['a', character('a', 10, true)],
+      ['b', character('b', 20, false)],
+      ['c', character('c', 30, false)]
+    ]);
+    const messages = [], registrations = new Map(), stored = new Map(), writes = [];
+    const channel = {on(type, handler) { registrations.set(type, handler); }, executeAsUser(type, data, userId) {
+      assert.equal(userId, gm.id);
+      return registrations.get(type)(data, {senderUserId: gm.id});
+    }};
+    globalThis.game = {
+      user: gm, actors, users: new Map([[gm.id, gm]]), messages,
+      settings: {
+        get: (namespace, key) => stored.get(`${namespace}.${key}`),
+        set: async (namespace, key, value) => stored.set(`${namespace}.${key}`, value)
+      },
+      modules: new Map([['morelord-core', {active: true}]])
+    };
+    globalThis.MorelordCore = {
+      users: {list: () => [gm]},
+      socket: {createChannel: () => channel},
+      ui: {participation: {}, actorIdentity: ({actorUuid}) => '<span class="ml-actor-identity">' + actorUuid + '</span>'},
+      rolls: {skill() { return null; }}
+    };
+    globalThis.foundry = {utils: {randomID: () => 'test-operation-0001', deepClone: value => structuredClone(value)}};
+    globalThis.ui = {notifications: {warn() {}, info() {}}};
+    globalThis.canvas = {scene: {id: 'scene'}, tokens: {controlled: []}};
+    globalThis.Actor = {async updateDocuments(updates) {
+      writes.push(updates);
+      const applied = [];
+      for (const update of updates) {
+        const actor = actors.get(update._id);
+        if ('system.attributes.inspiration' in update && Boolean(actor.system.attributes.inspiration) === Boolean(update['system.attributes.inspiration'])) continue;
+        if (update['system.details.xp.value'] != null && actor.system.details.xp.value === update['system.details.xp.value']) continue;
+        if ('system.attributes.inspiration' in update) actor.system.attributes.inspiration = update['system.attributes.inspiration'];
+        if (update['system.details.xp.value'] != null) actor.system.details.xp.value = update['system.details.xp.value'];
+        if (update.prototypeToken) actor.prototypeToken = {...actor.prototypeToken, ...update.prototypeToken};
+        applied.push(actor);
+      }
+      return applied;
+    }};
+    globalThis.ChatMessage = {async create(data) {
+      const message = {id: String(messages.length), author: gm, content: data.content, flags: structuredClone(data.flags), getFlag: (_namespace, flag) => message.flags[ID][flag], async update(change) {
+        if (change.content) message.content = change.content;
+        for (const [path, value] of Object.entries(change)) {
+          if (!path.startsWith('flags.')) continue;
+          const parts = path.split('.');
+          let target = message;
+          for (const part of parts.slice(0, -1)) target = target[part] ??= {};
+          target[parts.at(-1)] = value;
+        }
+      }};
+      messages.push(message);
+      return message;
+    }};
+    const random = Math.random;
+    Math.random = () => 0;
+    try {
+      initializeBulkActions(() => ['a', 'b', 'c']);
+      await writeBulkUndo({kind: 'xp', labelKey: 'xp.each', operation: 'each', actors: [{id: 'a', before: 1}]});
+      const grant = await applyBulkInspiration('grant', 'inspiration-grant-0002');
+      assert.equal(grant.unchanged, undefined);
+      assert.deepEqual(writes.at(-1).map(update => update._id), ['b', 'c']);
+      assert.equal(actors.get('a').system.attributes.inspiration, true);
+      assert.equal(actors.get('b').system.attributes.inspiration, true);
+      assert.match(messages.at(-1).content, /Skipped 1 who already had inspiration/);
+      assert.equal(messages.at(-1).content.includes('Actor.a'), false);
+      assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b', 'c']);
+      const again = await applyBulkInspiration('grant', 'inspiration-grant-0003');
+      assert.equal(again.unchanged, true);
+      assert.match(again.notice, /already has inspiration/);
+      assert.equal(writes.length, 1);
+      assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b', 'c']);
+      assert.equal(messages.length, 1);
+
+      await applyBulkInspiration('clear', 'inspiration-clear-0002');
+      assert.deepEqual(writes.at(-1).map(update => update._id), ['a', 'b', 'c']);
+      const clearAgain = await applyBulkInspiration('clear', 'inspiration-clear-0003');
+      assert.equal(clearAgain.unchanged, true);
+      assert.match(clearAgain.notice, /No one in the party has inspiration/);
+      assert.equal(readBulkUndo().action, 'clear');
+      assert.equal(writes.length, 2);
+
+      const set = await applyBulkXp('set', 10, 'xp-set-skip-0000001');
+      assert.deepEqual(writes.at(-1).map(update => update._id), ['b', 'c']);
+      assert.equal(actors.get('a').system.details.xp.value, 10);
+      assert.equal(actors.get('b').system.details.xp.value, 10);
+      assert.match(messages.at(-1).content, /Skipped 1 whose experience did not change/);
+      assert.deepEqual(readBulkUndo().actors.map(row => [row.id, row.before]), [['b', 20], ['c', 30]]);
+      const same = await applyBulkXp('set', 10, 'xp-set-skip-0000002');
+      assert.equal(same.unchanged, true);
+      assert.match(same.notice, /experience needed changing/);
+      assert.equal(writes.length, 3);
+      assert.equal(readBulkUndo().operation, 'set');
+
+      const split = await applyBulkXp('split', 2, 'xp-split-skip-000001');
+      assert.deepEqual(writes.at(-1).map(update => update._id), ['a']);
+      assert.equal(actors.get('a').system.details.xp.value, 12);
+      assert.equal(actors.get('b').system.details.xp.value, 10);
+      assert.match(messages.at(-1).content, /Skipped 2 whose experience did not change/);
+      assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['a']);
+
+      const kept = readBulkUndo();
+      const placed = {id: 'token-a', toObject() { return {name: 'Old', texture: {src: 'old'}, x: 1, y: 2, _id: 'ignore', actorId: 'a'}; }};
+      actors.get('a').tokens = [placed];
+      const synced = await applyBulkTokens('token-same-00000001');
+      assert.equal(synced.unchanged, true);
+      assert.match(synced.notice, /No prototype tokens needed updating/);
+      assert.match(messages.at(-1).content, /Skipped 1 whose prototype already matched/);
+      assert.match(messages.at(-1).content, /No token on the current scene/);
+      assert.equal(messages.at(-1).content.includes('Prototype token updated'), false);
+      assert.deepEqual(readBulkUndo(), kept);
+      assert.equal(writes.length, 4);
     } finally { Math.random = random; }
   });
 });

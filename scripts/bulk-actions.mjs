@@ -50,7 +50,11 @@ export function planInspiration(actors, action) {
   const grant = action === 'grant';
   return actors.map(actor => {
     if (actor?.type !== 'character') throw Error(bulkText('error.character'));
-    return {actorId: actor.id, before: Boolean(actor.system?.attributes?.inspiration), after: grant};
+    const before = Boolean(actor.system?.attributes?.inspiration);
+    // Grant and clear are idempotent. An actor who already has the requested
+    // value must not be written: Foundry omits that no-op from updateDocuments,
+    // and the shorter result was reported as a cancelled character update.
+    return {actorId: actor.id, before, after: grant, skipped: before === grant};
   });
 }
 
@@ -189,25 +193,44 @@ export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 
   return `<div class="ml-stack gm-bulk" data-gap="4">${bulkCoinsContent(actorIds, coins, busy, coinAction)}${xpContent(xp, xpAction, busy, actorIds)}<div class="gm-bulk-pair">${inspirationContent(inspiration, busy, actorIds)}${tokenContent(busy, actorIds)}</div>${undoContent(undo, busy)}</div>`;
 }
 
-function xpCard(operation, rows) {
-  const title = bulkHTML('xp.card', {action: bulkText(XP_ACTIONS[operation])});
-  const line = operation === 'set' ? 'xp.setTo' : 'xp.added';
-  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML(line, {amount: row.added.toLocaleString()}))).join(''));
+function skipNote(key, count) {
+  return count ? `<p>${bulkHTML(key, {count})}</p>` : '';
 }
 
-function inspirationCard(action, rows) {
+function xpCard(operation, rows, skipped = 0) {
+  const title = bulkHTML('xp.card', {action: bulkText(XP_ACTIONS[operation])});
+  const line = operation === 'set' ? 'xp.setTo' : 'xp.added';
+  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML(line, {amount: row.added.toLocaleString()}))).join('') + skipNote('xp.skipped', skipped));
+}
+
+function inspirationCard(action, rows, skipped = 0) {
   const title = bulkHTML(action === 'grant' ? 'inspiration.cardGrant' : 'inspiration.cardClear');
   const line = bulkHTML(action === 'grant' ? 'inspiration.granted' : 'inspiration.cleared');
-  return publicCard(title, rows.map(row => actorCard(row.actorId, line)).join(''));
+  const skippedKey = action === 'grant' ? 'inspiration.skippedGrant' : 'inspiration.skippedClear';
+  return publicCard(title, rows.map(row => actorCard(row.actorId, line)).join('') + skipNote(skippedKey, skipped));
 }
 
 function tokenCard(rows) {
-  return publicCard(bulkHTML('tokens.card'), rows.map(row => actorCard(row.actorId, bulkHTML(row.skipped ? 'tokens.skipped' : 'tokens.updated'))).join(''));
+  const already = rows.filter(row => row.unchanged).length;
+  const lines = rows.filter(row => !row.unchanged).map(row => actorCard(row.actorId, bulkHTML(row.skipped ? 'tokens.skipped' : 'tokens.updated'))).join('');
+  return publicCard(bulkHTML('tokens.card'), lines + skipNote('tokens.already', already));
 }
 
 function undoCard(snapshot, actorIds) {
   const purse = snapshot.purse ? `<p>${bulkHTML('undo.purse')}</p>` : '';
   return publicCard(bulkHTML('undo.card', {label: undoLabel(snapshot)}), actorIds.map(id => actorCard(id, bulkHTML('undo.restored'))).join('') + purse);
+}
+
+function sameData(left, right) {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+    return left.every((value, index) => sameData(value, right[index]));
+  }
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) if (!sameData(left[key], right[key])) return false;
+  return true;
 }
 
 function prototypeBefore(actor) {
@@ -222,30 +245,34 @@ export function initializeBulkActions(getActorIds) {
     assertBulkGm(execution);
     assertOperationId(operationId);
     const rows = planXp(partyActors(getActorIds()), operation, amount);
+    const changed = rows.filter(row => row.before !== row.after);
+    if (!changed.length) return {unchanged: true, notice: bulkText('xp.none')};
     return runBulk({
       flag: 'bulkXp',
-      receipt: {operationId, operation, actorIds: rows.map(row => row.actorId)},
+      receipt: {operationId, operation, actorIds: changed.map(row => row.actorId)},
       title: bulkHTML('xp.card', {action: bulkText(XP_ACTIONS[operation])}),
       async mutate() {
-        await updateActors(rows.map(row => ({_id: row.actorId, 'system.details.xp.value': row.after})));
-        await rememberUndo({kind: 'xp', labelKey: XP_ACTIONS[operation], operation, actors: rows.map(row => ({id: row.actorId, before: row.before}))});
+        await updateActors(changed.map(row => ({_id: row.actorId, 'system.details.xp.value': row.after})));
+        await rememberUndo({kind: 'xp', labelKey: XP_ACTIONS[operation], operation, actors: changed.map(row => ({id: row.actorId, before: row.before}))});
       },
-      complete: () => xpCard(operation, rows)
+      complete: () => xpCard(operation, changed, rows.length - changed.length)
     });
   }, queue);
   channel.on('inspiration', async ({action, operationId}, execution) => {
     assertBulkGm(execution);
     assertOperationId(operationId);
     const rows = planInspiration(partyActors(getActorIds()), action);
+    const changed = rows.filter(row => !row.skipped);
+    if (!changed.length) return {unchanged: true, notice: bulkText(action === 'grant' ? 'inspiration.noneGrant' : 'inspiration.noneClear')};
     return runBulk({
       flag: 'bulkInspiration',
-      receipt: {operationId, action, actorIds: rows.map(row => row.actorId)},
+      receipt: {operationId, action, actorIds: changed.map(row => row.actorId)},
       title: bulkHTML(action === 'grant' ? 'inspiration.cardGrant' : 'inspiration.cardClear'),
       async mutate() {
-        await updateActors(rows.map(row => ({_id: row.actorId, 'system.attributes.inspiration': row.after})));
-        await rememberUndo({kind: 'inspiration', labelKey: action === 'grant' ? 'inspiration.grant' : 'inspiration.clear', action, actors: rows.map(row => ({id: row.actorId, before: row.before}))});
+        await updateActors(changed.map(row => ({_id: row.actorId, 'system.attributes.inspiration': row.after})));
+        await rememberUndo({kind: 'inspiration', labelKey: action === 'grant' ? 'inspiration.grant' : 'inspiration.clear', action, actors: changed.map(row => ({id: row.actorId, before: row.before}))});
       },
-      complete: () => inspirationCard(action, rows)
+      complete: () => inspirationCard(action, changed, rows.length - changed.length)
     });
   }, queue);
   channel.on('tokens', async ({operationId}, execution) => {
@@ -258,19 +285,23 @@ export function initializeBulkActions(getActorIds) {
     const rows = actors.map(actor => {
       const token = chooseSceneToken(tokensForActor(actor, scene), controlled);
       if (!token) return {actorId: actor.id, skipped: true};
-      return {actorId: actor.id, before: prototypeBefore(actor), changes: cloneData(prototypeTokenChanges(token))};
+      const before = prototypeBefore(actor);
+      const changes = cloneData(prototypeTokenChanges(token));
+      if (sameData(before, changes)) return {actorId: actor.id, unchanged: true};
+      return {actorId: actor.id, before, changes};
     });
-    return runBulk({
+    const updates = rows.filter(row => row.changes);
+    const result = await runBulk({
       flag: 'bulkTokens',
       receipt: {operationId, actorIds: rows.map(row => row.actorId)},
       title: bulkHTML('tokens.card'),
       async mutate() {
-        const updates = rows.filter(row => !row.skipped);
         await updateActors(updates.map(row => ({_id: row.actorId, prototypeToken: row.changes})));
         if (updates.length) await rememberUndo({kind: 'tokens', labelKey: 'tokens.card', actors: updates.map(row => ({id: row.actorId, before: row.before}))});
       },
       complete: () => tokenCard(rows)
     });
+    return updates.length ? result : {...result, unchanged: true, notice: bulkText('tokens.none')};
   }, queue);
   channel.on('undo', async ({operationId}, execution) => {
     assertBulkGm(execution);

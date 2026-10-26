@@ -61,20 +61,23 @@ export function initializeBulkCoins(getActorIds) {
     const rows = planCoins(actors, operation, coins, game.dnd5e.applications.CurrencyManager, operation.endsWith('-remove') ? partyPurse() : null);
     const receipt = {operationId, operation, actorIds:rows.map(row => row.actorId), senderId:sender.id, stage:'applying'};
     const message = await ChatMessage.create({content:`<section class="ml-chat-card"><h3>Party Coins · ${e(COIN_ACTIONS[operation])}</h3><p>Applying coins…</p></section>`, blind:false, whisper:[], flags:{[ID]:{bulkCoins:receipt}}}, {messageMode:'public'});
+    const actorChanges = rows.filter(row => !row.purse && coinChanged(row));
+    const purseRow = rows.find(row => row.purse);
+    const purseChanged = Boolean(purseRow && coinChanged(purseRow));
+    const updates = actorChanges.map(row => ({_id: row.actorId, 'system.currency': row.after}));
+    if (purseChanged) updates.push({_id: purseRow.actorId, 'system.currency': purseRow.after});
     try {
-      const updates = rows.filter(row => COINS.some(key => row.before[key] !== row.after[key])).map(row => ({_id:row.actorId, 'system.currency':row.after}));
       if (updates.length) {
         const updated = await Actor.updateDocuments(updates);
         if (updated.length !== updates.length) throw Error('A character update was cancelled.');
-      }
-      try {
-        const snapshot = {kind: 'coins', operation, actors: rows.filter(row => !row.purse).map(row => ({id: row.actorId, currency: cloneCoins(row.before)}))};
-        const purse = rows.find(row => row.purse);
-        if (purse) snapshot.purse = {id: purse.actorId, currency: cloneCoins(purse.before)};
-        await writeBulkUndo(snapshot);
-      } catch (error) {
-        console.error(`${ID} | Coins changed but the undo snapshot failed`, error);
-        ui.notifications.warn('Coins were changed, but the last action could not be saved for undo.');
+        try {
+          const snapshot = {kind: 'coins', operation, actors: actorChanges.map(row => ({id: row.actorId, currency: cloneCoins(row.before)}))};
+          if (purseChanged) snapshot.purse = {id: purseRow.actorId, currency: cloneCoins(purseRow.before)};
+          await writeBulkUndo(snapshot);
+        } catch (error) {
+          console.error(`${ID} | Coins changed but the undo snapshot failed`, error);
+          ui.notifications.warn('Coins were changed, but the last action could not be saved for undo.');
+        }
       }
     } catch (error) {
       await message.update({content:`<section class="ml-chat-card"><h3>Party Coins · Failed</h3><p>${e(error.message)} Review character sheets before trying again.</p></section>`, [`flags.${ID}.bulkCoins`]:{...receipt, stage:'failed'}});
@@ -86,8 +89,11 @@ export function initializeBulkCoins(getActorIds) {
       console.error(`${ID} | Coins changed but the chat summary failed`, error);
       ui.notifications.warn('Coins were changed, but the chat summary could not be completed. Check character sheets before repeating the action.');
     }
-    return {messageId:message.id};
+    return updates.length ? {messageId: message.id} : {messageId: message.id, unchanged: true, notice: 'No coin balances changed.'};
   }, {serialize:BULK_QUEUE});
+}
+function coinChanged(row) {
+  return COINS.some(key => (row.before?.[key] ?? 0) !== (row.after?.[key] ?? 0));
 }
 function cloneCoins(value) {
   return foundry.utils?.deepClone ? foundry.utils.deepClone(value) : structuredClone(value);
@@ -169,5 +175,6 @@ function partyPurse() {
 
 export function coinCard(operation, coins, rows) {
   const remove = operation.endsWith('-remove');
-  return `<section class="ml-chat-card ml-stack"><h3>Party Coins: ${e(COIN_ACTIONS[operation])}</h3>${rows.filter(row => !row.purse).map(row => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(row.actorId)?.uuid})}<p>${remove ? 'Removed' : 'Added'}: ${e(formatCoins(row.applied))}</p>${remove && COINS.some(key => row.deficit[key] > 0) ? `<p class="ml-text" data-tone="warning">Deficit: ${e(formatCoins(row.deficit))}</p>` : remove && COINS.some(key => row.partyPaid[key] > 0) ? `<p class="ml-text" data-tone="warning">Paid by Party: ${e(formatCoins(row.partyPaid))}</p>` : ''}</div>`).join('')}</section>`;
+  const skipped = rows.filter(row => !row.purse && !coinChanged(row)).length;
+  return `<section class="ml-chat-card ml-stack"><h3>Party Coins: ${e(COIN_ACTIONS[operation])}</h3>${rows.filter(row => !row.purse).map(row => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(row.actorId)?.uuid})}<p>${remove ? 'Removed' : 'Added'}: ${e(formatCoins(row.applied))}</p>${remove && COINS.some(key => row.deficit[key] > 0) ? `<p class="ml-text" data-tone="warning">Deficit: ${e(formatCoins(row.deficit))}</p>` : remove && COINS.some(key => row.partyPaid[key] > 0) ? `<p class="ml-text" data-tone="warning">Paid by Party: ${e(formatCoins(row.partyPaid))}</p>` : ''}</div>`).join('')}${skipped ? `<p>Skipped ${skipped} whose coins did not change.</p>` : ''}</section>`;
 }

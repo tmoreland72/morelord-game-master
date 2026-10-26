@@ -215,7 +215,7 @@ XP sits under Coins. **Split amount amongst party members** divides a positive w
 
 ### Inspiration
 
-Inspiration and Prototype Token Sync share one row of compact cards, in that order. **Grant Heroic Inspiration** sets `system.attributes.inspiration` for every party member. **Clear Heroic Inspiration** turns it off.
+Inspiration and Prototype Token Sync share one row of compact cards, in that order. **Grant Heroic Inspiration** sets `system.attributes.inspiration` for party members who do not already have it. **Clear Heroic Inspiration** turns it off for members who have it. Characters who would not change are skipped. The chat card can say how many were skipped. If everyone is already in the requested state, a notice says so and the previous undo is left in place.
 
 ### Prototype Token Sync
 
@@ -223,7 +223,7 @@ Inspiration and Prototype Token Sync share one row of compact cards, in that ord
 
 ### Undo Last Action
 
-Undo restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, using the before-values stored for this world. There is no earlier history. The button enables as soon as the action finishes, without reopening the tray, and is disabled when nothing is stored. The snapshot is cleared after a successful undo. It remains available after a reload. A prototype sync that updates nobody leaves the previous snapshot in place.
+Undo restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, using the before-values stored for this world. There is no earlier history. The snapshot stores only the characters whose values changed. The button enables as soon as the action finishes, without reopening the tray, and is disabled when nothing is stored. The snapshot is cleared after a successful undo. It remains available after a reload. An action that changes nobody, including a prototype sync, leaves the previous snapshot in place.
 
 XP, Inspiration, Prototype Token Sync, and Undo each post one short public chat card, the same way Coins does.
 
