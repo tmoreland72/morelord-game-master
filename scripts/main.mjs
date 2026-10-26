@@ -64,7 +64,7 @@ async function form(title, content, actions = [["ok", "Save"]]) {
 
 Hooks.once("init", () => {
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
-    render() { settings().catch(fail); return this; }
+    render() { closeTrayForSettings(); settings().catch(fail); return this; }
   }
   game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience folders.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
   game.settings.register(ID, "board", { scope: "world", config: false, type: Object,
@@ -126,11 +126,19 @@ Hooks.once("ready", async () => {
   core().ui.activateCardSelection({element:root});
 });
 
-function toggle(value = !open) {
+function toggle(value = !open, {focus = true} = {}) {
   if (!game.user?.isGM || !root) return;
   open = Boolean(value); document.body.classList.toggle("mlgm-open", open); render();
-  root.querySelector(open ? "[role=tab][aria-selected=true]" : ".gm-handle")?.focus();
+  if (focus) root.querySelector(open ? "[role=tab][aria-selected=true]" : ".gm-handle")?.focus();
 }
+function closeTrayForSettings() {
+  if (!open) return;
+  toggle(false, {focus: false});
+}
+Hooks.on("renderSettingsConfig", (_application, _element, _context, options) => {
+  if (options?.isFirstRender === false) return;
+  closeTrayForSettings();
+});
 function saved(type) {
   return state.saved.filter(s => s.type === type).map(s => savedButton("saved",savedName(s.type,s.config),s.id,"remove-saved")).join("");
 }
