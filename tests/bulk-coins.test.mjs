@@ -93,7 +93,7 @@ test('Core-routed GM actions update only configured characters, post public card
     messages.push(message); return message;
   }};
   initializeBulkCoins(() => ['a', 'b', 'a']);
-  assert.equal(registrations.get('apply').options.serialize, 'morelord-game-master.bulk-coins');
+  assert.equal(registrations.get('apply').options.serialize, 'morelord-game-master.bulk-actions');
   await applyBulkCoins('each-remove', {gp:5});
   assert.equal(actors.get('a').system.currency.gp, 0); assert.equal(actors.get('b').system.currency.gp, 5);
   assert.equal(actors.get('outside').system.currency.gp, 100);

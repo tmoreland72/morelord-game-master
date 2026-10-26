@@ -71,9 +71,9 @@ try {
   await wait('document.querySelector("[data-roll-card=check] select[name=checkId]").value==="prc" && [...document.querySelectorAll("[data-roll-card=check] label>span")].some(s=>s.textContent==="Skill")');
 
   await click('[data-action="send-check"]');await wait('game.messages.size===1');assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
-  await click('[data-mlgm-actor="actor0"][data-mlgm-mode="normal"]');await wait('game.messages.size===2');
+  await click('[data-mlgm-actor="actor0"]');await wait('game.messages.size===2');
   assert.equal(await evaluate('game.messages.some(m=>m.getFlag("morelord-game-master","summary"))'),false);
-  await click('[data-mlgm-actor="actor1"][data-mlgm-mode="normal"]');await click('[data-mlgm-actor="actor2"][data-mlgm-mode="normal"]');await wait('game.messages.size===5');
+  await click('[data-mlgm-actor="actor1"]');await click('[data-mlgm-actor="actor2"]');await wait('game.messages.size===5');
   assert.match(await evaluate('game.messages.find(m=>m.getFlag("morelord-game-master","summary"))?.content'),/Average: 11.00/);
   assert.doesNotMatch(await evaluate('document.querySelector("#mlgm-panel").textContent'),/Average|received/);
   assert.equal(await evaluate('document.querySelector("[data-roll-card=check] select[name=scope]").value'),'party');

@@ -68,7 +68,7 @@ Requires Core 0.3.13 for the shared tray surface. Rendered tab backgrounds passe
 test("the committed changelog matches every versioned release note", () => {
   const notes = listReleaseNotes(root);
   const versions = notes.map(note => note.version);
-  assert.deepEqual(versions, ["0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1"]);
+  assert.deepEqual(versions, ["0.2.0", "0.1.15", "0.1.14", "0.1.13", "0.1.12", "0.1.11", "0.1.10", "0.1.9", "0.1.8", "0.1.7", "0.1.6", "0.1.5", "0.1.4", "0.1.3", "0.1.2", "0.1.1"]);
   assert.equal(path.basename(notes.find(note => note.version === "0.1.7").file), "0.1.7.md");
   const status = changelogStatus(root);
   assert.equal(status.skipped, false);

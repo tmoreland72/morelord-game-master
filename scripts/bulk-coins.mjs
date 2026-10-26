@@ -1,5 +1,6 @@
 import {ID, escapeHTML as e} from './core.mjs';
 import {core, activeGM} from './requests.mjs';
+import {BULK_QUEUE, writeBulkUndo} from './bulk-undo.mjs';
 
 export const COINS = ['pp', 'gp', 'ep', 'sp', 'cp'];
 export const COIN_ACTIONS = {
@@ -41,7 +42,7 @@ export function coinShares(coins, count, split) {
 
 export function bulkCoinsContent(actorIds, coins = {}, busy = false, selected = 'split-add') {
   const disabled = busy || !actorIds.length ? 'disabled' : '';
-  return `<section class="ml-card ml-stack" data-gap="4"><strong class="gm-specialty-title">Coins</strong><label class="gm-bulk-coin-action"><span>Action</span><select name="bulkCoinAction" ${busy ? 'disabled' : ''}>${Object.entries(COIN_ACTIONS).map(([operation, name]) => `<option value="${operation}" ${operation === selected ? 'selected' : ''}>${name}</option>`).join('')}</select></label><form data-mlgm-bulk-coins><div class="ml-horizontal-scroll"><div class="gm-bulk-coin-fields">${COINS.map(key => `<label><span>${e(game.i18n.localize(CONFIG.DND5E.currencies[key].label))} (${key})</span><div class="ml-stepper" data-layout="stacked"><input type="number" name="${key}" min="0" step="1" max="${Number.MAX_SAFE_INTEGER}" value="${e(coins[key] ?? 0)}" required><button type="button" data-step="up" data-action="bulk-coin-step" data-id="${key}:1" title="Increase ${key}" aria-label="Increase ${key}"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button><button type="button" data-step="down" data-action="bulk-coin-step" data-id="${key}:-1" title="Decrease ${key}" aria-label="Decrease ${key}"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button></div></label>`).join('')}<button type="button" data-action="bulk-coins-clear" ${busy ? 'disabled' : ''}>Clear</button><button type="button" data-action="bulk-coins" ${disabled}>${selected.endsWith('-remove') ? 'Take' : 'Send'}</button></div></div></form></section>`;
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="coins"><strong class="gm-specialty-title">Coins</strong><label class="gm-bulk-coin-action"><span>Action</span><select name="bulkCoinAction" ${busy ? 'disabled' : ''}>${Object.entries(COIN_ACTIONS).map(([operation, name]) => `<option value="${operation}" ${operation === selected ? 'selected' : ''}>${name}</option>`).join('')}</select></label><form data-mlgm-bulk-coins><div class="ml-horizontal-scroll"><div class="gm-bulk-coin-fields">${COINS.map(key => `<label><span>${e(game.i18n.localize(CONFIG.DND5E.currencies[key].label))} (${key})</span><div class="ml-stepper" data-layout="stacked"><input type="number" name="${key}" min="0" step="1" max="${Number.MAX_SAFE_INTEGER}" value="${e(coins[key] ?? 0)}" required><button type="button" data-step="up" data-action="bulk-coin-step" data-id="${key}:1" title="Increase ${key}" aria-label="Increase ${key}"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button><button type="button" data-step="down" data-action="bulk-coin-step" data-id="${key}:-1" title="Decrease ${key}" aria-label="Decrease ${key}"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button></div></label>`).join('')}<button type="button" data-action="bulk-coins-clear" ${busy ? 'disabled' : ''}>Clear</button><button type="button" data-action="bulk-coins" ${disabled}>${selected.endsWith('-remove') ? 'Take' : 'Send'}</button></div></div></form></section>`;
 }
 
 export function initializeBulkCoins(getActorIds) {
@@ -66,6 +67,15 @@ export function initializeBulkCoins(getActorIds) {
         const updated = await Actor.updateDocuments(updates);
         if (updated.length !== updates.length) throw Error('A character update was cancelled.');
       }
+      try {
+        const snapshot = {kind: 'coins', operation, actors: rows.filter(row => !row.purse).map(row => ({id: row.actorId, currency: cloneCoins(row.before)}))};
+        const purse = rows.find(row => row.purse);
+        if (purse) snapshot.purse = {id: purse.actorId, currency: cloneCoins(purse.before)};
+        await writeBulkUndo(snapshot);
+      } catch (error) {
+        console.error(`${ID} | Coins changed but the undo snapshot failed`, error);
+        ui.notifications.warn('Coins were changed, but the last action could not be saved for undo.');
+      }
     } catch (error) {
       await message.update({content:`<section class="ml-chat-card"><h3>Party Coins · Failed</h3><p>${e(error.message)} Review character sheets before trying again.</p></section>`, [`flags.${ID}.bulkCoins`]:{...receipt, stage:'failed'}});
       throw error;
@@ -77,7 +87,10 @@ export function initializeBulkCoins(getActorIds) {
       ui.notifications.warn('Coins were changed, but the chat summary could not be completed. Check character sheets before repeating the action.');
     }
     return {messageId:message.id};
-  }, {serialize:`${ID}.bulk-coins`});
+  }, {serialize:BULK_QUEUE});
+}
+function cloneCoins(value) {
+  return foundry.utils?.deepClone ? foundry.utils.deepClone(value) : structuredClone(value);
 }
 
 export async function applyBulkCoins(operation, coins, operationId = foundry.utils.randomID(24)) {

@@ -52,19 +52,21 @@ export const gameMasterChecks=[{
       assert(summary?.content.includes(actor.name) && summary.content.includes('Average:') && /Pass|Fail/.test(summary.content),"Private summary shows each roll, pass/fail, and average in chat.");
       assert(summary.blind && summary.whisper.every(id=>game.users.get(id)?.isGM),"Summary is private to GMs and assistants.");
       assert(!document.querySelector('#mlgm-panel').textContent.includes("Average:"),"Check results appear only in chat, not in the tray.");
-      for (const [mode,automatic,expected] of [["adv",0,1],["dis",0,-1],["normal",1,1],["dis",1,0],["normal",-1,-1]]) {
+      for (const automatic of [0, 1, -1]) {
         await actor.update({'system.skills.prc.roll.mode':automatic});
         const request=await createRequest({kind:'skill',actorIds:[actor.id],skill:'prc'});requests.push(request.id);
-        assert(request.content.includes('ml-roll-controls'),"Skill requests provide DIS / Roll / ADV.");
-        if (automatic === 0) {
-          await wait(()=>document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-mode="${mode}"]`));
-          document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-mode="${mode}"]`).click();
+        assert(!request.content.includes('ml-roll-controls') && !request.content.includes('data-mlgm-mode'),"Skill requests show only Roll.");
+        const suppressDialog=(_config,dialog)=>{dialog.configure=false;};
+        Hooks.on('dnd5e.preRollSkill',suppressDialog);Hooks.on('dnd5e.preRollSkillV2',suppressDialog);
+        try {
+          await wait(()=>document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-actor="${actor.id}"]`));
+          document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-actor="${actor.id}"]`).click();
           await wait(()=>game.messages.some(m=>m.getFlag(ID,'result')?.requestId===request.id));
-        } else await rollRequest(request.id,actor.id,undefined,mode);
+        } finally { Hooks.off('dnd5e.preRollSkill',suppressDialog);Hooks.off('dnd5e.preRollSkillV2',suppressDialog); }
         const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id);
-        const [native]=await actor.rollSkill({skill:'prc',...(mode==='adv'?{advantage:true}:{}),...(mode==='dis'?{disadvantage:true}:{})},{configure:false},{create:false});
-        assert(result.rolls[0].options.advantageMode===native.options.advantageMode,`Request matches native ${mode} with automatic mode ${automatic}.`);
-        if (automatic===0 || mode==='normal') assert(result.rolls[0].options.advantageMode===expected,`Native skill roll preserves ${mode} with automatic mode ${automatic}.`);
+        const [native]=await actor.rollSkill({skill:'prc'},{configure:false},{create:false});
+        assert(result.rolls[0].options.advantageMode===native.options.advantageMode,`Request matches the native skill roll for automatic mode ${automatic}.`);
+        assert(result.rolls[0].options.advantageMode===automatic,`Native skill roll keeps automatic mode ${automatic}.`);
       }
       const encounter=await createRequest({kind:'encounter',die:8,actorIds:[actor.id]});requests.push(encounter.id);
       assert(!encounter.content.includes('DC '),"Blank DC is omitted.");

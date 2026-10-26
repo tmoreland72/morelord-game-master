@@ -21,10 +21,10 @@ Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API.
 - **GM Settings:** a separate tab from Player Settings. Each specialty request can be hidden for this world, and dragging a row reorders the Roll Requests cards. Hidden requests keep their place. New worlds and upgrades keep every current specialty visible until a GM turns it off. Those choices stay on this tab, under the same world setting keys. Ambience configuration stays in Foundry Game Settings.
 - **Visibility:** Blind defaults off and is remembered separately for the builder and each specialty request. Blind results and summaries go only to GMs and Assistant GMs; switching it off makes both public. Requests never contain private totals. Blind death saves keep sheet counters unchanged, while public death saves use native counter updates.
 - **Encounter:** select d4, d6, d8, d10, d12, or d20 from the dropdown on the Encounter Check card; default d8.
-- **Checks:** skill checks, ability checks, and saving throws use an optional DC, native automatic modifiers, and DIS / Roll / ADV chat controls. Complete-only summary cards include individual totals, pass/fail when a DC is set, and averages, including a single character.
+- **Checks:** skill checks, ability checks, and saving throws use an optional DC and the dnd5e native roll. The chat card has one Roll button. Advantage and disadvantage come from the system's roll dialog and automatic modifiers. Complete-only summary cards include individual totals, pass/fail when a DC is set, and averages, including a single character.
 - **Delerium Search:** uses Craftworks rules, rewards, and encounters. Foraging uses Journeys terrain/DC settings and food rules. Both produce complete-only chat summaries.
 - **Sound:** Start Playlist opens above the tray and starts the chosen playlist at the volume in that dialog. The button is usable again after success or failure, and a playback error is a Foundry notification. Saved playlist and ambience controls start immediately. Starting music stops other music first and shuffles. Above Now Playing, enter a percentage (0–100) and choose **Set All Track Volumes** to update every current playlist track, including stopped tracks and ambience. The percentage is remembered per world and uses Foundry's volume-slider scale. Now Playing uses that same scale. The same level is stored on saved playlist and ambience buttons so starting one later does not restore an older volume. Saved volumes from before this scale are converted once. Saved playback buttons retain their configured volumes and reapply them when started. Stop controls appear under Now Playing only while something is playing.
-- **Bulk Actions:** precedes Macros. Enter coins once, then use **Split amount amongst party members**, **Give amount to all party members**, **Split removal amongst party members**, or **Take amount from all party members** for the characters configured on Player Settings. Removal uses personal coins first, then the shared Party/Group purse, and reports any remaining deficit in a standard public chat card. See [Bulk Actions](#bulk-actions).
+- **Bulk Actions:** precedes Macros. Coins, XP, Inspiration, Prototype Token Sync, and Undo Last Action operate on the characters configured on Player Settings. Coin removal uses personal coins first, then the shared Party/Group purse, and reports any remaining deficit. Each applied action posts a standard public chat card. See [Bulk Actions](#bulk-actions).
 - **Macros:** immediately after Bulk Actions, starts empty. Drag a macro into the panel to pin it. Drag a pin to reorder; the new order is saved immediately for the world, and that drag does not run the macro. Click to execute, or right-click and choose Remove. Each pin is a compact row with the icon on the left and the name on the right. A long name truncates with an ellipsis, and the full name is on hover. The Macros tab has no outer frame. There is no ten-slot limit. Pins are world-specific and shared by GMs in that world; unpinning does not delete the underlying macro.
 - **Triggers:** the tab does not create triggers. Trigger behavior stays in module code. Each card is only as tall as its content. One header row shows the name, scope, status icon, and play/pause control. When and Then sit tightly under that row. The card does not also print Running or Stopped. Edit and Delete are hidden. Supports item-use → roll table, Sorcerer-source spell → player d20 request → conditional roll table, and qualifying weapon hit → native Sneak Attack damage. Triggers operate while the tray is hidden. The configured Sneak Attack and Wild Magic rules now apply to every matching character, including Grim Shara and Rhyndor. Legacy character bindings are ignored for these two rule types; rule IDs and existing surge counters are preserved. Item-use rules remain character-specific.
 
@@ -67,7 +67,7 @@ The module suite creates and removes its own temporary character and chat cards.
 
 The check builder stays on one tray row. Specialty requests use compact cards in a responsive grid. Chat results still use Core cards. Macro pins show the icon beside the name. Dragging a pin reorders it and saves that order immediately without running the macro. The native context menu removes only the pin. Popup forms have distinct stable IDs, allowing Core to remember each form's size and position independently.
 
-Foraging uses the saved Player Settings scope and remembers the selected terrain. Survival checks use Journeys' six terrain choices and current configured DCs, with DIS/Roll/ADV. After all rolls finish, a chat card, respecting the Blind roll toggle, lists each total and pass/fail, food found, meals still needed, and water availability. It does not modify an active journey or consume inventory.
+Foraging uses the saved Player Settings scope and remembers the selected terrain. Survival checks use Journeys' six terrain choices and current configured DCs, with one Roll button that calls the native Survival roll. After all rolls finish, a chat card, respecting the Blind roll toggle, lists each total and pass/fail, food found, meals still needed, and water availability. It does not modify an active journey or consume inventory.
 
 The check builder stays on one line and chooses a skill check, ability check, or saving throw. Specialty cards are Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. Blind roll defaults off for unconfigured private cards; saved choices remain sticky.
 
@@ -208,5 +208,23 @@ Verification: `node --test tests/bulk-coins.test.mjs` checks allocation, input v
 Game Master stays above other Foundry windows while its tray is open. Tooltips and notifications retain their native foreground layers.
 
 In Bulk Actions, Clear resets all five coin fields to zero and saves them without changing the selected action. The execution button reads Send for additions or Take for removals. Clear sits immediately to its left.
+
+### XP
+
+XP sits under Coins. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. The action updates `system.details.xp.value`. A successful Send clears the amount.
+
+### Inspiration
+
+**Grant Heroic Inspiration** sets `system.attributes.inspiration` for every party member. **Clear Heroic Inspiration** turns it off.
+
+### Prototype Token Sync
+
+**Sync prototype tokens** copies each party character's placed token on the active GM's current scene onto that character's prototype token. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. Position, coordinates, elevation, token identity, and placed-token runtime state are not copied.
+
+### Undo Last Action
+
+Undo restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, using the before-values stored for this world. There is no earlier history. The button is disabled when nothing is stored, and the snapshot is cleared after a successful undo. It remains available after a reload. A prototype sync that updates nobody leaves the previous snapshot in place.
+
+XP, Inspiration, Prototype Token Sync, and Undo each post one short public chat card, the same way Coins does.
 
 Bulk coin inputs use compact widths suitable for typical four-digit amounts, with larger spacing between denominations. Larger whole numbers remain accepted. Coin labels inherit the same Core uppercase muted field styling as Roll Requests.

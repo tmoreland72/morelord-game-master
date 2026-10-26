@@ -7,13 +7,16 @@ import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
-import {applyBulkCoins, bulkCoinsContent, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
+import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
+import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, initializeBulkActions, readXp} from './bulk-actions.mjs';
+import {bulkText} from './bulk-text.mjs';
+import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
 let terrainOptions = [];
 let settingTrackVolumes = false;
-let bulkCoinsBusy = false;
+let bulkBusy = false;
 let suppressMacroClick = false;
 let suppressSpecialtyToggle = false;
 const get = key => game.settings.get(ID, key);
@@ -68,6 +71,7 @@ Hooks.once("init", () => {
   game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "A folder in Foundry's user data containing audio files.", scope: "world", config: false, type: String, default: "Ambience" });
+  game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: Object, default: {empty: true}});
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
@@ -76,7 +80,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", async () => {
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
-  try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
+  try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeBulkActions(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
   if (!game.user.isGM) return;
   state = foundry.utils.deepClone(get("board"));
@@ -180,7 +184,7 @@ function render() {
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "bulk") return bulkCoinsContent(partyActorIds(), state.last.bulkCoins, bulkCoinsBusy, state.last.bulkCoinAction);
+  if (tab === "bulk") return bulkPanel({actorIds: partyActorIds(), coins: state.last.bulkCoins, coinAction: state.last.bulkCoinAction, xp: state.last.bulkXp, xpAction: state.last.bulkXpAction, inspiration: state.last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo()});
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
@@ -265,20 +269,71 @@ async function sendCheck() {
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
 }
 async function sendBulkCoins(operation) {
-  if (bulkCoinsBusy) return;
+  if (bulkBusy) return;
   await saving;
-  if (bulkCoinsBusy) return;
+  if (bulkBusy) return;
   const form = root.querySelector('[data-mlgm-bulk-coins]');
   if (!form?.reportValidity()) return;
   const coins = readCoins(Object.fromEntries(new FormData(form)));
-  bulkCoinsBusy = true; render();
+  bulkBusy = true; render();
   try {
     const result = await applyBulkCoins(operation, coins);
     if (!result?.messageId) throw Error('The coordinating GM must refresh Game Master before using party coins.');
     for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
     await persist(n => { n.last.bulkCoins = readCoins(); });
     notify('Party coins updated. See the chat card for changes and deficits.');
-  } finally { bulkCoinsBusy = false; render(); }
+  } finally { bulkBusy = false; render(); }
+}
+async function sendBulkXp(operation) {
+  if (bulkBusy) return;
+  await saving;
+  if (bulkBusy) return;
+  const form = root.querySelector('[data-mlgm-bulk-xp]');
+  if (!form?.reportValidity()) return;
+  const amount = readXp(new FormData(form).get('xp'));
+  bulkBusy = true; render();
+  try {
+    const result = await applyBulkXp(operation, amount);
+    if (!result?.messageId) throw Error(bulkText('error.noGm'));
+    const input = root.querySelector('[data-mlgm-bulk-xp] input[name="xp"]');
+    if (input) input.value = '0';
+    await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
+    notify(bulkText('xp.updated'));
+  } finally { bulkBusy = false; render(); }
+}
+async function sendBulkInspiration(action) {
+  if (bulkBusy) return;
+  await saving;
+  if (bulkBusy) return;
+  bulkBusy = true; render();
+  try {
+    const result = await applyBulkInspiration(action);
+    if (!result?.messageId) throw Error(bulkText('error.noGm'));
+    await persist(n => { n.last.bulkInspiration = action; });
+    notify(bulkText('inspiration.updated'));
+  } finally { bulkBusy = false; render(); }
+}
+async function sendBulkTokens() {
+  if (bulkBusy) return;
+  await saving;
+  if (bulkBusy) return;
+  bulkBusy = true; render();
+  try {
+    const result = await applyBulkTokens();
+    if (!result?.messageId) throw Error(bulkText('error.noGm'));
+    notify(bulkText('tokens.updatedNotice'));
+  } finally { bulkBusy = false; render(); }
+}
+async function sendBulkUndo() {
+  if (bulkBusy || !readBulkUndo()) return;
+  await saving;
+  if (bulkBusy || !readBulkUndo()) return;
+  bulkBusy = true; render();
+  try {
+    const result = await applyBulkUndo();
+    if (!result?.messageId) throw Error(bulkText('error.noGm'));
+    notify(bulkText('undo.done'));
+  } finally { bulkBusy = false; render(); }
 }
 async function sendQuick(id) {
   await saving;
@@ -336,10 +391,21 @@ async function act(action, id) {
   if (action === "send-check") return sendCheck();
   if (action === "quick-request") return sendQuick(id);
   if (action === "bulk-coins") return sendBulkCoins(root.querySelector('[name="bulkCoinAction"]')?.value);
+  if (action === "bulk-xp") return sendBulkXp(root.querySelector('[name="bulkXpAction"]')?.value);
+  if (action === "bulk-inspiration") return sendBulkInspiration(root.querySelector('[name="bulkInspirationAction"]')?.value === 'clear' ? 'clear' : 'grant');
+  if (action === "bulk-tokens") return sendBulkTokens();
+  if (action === "bulk-undo") return sendBulkUndo();
   if (action === "bulk-coins-clear") {
-    if (bulkCoinsBusy) return;
+    if (bulkBusy) return;
     for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
     await persist(n => { n.last.bulkCoins = readCoins(); });
+    return;
+  }
+  if (action === "bulk-xp-step") {
+    const input = root.querySelector('[data-mlgm-bulk-xp] input[name="xp"]');
+    if (!input) return;
+    if (Number(id) > 0) input.stepUp(); else input.stepDown();
+    input.dispatchEvent(new Event('change', {bubbles: true}));
     return;
   }
   if (action === "bulk-coin-step") {
@@ -370,10 +436,18 @@ async function act(action, id) {
 async function onChange(event) {
   const el = event.target;
   if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : 'Send'; await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
+  if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = el.value === 'each' ? 'each' : 'split'; }); return; }
+  if (el.name === 'bulkInspirationAction') { await persist(n => { n.last.bulkInspiration = el.value === 'clear' ? 'clear' : 'grant'; }); return; }
   const bulkForm = el.closest('[data-mlgm-bulk-coins]');
   if (bulkForm) {
     if (el.value !== '' && Number(el.value) < 0) el.value = '0';
     if (bulkForm.checkValidity()) await persist(n => { n.last.bulkCoins = readCoins(Object.fromEntries(new FormData(bulkForm))); });
+    return;
+  }
+  const xpForm = el.closest('[data-mlgm-bulk-xp]');
+  if (xpForm) {
+    if (el.value !== '' && Number(el.value) < 0) el.value = '0';
+    if (xpForm.checkValidity()) await persist(n => { n.last.bulkXp = readXp(new FormData(xpForm).get('xp'), {allowZero: true}); });
     return;
   }
   if (el.id === "ml-game-master-track-volume" && el.checkValidity()) {
@@ -566,7 +640,7 @@ Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
   if (setting.key === `${ID}.macros`) refreshTray(["macros"]);
   if (setting.key === `${ID}.specialtyOrder`) refreshTray(["settings", "rolls"]);
-  if (setting.key === 'dnd5e.primaryParty') refreshTray(['bulk']);
+  if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
     if (open && ["rolls", "sound", "triggers", "party", "settings", "macros", "bulk"].includes(tab)) render();

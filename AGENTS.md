@@ -16,7 +16,7 @@ and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 - Per-world GM toggles live on the GM Settings tray tab. Specialty request visibility is set there and stored as world settings, defaulting on so an upgrade hides nothing. Dragging a GM Settings row saves that world's card order; hidden requests keep their place. Ambience and other module configuration stay in Foundry Game Settings.
 - Sound actions use full-width Core buttons. Saved sound buttons use Core trash-icon deletion controls.
 - Starting music stops other music first and uses native shuffle; ambience remains separate. Start Playlist starts the chosen playlist at the dialog volume. The tray stays above the canvas and Foundry windows, and a rebuild keeps in-progress fields. Sound levels use Foundry's volume curve.
-- Skill chat controls use DIS / Roll / ADV; normal Roll preserves automatic system modifiers.
+- Skill, ability, save, foraging, and death-save chat cards show a single Roll button. That button uses the dnd5e native roll, including the system's roll dialog and automatic modifiers.
 - Delerium Search reuses Craftworks rules and rewards with Game Master's chat UI.
 - Blind death saves keep sheet counters unchanged; public death saves retain native updates.
 
@@ -50,7 +50,7 @@ All roll-request cards are public, including Wild Magic d20 requests; assigned-p
 
 - Keep per-version release notes in `release-notes/`. Put temporary scripts, staging folders, browser profiles, and other working files in the owning module's `/tmp/` directory; ignore `/tmp/` in Git and exclude it from release archives. Preserve permanent source, documentation, and regression evidence.
 
-- Bulk Actions uses the Player Settings scope for coin additions and removals. Split each denomination separately and distribute remainders in party order. Removal spends personal currency first, then the shared D&D5e Party/Group purse; report any unpaid deficit without negative balances. Every applied operation posts a standard public Core chat card.
+- Bulk Actions uses the Player Settings scope for coins, XP, inspiration, and prototype token sync. Coin and XP splits give the entire remainder to one random party member: leftover copper for coins, leftover XP for experience. Giving an amount to each member adds the full amount to everyone. Coin removal spends personal currency first, then the shared D&D5e Party/Group purse, and reports any unpaid deficit without negative balances. Inspiration grants or clears Heroic Inspiration. Prototype Token Sync copies the current scene token onto the prototype token and skips characters with no placed token. Undo Last Action restores only the latest bulk action from its world setting. Every applied operation posts a standard public Core chat card.
 
 ## Releases and documentation
 
