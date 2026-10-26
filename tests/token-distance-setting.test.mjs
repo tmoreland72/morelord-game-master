@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
   applyTokenDistanceWorldSetting,
   promoteTokenDistanceSetting,
@@ -69,4 +70,16 @@ test('an unsaved world takes a GM client off value and ignores player clients', 
   assert.equal(kept.write, false);
   assert.equal(kept.promoted, false);
   assert.equal(world.get(KEY).value, false);
+});
+
+test('every Game Master setting registration is world-scoped and GM-restricted', () => {
+  const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const calls = [...source.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g)].map(match => match[0]);
+  assert.equal(calls.length, 8);
+  for (const call of calls) {
+    assert.match(call, /scope:\s*"world"/);
+    assert.match(call, /restricted:\s*true/);
+    assert.doesNotMatch(call, /scope:\s*"client"/);
+  }
+  assert.match(source, /game\.keybindings\.register\(ID, "toggle", \{ name: "Toggle Game Master tray", restricted: true,/);
 });

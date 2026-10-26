@@ -293,7 +293,7 @@ describe('bulk actions', {concurrency: 1}, () => {
 
   test('each bulk action enables undo immediately, then undo restores the previous values', async () => {
     const source = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
-    assert.match(source, /register\(ID, BULK_UNDO, \{scope: "world", config: false, type: String, default: ""\}\)/);
+    assert.match(source, /register\(ID, BULK_UNDO, \{scope: "world", config: false, restricted: true, type: String, default: ""\}\)/);
     const gm = {id: 'gm', isGM: true, active: true};
     const character = (id, xp) => ({
       id, uuid: `Actor.${id}`, name: id, type: 'character', tokens: [],

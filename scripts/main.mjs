@@ -79,15 +79,15 @@ Hooks.once("init", () => {
     render() { closeTrayForSettings(); settings().catch(fail); return this; }
   }
   game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience folders.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
-  game.settings.register(ID, "board", { scope: "world", config: false, type: Object,
+  game.settings.register(ID, "board", { scope: "world", config: false, restricted: true, type: Object,
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
-  game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
-  game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
-  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, type: String, default: LEGACY_AMBIENCE_DEFAULT });
-  game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, type: Array, default: [] });
-  game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, type: Boolean, default: false });
-  game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: String, default: ""});
-  for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
+  game.settings.register(ID,"macros",{scope:"world",config:false,restricted:true,type:Array,default:[]});
+  game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,restricted:true,type:Array,default:[]});
+  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, restricted: true, type: String, default: LEGACY_AMBIENCE_DEFAULT });
+  game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, restricted: true, type: Array, default: [] });
+  game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, restricted: true, type: Boolean, default: false });
+  game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, restricted: true, type: String, default: ""});
+  for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, restricted: true, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
 });
