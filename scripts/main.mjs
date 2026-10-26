@@ -12,6 +12,7 @@ import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkP
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan, resolveAmbiencePickerPath} from './ambience-folders.mjs';
+import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -73,6 +74,7 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true} =
 }
 
 Hooks.once("init", () => {
+  promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { closeTrayForSettings(); settings().catch(fail); return this; }
   }
@@ -91,6 +93,9 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
+  try {
+    await applyTokenDistanceWorldSetting(game.settings, {storage: globalThis.localStorage, isGM: game.user?.isGM === true});
+  } catch (error) { console.error(`${ID} | Token Distance Indicator`, error); }
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
   try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeBulkActions(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
