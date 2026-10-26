@@ -50,7 +50,6 @@ test('set all track volumes is stored on every playlist sound and kept when anot
       if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error('Volume must be between 0 and 100.');
       return foundry.audio.AudioHelper.inputToVolume(n / 100);
     },
-    keepPlaylistVolumePrecision() {},
     foundry, state, game: {playlists},
     root: {querySelector: () => ({reportValidity: () => true, value: '25'})},
     persist: async change => change(state),

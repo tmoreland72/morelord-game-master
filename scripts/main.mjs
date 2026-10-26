@@ -74,7 +74,6 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true} =
 }
 
 Hooks.once("init", () => {
-  keepPlaylistVolumePrecision();
   promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { closeTrayForSettings(); settings().catch(fail); return this; }
@@ -524,50 +523,31 @@ function volumeFromPercent(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100.");
   const percent = Math.round(n);
-  const curve = foundry.audio.AudioHelper.inputToVolume(percent / 100);
-  const step = 0.001;
-  const snap = volume => Number((Math.round(volume / step) * step).toFixed(3));
-  let chosen = snap(curve);
-  if (percentFromVolume(chosen) === percent) return chosen;
-  for (let delta = 1; delta <= 20; delta++) {
-    for (const sign of [1, -1]) {
-      const candidate = snap(curve + sign * delta * step);
-      if (candidate >= 0 && candidate <= 1 && percentFromVolume(candidate) === percent) return candidate;
+  const exact = foundry.audio.AudioHelper.inputToVolume(percent / 100);
+  // PlaylistSound.volume is a core AlphaField. Foundry v14 cleans it on the server
+  // with Number#toNearest at the field step, and that step is hundredths: 0.225 is
+  // stored as 0.23 and 0.164 is stored as 0.16. A client schema edit never reaches
+  // that clean. Choose the hundredth whose slider percent is closest, then the one
+  // closest to the curve. Some percents, including 30 and 37, have no hundredth
+  // that reads back as themselves.
+  const nearest = Number((Math.round(exact * 100) / 100).toFixed(2));
+  let chosen = nearest;
+  let rank = [Infinity, Infinity, Infinity];
+  for (let step = 0; step <= 100; step++) {
+    const candidate = Number((step / 100).toFixed(2));
+    const read = percentFromVolume(candidate);
+    const next = [Math.abs(read - percent), Math.abs(candidate - exact), candidate === nearest ? 0 : 1];
+    if (next[0] < rank[0] || (next[0] === rank[0] && (next[1] < rank[1] || (next[1] === rank[1] && next[2] < rank[2])))) {
+      chosen = candidate;
+      rank = next;
     }
   }
-  return Math.min(1, Math.max(0, curve));
+  return chosen;
 }
 function percentFromVolume(volume) {
   const level = Number(volume);
   if (!Number.isFinite(level)) return 0;
   return Math.round(foundry.audio.AudioHelper.volumeToInput(Math.min(1, Math.max(0, level))) * 100);
-}
-function keepPlaylistVolumePrecision() {
-  const seen = new Set();
-  const widen = field => {
-    if (!field || seen.has(field)) return;
-    seen.add(field);
-    // Hundredths turn 37 into 0.23 (reads 38) and 30 into 0.16 (reads 29).
-    if (field.options) field.options.step = 0.001;
-    try { field.step = 0.001; } catch { /* Some fields expose step as a getter. */ }
-    if (field._mlgmVolumeClean) return;
-    field._mlgmVolumeClean = true;
-    field._cleanType = function(value) {
-      const requested = Number(value);
-      if (!Number.isFinite(requested)) return value;
-      return Math.min(1, Math.max(0, Math.round(requested * 1000) / 1000));
-    };
-  };
-  const consider = model => widen(model?.schema?.fields?.volume);
-  consider(foundry.documents?.BasePlaylistSound);
-  consider(foundry.documents?.PlaylistSound);
-  consider(globalThis.PlaylistSound);
-  consider(globalThis.CONFIG?.PlaylistSound?.documentClass);
-  for (const playlist of game?.playlists?.contents ?? game?.playlists ?? []) {
-    consider(playlist?.sounds?.documentClass);
-    consider(playlist?.documentClass);
-    for (const sound of playlist?.sounds?.contents ?? playlist?.sounds ?? []) consider(sound);
-  }
 }
 function migrateSoundVolumes(board) {
   if (!board || board.volumeScale === "foundry") return false;
@@ -583,55 +563,18 @@ function migrateSoundVolumes(board) {
 }
 async function setTrackVolumes() {
   gm();
-  keepPlaylistVolumePrecision();
-  if (settingTrackVolumes) return;
+  const label = `${typeof ID === "string" ? ID : "morelord-game-master"} | Set All Track Volumes`;
+  if (settingTrackVolumes) {
+    if (typeof console !== "undefined") console.info(label, {ignored: true, reason: "an update is still running"});
+    return;
+  }
   const field = root.querySelector('#ml-game-master-track-volume');
   if (!field?.reportValidity()) return;
   const percent = Number(field.value);
   const volume = volumeFromPercent(percent);
-  const volumeKey = value => Number(Number(value).toFixed(3));
-  const sameVolume = value => Number.isFinite(Number(value)) && volumeKey(value) === volumeKey(volume);
-  const storedVolume = sound => {
-    const sourceVolume = sound?._source?.volume;
-    if (Number.isFinite(Number(sourceVolume))) return Number(sourceVolume);
-    const current = Number(sound?.volume);
-    return Number.isFinite(current) ? current : undefined;
-  };
-  // PlaylistSound#debounceVolume writes the live gain back into the document.
-  // A playing track was keeping that second value while a stopped track kept the
-  // field's hundredths rounding, so one click left both 0.23 and 0.16.
-  const holdWriteback = sounds => {
-    const held = [];
-    for (const sound of sounds) {
-      if (typeof sound?.debounceVolume !== "function" || sound.debounceVolume.mlgmHeld) continue;
-      const original = sound.debounceVolume;
-      const paused = () => {};
-      paused.mlgmHeld = true;
-      sound.debounceVolume = paused;
-      held.push([sound, original]);
-    }
-    return () => {
-      for (const [sound, original] of held) if (sound.debounceVolume?.mlgmHeld) sound.debounceVolume = original;
-    };
-  };
-  const writePlaylist = async playlist => {
-    const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])];
-    const updates = sounds.filter(sound => sound?.id).map(sound => ({_id: sound.id, volume}));
-    if (!updates.length) return 0;
-    const release = holdWriteback(sounds);
-    try {
-      await playlist.updateEmbeddedDocuments("PlaylistSound", updates, {diff: false});
-      const drifted = sounds.filter(sound => {
-        const stored = storedVolume(sound);
-        return stored !== undefined && !sameVolume(stored);
-      });
-      if (drifted.length) await playlist.updateEmbeddedDocuments("PlaylistSound", drifted.map(sound => ({_id: sound.id, volume})), {diff: false});
-    } finally {
-      release();
-    }
-    return updates.length;
-  };
   settingTrackVolumes = true;
+  const control = root.querySelector('[data-action="set-track-volumes"]');
+  if (control) { control.disabled = true; control.textContent = "Setting volumes…"; }
   try {
     await persist(n=>{
       n.volumeScale="foundry";
@@ -644,17 +587,35 @@ async function setTrackVolumes() {
         if (saved.type==="ambience") for (const file of saved.config?.files ?? []) file.volume=volume;
       }
     });
-    let count = 0;
     const playlists = [...(game.playlists.contents ?? game.playlists)];
-    for (const playlist of playlists) count += await writePlaylist(playlist);
-    const stored = [...new Set(playlists.flatMap(playlist => [...(playlist.sounds?.contents ?? playlist.sounds ?? [])].map(storedVolume).filter(value => value !== undefined)).map(volumeKey))];
-    const record = {percent, passed: volume, stored};
-    if (typeof console !== "undefined") {
-      const label = `${typeof ID === "string" ? ID : "morelord-game-master"} | Set All Track Volumes`;
-      console.info(label, record);
-      if (stored.some(value => !sameVolume(value))) console.warn(label, record);
+    let count = 0;
+    for (const playlist of playlists) {
+      const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])].filter(sound => sound?.id);
+      if (!sounds.length) continue;
+      await playlist.updateEmbeddedDocuments("PlaylistSound", sounds.map(sound => ({_id: sound.id, volume})), {diff: false});
+      count += sounds.length;
     }
-    ui.notifications.info(`Set ${count} playlist tracks to ${percent}%.`);
+    const stored = {};
+    let sounds = 0;
+    for (const playlist of playlists) {
+      for (const sound of [...(playlist.sounds?.contents ?? playlist.sounds ?? [])]) {
+        const sourceVolume = sound?._source?.volume;
+        const value = Number.isFinite(Number(sourceVolume)) ? Number(sourceVolume) : Number(sound?.volume);
+        if (!Number.isFinite(value)) continue;
+        const key = Number(value).toFixed(2);
+        stored[key] = (stored[key] ?? 0) + 1;
+        sounds += 1;
+      }
+    }
+    const passedKey = Number(volume).toFixed(2);
+    const record = {percent, passed: volume, playlists: playlists.length, sounds, stored};
+    const uniform = sounds === count && (sounds === 0 || (stored[passedKey] === sounds && Object.keys(stored).length === 1));
+    if (typeof console !== "undefined") {
+      console.info(label, record);
+      if (!uniform) console.warn(label, record);
+    }
+    const summary = Object.entries(stored).map(([gain, total]) => `${gain}×${total}`).join(", ");
+    ui.notifications.info(`Set ${count} playlist tracks to ${percent}% (${volume}).${summary ? ` Stored ${summary}.` : ""}`);
   } finally {
     settingTrackVolumes = false;
     render();
