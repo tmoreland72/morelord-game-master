@@ -11,8 +11,8 @@
 - Undo Last Action restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, then clears. The button is disabled when there is nothing to undo. The snapshot is stored for the world and survives a reload.
 - Each new bulk action posts a short public chat card, the same way Coins does.
 - Opening Foundry Game Settings closes the Game Master tray. The module Configure menu opened from Game Settings does the same. The tray handle opens it again afterward.
-- Ambience can use more than one source folder. Foundry Game Settings lists the folders, and a GM can add or remove them with the folder FilePicker. An existing single folder is copied into that list once. Each folder is scanned recursively, including S3 and other FilePicker sources. The ambience picker shows the path inside the source folder so files that share a name stay distinct. Saved ambience buttons still play the full path they already stored.
-- Add folder in Game Master settings opens Foundry's folder browser without the settings dialog blocking it. Browsing into a folder and choosing it adds that folder to the list, and Save stores the list.
+- Ambience can use more than one source folder. Foundry Game Settings lists the folders, and a GM can add or remove them with the folder FilePicker. The list starts empty. A previous single folder is copied into that list once when the saved value has a path. Each folder is scanned recursively, including S3 and other FilePicker sources. A missing or invalid folder is skipped, with a console warning and one notice, and Play Ambience continues. The ambience picker shows the path inside the source folder so files that share a name stay distinct. Saved ambience buttons still play the full path they already stored.
+- Add folder in Game Master settings opens Foundry's folder browser without the settings dialog blocking it. The browser comes to the front. If the current folder is missing, it opens at the data root. Browsing into a folder and choosing it adds that folder to the list, and Save stores the list.
 
 ## Verification
 

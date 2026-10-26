@@ -3,7 +3,7 @@ import {ID} from './core.mjs';
 export const AMBIENCE_FOLDERS = 'ambienceFolders';
 export const AMBIENCE_MIGRATED = 'ambienceMigrated';
 export const LEGACY_AMBIENCE_FOLDER = 'ambienceFolder';
-export const DEFAULT_AMBIENCE_FOLDER = {source: 'data', path: 'Ambience'};
+export const LEGACY_AMBIENCE_DEFAULT = 'Ambience';
 const AUDIO_FILE = /\.(mp3|ogg|wav|flac|webm|m4a)$/i;
 const MAX_DEPTH = 32;
 const MAX_DIRECTORIES = 5000;
@@ -75,7 +75,12 @@ export function readLegacyAmbienceFolder(settings, moduleId = ID) {
   let world;
   try { world = settings?.storage?.get?.('world'); }
   catch { world = null; }
-  if (!world || typeof world.get !== 'function') return {stored: true, value: settings.get(moduleId, LEGACY_AMBIENCE_FOLDER)};
+  if (!world || typeof world.get !== 'function') {
+    const value = settings.get(moduleId, LEGACY_AMBIENCE_FOLDER);
+    const path = normalizePath(value);
+    if (!path || path === LEGACY_AMBIENCE_DEFAULT) return {stored: false, value: ''};
+    return {stored: true, value};
+  }
   const document = world.get(`${moduleId}.${LEGACY_AMBIENCE_FOLDER}`);
   if (document == null) return {stored: false, value: ''};
   const value = settingValue(document);
@@ -84,7 +89,7 @@ export function readLegacyAmbienceFolder(settings, moduleId = ID) {
 
 export async function ensureAmbienceFolders(settings, moduleId = ID) {
   const migrated = settings.get(moduleId, AMBIENCE_MIGRATED) === true;
-  const existing = normalizeAmbienceFolders(settings.get(moduleId, AMBIENCE_FOLDERS) ?? [DEFAULT_AMBIENCE_FOLDER]);
+  const existing = normalizeAmbienceFolders(settings.get(moduleId, AMBIENCE_FOLDERS) ?? []);
   if (migrated) return existing;
   const legacy = readLegacyAmbienceFolder(settings, moduleId);
   const next = migrateAmbienceFolders({legacy: legacy.value, legacyStored: legacy.stored, folders: existing, migrated: false}).folders;
@@ -191,4 +196,32 @@ export async function collectAmbienceFiles(folders, browse) {
   for (const folder of normalizeAmbienceFolders(folders)) await walk(folder.source, folder.path, folder.path, 0);
   found.sort((a, b) => a.path.localeCompare(b.path) || a.source.localeCompare(b.source));
   return {files: labelAmbienceFiles(found), errors};
+}
+
+export async function resolveAmbiencePickerPath(folder, browse) {
+  const source = String(folder?.source || 'data').trim() || 'data';
+  const path = normalizePath(folder?.path);
+  if (!path) return {source: 'data', path: ''};
+  const location = browseLocation(source, path);
+  try {
+    await browse(location.source, location.target, location.options);
+    return {source, path};
+  } catch (error) {
+    return {source: 'data', path: '', error: error instanceof Error ? error : new Error(String(error))};
+  }
+}
+
+export function ambiencePickerOptions(target, callback) {
+  const path = target?.path || '';
+  const options = {type: 'folder', current: path, callback};
+  if (path && target?.source && target.source !== 'data') options.activeSource = target.source;
+  return options;
+}
+
+export function presentAmbienceScan({files = [], errors = []} = {}, {warn = () => {}, notify = () => {}} = {}) {
+  for (const error of errors) warn(error);
+  if (errors.length === 1) notify('An Ambience folder could not be read and was skipped.');
+  else if (errors.length > 1) notify('Some Ambience folders could not be read and were skipped.');
+  else if (!files.length) notify('No audio files found in the Ambience folders.');
+  return files;
 }

@@ -11,7 +11,7 @@ import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, initializeBulkActions, readXp} from './bulk-actions.mjs';
 import {bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
-import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders} from './ambience-folders.mjs';
+import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan, resolveAmbiencePickerPath} from './ambience-folders.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -71,8 +71,8 @@ Hooks.once("init", () => {
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
   game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
-  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders.", scope: "world", config: false, type: String, default: "Ambience" });
-  game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Each folder keeps its FilePicker source.", scope: "world", config: false, type: Array, default: [{source: "data", path: "Ambience"}] });
+  game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, type: String, default: LEGACY_AMBIENCE_DEFAULT });
+  game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, type: Array, default: [] });
   game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, type: Boolean, default: false });
   game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: Object, default: {empty: true}});
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
@@ -625,13 +625,15 @@ async function playlistForm() {
 }
 async function ambienceForm() {
   const folders = normalizeAmbienceFolders(get(AMBIENCE_FOLDERS));
-  const {files, errors} = await collectAmbienceFiles(folders, (source, target, options) => foundry.applications.apps.FilePicker.browse(source, target, options));
-  for (const error of errors) console.warn(`${ID} |`, error);
-  if (!files.length) throw new Error("No audio files found in the configured Ambience folders.");
+  const Picker = foundry.applications.apps.FilePicker.implementation ?? foundry.applications.apps.FilePicker;
+  const browse = Picker.browse ?? foundry.applications.apps.FilePicker.browse;
+  const {files, errors} = await collectAmbienceFiles(folders, (source, target, options) => browse.call(Picker, source, target, options));
+  const playable = presentAmbienceScan({files, errors}, {warn: error => console.warn(`${ID} |`, error), notify});
+  if (!playable.length) return;
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Play Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${files.map((file, i) => { const prev = last.find(entry => entry.path === file.path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span title="${e(file.path)}">${e(file.label)}</span></label>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
+  const result = await form("Play Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span title="${e(file.path)}">${e(file.label)}</span></label>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => ({path: files[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
+  const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
   await saveAndRun("ambience", {files: selected});
 }
@@ -745,16 +747,33 @@ function bindAmbienceFolderEditor(dialog) {
     event.preventDefault();
     event.stopPropagation();
     try {
-      const current = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
+      const source = [...fieldset.querySelectorAll('[name="ambienceSource"]')].at(-1)?.value ?? "data";
+      const path = [...fieldset.querySelectorAll('[name="ambiencePath"]')].at(-1)?.value ?? "";
       const Picker = foundry.applications.apps.FilePicker.implementation ?? foundry.applications.apps.FilePicker;
-      const picker = new Picker({type: "folder", current, callback: (path, instance) => {
-        const folder = folderFromFilePicker(path, instance ?? picker);
+      const browse = Picker.browse ?? foundry.applications.apps.FilePicker.browse;
+      const target = await resolveAmbiencePickerPath({source, path}, (nextSource, nextTarget, options) => browse.call(Picker, nextSource, nextTarget, options));
+      if (target.error) console.warn(`${ID} |`, target.error);
+      let activePicker;
+      const callback = (selected, instance) => {
+        const folder = folderFromFilePicker(selected, instance ?? activePicker);
         if (!folder) return;
         const duplicate = [...fieldset.querySelectorAll("[data-mlgm-ambience-folder]")].some(row => row.querySelector('[name="ambienceSource"]').value === folder.source && row.querySelector('[name="ambiencePath"]').value === folder.path);
         if (duplicate) return;
         add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
-      }});
-      await picker.render({force: true});
+      };
+      const show = async current => {
+        const picker = new Picker(ambiencePickerOptions(current, callback));
+        activePicker = picker;
+        await picker.render({force: true});
+        picker.bringToFront?.();
+      };
+      try { await show(target); }
+      catch (error) {
+        console.warn(`${ID} |`, error);
+        try { await activePicker?.close?.(); } catch { /* A failed window is replaced by the data-root picker. */ }
+        if (!target.path) throw error;
+        await show({source: "data", path: ""});
+      }
     } catch (error) { fail(error); }
   });
 }

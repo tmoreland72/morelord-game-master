@@ -4,13 +4,16 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {escapeHTML} from '../scripts/core.mjs';
 import {
+  ambiencePickerOptions,
   browseLocation,
   collectAmbienceFiles,
   ensureAmbienceFolders,
   folderFromFilePicker,
   labelAmbienceFiles,
   migrateAmbienceFolders,
-  normalizeAmbienceFolders
+  normalizeAmbienceFolders,
+  presentAmbienceScan,
+  resolveAmbiencePickerPath
 } from '../scripts/ambience-folders.mjs';
 
 const MODULE = 'morelord-game-master';
@@ -78,10 +81,23 @@ test('migration is idempotent and does not resurrect a removed folder', () => {
   assert.deepEqual(edited.folders, [{source: 's3', path: 'bucket/bed'}]);
 });
 
-test('missing settings storage still migrates the registered legacy default', async () => {
-  const store = worldSettings({legacy: 'Ambience', storage: false});
-  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), [{source: 'data', path: 'Ambience'}]);
+test('an unconfigured ambience list stays empty', async () => {
+  const store = worldSettings({legacyStored: false, folders: []});
+  store.data.ambienceFolders = undefined;
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), []);
   assert.equal(store.data.ambienceMigrated, true);
+});
+
+test('a stored non-empty legacy folder is kept', async () => {
+  const store = worldSettings({legacy: 'Ambience', folders: []});
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), [{source: 'data', path: 'Ambience'}]);
+});
+
+test('missing settings storage does not seed the default Ambience folder', async () => {
+  const store = worldSettings({legacy: 'Ambience', storage: false, folders: []});
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), []);
+  const custom = worldSettings({legacy: 'Tavern', storage: false, folders: []});
+  assert.deepEqual(await ensureAmbienceFolders(custom.settings, MODULE), [{source: 'data', path: 'Tavern'}]);
 });
 
 test('folders from the FilePicker keep their source and ignore duplicates', () => {
@@ -208,17 +224,75 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   assert.match(form, /file\.label/);
   assert.match(form, /title="\$\{e\(file\.path\)\}"/);
   assert.doesNotMatch(form, /No audio files found in the configured Ambience folder\./);
-  assert.match(settings, /type: "folder"/);
   assert.match(settings, /data-mlgm-add-ambience/);
   assert.match(settings, /data-mlgm-remove-ambience/);
   assert.match(settings, /FilePicker\.implementation/);
-  assert.match(settings, /new Picker\(\{type: "folder", current, callback:/);
-  assert.match(settings, /instance \?\? picker/);
+  assert.match(settings, /resolveAmbiencePickerPath/);
+  assert.match(settings, /new Picker\(ambiencePickerOptions/);
+  assert.match(settings, /instance \?\? activePicker/);
   assert.match(settings, /await picker\.render\(\{force: true\}\)/);
+  assert.match(settings, /bringToFront\?\.\(\)/);
+  assert.match(settings, /path: ""/);
   assert.match(settings, /form\("Game Master settings",[\s\S]*\{modal: false\}\)/);
+  assert.match(form, /presentAmbienceScan/);
+  assert.doesNotMatch(form, /throw new Error\("No audio files found/);
+  assert.match(source, /register\(ID, AMBIENCE_FOLDERS, \{[^}]*default: \[\] \}/);
+  assert.doesNotMatch(source, /default: \[\{source: "data", path: "Ambience"\}\]/);
   assert.match(settings, /AMBIENCE_FOLDERS/);
   assert.doesNotMatch(settings, /set\(ID,\s*"ambienceFolder"/);
   assert.doesNotMatch(settings, /new foundry\.applications\.apps\.FilePicker\(/);
+});
+
+test('the folder browser opens at the data root when the current folder is missing', async () => {
+  const missing = await resolveAmbiencePickerPath({source: 'data', path: 'Ambience'}, async () => {
+    throw new Error('The directory Ambience does not exist');
+  });
+  assert.deepEqual({source: missing.source, path: missing.path}, {source: 'data', path: ''});
+  assert.equal(missing.error.message, 'The directory Ambience does not exist');
+  const present = await resolveAmbiencePickerPath({source: 's3', path: 'audio/tavern'}, async () => ({dirs: []}));
+  assert.deepEqual({source: present.source, path: present.path}, {source: 's3', path: 'audio/tavern'});
+  const callback = () => {};
+  assert.equal(ambiencePickerOptions(missing, callback).current, '');
+  assert.equal(ambiencePickerOptions(missing, callback).activeSource, undefined);
+  assert.equal(ambiencePickerOptions(present, callback).activeSource, 's3');
+  assert.equal(ambiencePickerOptions({source: 'data', path: ''}, callback).current, '');
+});
+
+test('a missing ambience folder is skipped with one notice and no thrown error', async () => {
+  const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const fn = source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck'));
+  const warnings = [];
+  const notices = [];
+  let opened = false;
+  const context = vm.createContext({
+    ID: MODULE,
+    AMBIENCE_FOLDERS: 'ambienceFolders',
+    normalizeAmbienceFolders,
+    collectAmbienceFiles,
+    presentAmbienceScan,
+    get: () => [{source: 'data', path: 'Ambience'}, {source: 'data', path: 'Missing'}],
+    console: {warn(...args) { warnings.push(args.map(item => item?.message ?? String(item)).join(' ')); }},
+    notify(message) { notices.push(message); },
+    form() { opened = true; },
+    foundry: {applications: {apps: {FilePicker: {async browse(_source, target) {
+      throw new Error(`The directory ${target} does not exist`);
+    }}}}}
+  });
+  vm.runInContext(fn, context);
+  await vm.runInContext('ambienceForm()', context);
+  assert.equal(opened, false);
+  assert.equal(warnings.length, 2);
+  assert.deepEqual(notices, ['Some Ambience folders could not be read and were skipped.']);
+  const kept = [];
+  const files = presentAmbienceScan({
+    files: [{path: 'Music/rain.ogg'}],
+    errors: [new Error('Ambience missing')]
+  }, {warn() {}, notify(message) { kept.push(message); }});
+  assert.deepEqual(files, [{path: 'Music/rain.ogg'}]);
+  assert.deepEqual(kept, ['An Ambience folder could not be read and was skipped.']);
+  const quiet = [];
+  assert.deepEqual(presentAmbienceScan({files: [], errors: []}, {notify(message) { quiet.push(message); }}), []);
+  assert.deepEqual(quiet, ['No audio files found in the Ambience folders.']);
 });
 
 const VOID_TAGS = new Set(['input', 'br', 'img', 'hr']);
@@ -337,9 +411,16 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   const fn = source.slice(source.indexOf('function ambienceFolderRow'), source.indexOf('async function settings'));
   const constructed = [];
   const renders = [];
+  const warnings = [];
+  const browsed = [];
   let releaseRender = () => {};
   const renderGate = new Promise(resolve => { releaseRender = resolve; });
   class FilePicker {
+    static browse(source, target) {
+      browsed.push({source, target});
+      if (target === 'Ambience') throw new Error('The directory Ambience does not exist');
+      return {files: [], dirs: []};
+    }
     constructor(options) {
       this.options = options;
       this.activeSource = 'data';
@@ -349,15 +430,20 @@ test('selecting a folder adds it to the list that Save persists', async () => {
       renders.push(options);
       return renderGate.then(() => this);
     }
+    bringToFront() { this.front = true; }
   }
   class FilePickerImplementation extends FilePicker {}
   const foundry = {applications: {apps: {FilePicker}}};
   foundry.applications.apps.FilePicker.implementation = FilePickerImplementation;
   const failures = [];
   const context = vm.createContext({
+    ID: MODULE,
     e: escapeHTML,
     folderFromFilePicker,
+    resolveAmbiencePickerPath,
+    ambiencePickerOptions,
     foundry,
+    console: {warn(...args) { warnings.push(args.map(item => item?.message ?? String(item)).join(' ')); }, error() {}},
     fail(error) { failures.push(error); }
   });
   vm.runInContext(fn, context);
@@ -378,21 +464,24 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   });
   let opened = false;
   pending.then(() => { opened = true; });
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < 8 && constructed.length < 1; i += 1) await Promise.resolve();
   assert.equal(opened, false);
   assert.equal(constructed.length, 1);
   assert.equal(constructed[0].constructor, FilePickerImplementation);
   assert.equal(constructed[0].options.type, 'folder');
-  assert.equal(constructed[0].options.current, 'Ambience');
+  assert.equal(constructed[0].options.current, '');
+  assert.equal(constructed[0].front, undefined);
   assert.equal(typeof constructed[0].options.callback, 'function');
   assert.deepEqual(Object.keys(constructed[0].options).sort(), ['callback', 'current', 'type']);
+  assert.deepEqual(browsed, [{source: 'data', target: 'Ambience'}]);
+  assert.equal(warnings.length, 1);
   assert.equal(renders.length, 1);
   assert.equal(renders[0].force, true);
   assert.deepEqual(Object.keys(renders[0]), ['force']);
   releaseRender();
   await pending;
   assert.equal(opened, true);
+  assert.equal(constructed[0].front, true);
   assert.deepEqual(failures, []);
   assert.equal(flags.prevented, true);
   assert.equal(flags.stopped, true);
