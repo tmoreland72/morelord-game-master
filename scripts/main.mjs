@@ -44,13 +44,19 @@ async function press(target, work) {
   catch (error) { fail(error); }
   finally { if (target.isConnected) target.disabled = false; }
 }
+let localBoardWrite = 0;
 function persist(change) {
   // Serialize settings writes so fast clicks cannot overwrite a previous save.
   saving = saving.catch(() => {}).then(async () => {
     const next = foundry.utils.deepClone(state);
     change(next);
     if (JSON.stringify(next.triggers) !== JSON.stringify(state.triggers)) await saveGlobalTriggers(next.triggers);
-    await game.settings.set(ID, "board", next);
+    // Blur saves this board value during mousedown, before click. The setting
+    // hook would rebuild the tray and drop that click. This write is the field
+    // the user just edited, so the open tray already shows it.
+    localBoardWrite++;
+    try { await game.settings.set(ID, "board", next); }
+    finally { localBoardWrite--; }
     state = next;
   });
   return saving;
@@ -92,10 +98,6 @@ Hooks.once("ready", async () => {
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
-  root.addEventListener("pointerdown", beginTrayPointer, true);
-  const releaseTrayAfterClick = () => { setTimeout(releaseTrayPointer, 0); };
-  document.addEventListener("pointerup", releaseTrayAfterClick, true);
-  document.addEventListener("pointercancel", releaseTrayAfterClick, true);
   root.addEventListener("click", event => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
@@ -187,25 +189,8 @@ function restoreControls(container, drafts) {
     try { focus.el.setSelectionRange(focus.start, focus.end); } catch { /* number and select controls */ }
   }
 }
-let holdTrayRender = false;
-let trayRenderWaiting = false;
-function beginTrayPointer(event) {
-  // Blur saves the focused amount and rebuilds the tray. Hold that rebuild until
-  // after click, or the first press on Send removes the button before click fires.
-  if (event?.button !== 0) return;
-  const target = event.target?.closest?.("[data-action]");
-  if (!target || target.disabled) return;
-  holdTrayRender = true;
-}
-function releaseTrayPointer() {
-  if (!holdTrayRender) return;
-  holdTrayRender = false;
-  if (trayRenderWaiting) render();
-}
 function render() {
   if (!root) return;
-  if (holdTrayRender) { trayRenderWaiting = true; return; }
-  trayRenderWaiting = false;
   const controls = snapshotControls(root);
   root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
@@ -683,6 +668,7 @@ Hooks.on("updateSetting", setting => {
   if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
+    if (localBoardWrite) return;
     if (open && ["rolls", "sound", "triggers", "party", "settings", "macros", "bulk"].includes(tab)) render();
   }
   if (SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) refreshTray(["rolls", "settings"]);

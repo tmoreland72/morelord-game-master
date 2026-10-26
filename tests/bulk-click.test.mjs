@@ -4,88 +4,138 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+const ID = 'morelord-game-master';
 
 function tray() {
-  const buttons = [];
-  const control = action => {
+  const nodes = [];
+  const control = (action, dataset = {}) => {
     const node = {
-      dataset: {action},
+      dataset: {action, ...dataset},
       disabled: false,
       isConnected: true,
-      closest(selector) { return selector === '[data-action]' ? node : null; }
+      value: dataset.value ?? '',
+      closest(selector) { return selector === '[data-action]' && action ? node : null; }
     };
-    buttons.push(node);
+    nodes.push(node);
     return node;
   };
   const root = {
-    listeners: [],
-    ownerDocument: {activeElement: null},
-    querySelectorAll: () => [],
-    addEventListener(type, fn, capture = false) { this.listeners.push({type, fn, capture}); },
-    set innerHTML(_value) { for (const node of buttons) node.isConnected = false; },
+    set innerHTML(_value) { for (const node of nodes) node.isConnected = false; },
     get innerHTML() { return ''; }
   };
-  const dispatch = (type, event) => {
-    for (const listener of root.listeners.filter(item => item.type === type && item.capture)) listener.fn(event);
-    for (const listener of root.listeners.filter(item => item.type === type && !item.capture)) listener.fn(event);
-  };
-  return {buttons, control, root, dispatch};
+  return {nodes, control, root};
 }
 
-function loadRender(root) {
-  const start = source.indexOf('let holdTrayRender = false;');
-  const end = source.indexOf('function content(');
+function loadBoardSave(root, onSave) {
+  const persistStart = source.indexOf('let localBoardWrite = 0;');
+  const persistEnd = source.indexOf('async function form(');
+  const hookStart = source.indexOf('function refreshTray(');
+  const hookEnd = source.indexOf('export async function addTrigger');
+  const hooks = {};
+  let stored = {last: {}, triggers: [], saved: []};
   const context = vm.createContext({
-    root,
+    ID,
+    saving: Promise.resolve(),
+    state: {last: {}, triggers: [], saved: []},
     open: true,
-    tab: 'bulk',
-    tabs: {bulk: 'Bulk Actions'},
-    button: () => '<button type="button"></button>',
-    e: value => String(value),
-    content: () => '',
-    snapshotControls: () => [],
-    restoreControls() {},
-    core: () => ({ui: {applyPageLayout() {}}})
+    tab: 'sound',
+    root,
+    BULK_UNDO: 'bulkUndo',
+    SPECIALTIES: [],
+    JSON,
+    Promise,
+    foundry: {utils: {deepClone: value => JSON.parse(JSON.stringify(value))}},
+    saveGlobalTriggers: async () => {},
+    get: key => (key === 'board' ? stored : null),
+    render() { root.innerHTML = 'rebuild'; },
+    game: {
+      user: {isGM: true},
+      settings: {
+        async set(_id, key, value) {
+          if (key !== 'board') return;
+          stored = value;
+          for (const fn of hooks.updateSetting ?? []) fn({key: `${ID}.board`});
+          onSave();
+        }
+      }
+    },
+    Hooks: {on(name, fn) { (hooks[name] ??= []).push(fn); }}
   });
-  vm.runInContext(source.slice(start, end), context);
+  vm.runInContext(`${source.slice(persistStart, persistEnd)}\n${source.slice(hookStart, hookEnd)}`, context);
   return {
-    begin: vm.runInContext('beginTrayPointer', context),
-    release: vm.runInContext('releaseTrayPointer', context),
-    render: vm.runInContext('render', context)
+    persist: vm.runInContext('persist', context),
+    rebuildFromOutside: () => hooks.updateSetting[0]({key: `${ID}.board`}),
+    playlistHooks: hooks.updatePlaylistSound ?? []
   };
 }
 
-test('the first click applies every bulk action while the amount change rebuilds the tray', () => {
-  assert.match(source, /root\.addEventListener\("pointerdown", beginTrayPointer, true\)/);
-  assert.match(source, /setTimeout\(releaseTrayPointer, 0\)/);
+test('typing in a tray field and clicking once applies the control under the pointer', async () => {
+  assert.doesNotMatch(source, /holdTrayRender|beginTrayPointer/);
+  assert.match(source, /localBoardWrite/);
   const xp = source.slice(source.indexOf('async function sendBulkXp'), source.indexOf('async function sendBulkInspiration'));
   const coins = source.slice(source.indexOf('async function sendBulkCoins'), source.indexOf('async function sendBulkXp'));
   assert.ok(xp.indexOf('reportValidity') < xp.indexOf('await saving'));
   assert.ok(coins.indexOf('reportValidity') < coins.indexOf('await saving'));
-  assert.match(source, /n\.last\.bulkXpAction = bulkXpChoice\(el\.value\)/);
+  assert.match(source, /ml-game-master-track-volume[\s\S]*allTrackVolume/);
+  assert.match(source, /data-sound/);
 
-  const {control, root, dispatch} = tray();
-  const {begin, release, render} = loadRender(root);
-  root.addEventListener('pointerdown', begin, true);
-  root.addEventListener('change', () => render());
+  const {control, root} = tray();
+  const field = {id: 'ml-game-master-track-volume', value: '25'};
+  const actions = [
+    'set-track-volumes', 'stop-sound', 'stop-music', 'stop-ambience', 'playlist', 'ambience', 'saved',
+    'bulk-xp', 'bulk-coins', 'bulk-coins-clear', 'bulk-inspiration', 'bulk-tokens', 'bulk-undo',
+    'send-check', 'quick-request', 'macro', 'trigger-toggle', 'tab'
+  ];
+  const buttons = Object.fromEntries(actions.map(action => [action, control(action)]));
+  const slider = control('', {sound: 'rain', playlist: 'bed', value: '0.25'});
+  const blind = control('', {name: 'blind'});
+  let pressed = null;
+  const {persist, rebuildFromOutside, playlistHooks} = loadBoardSave(root, () => { pressed?.(); });
+
   const applied = [];
-  root.addEventListener('click', event => {
-    const target = event.target.closest('[data-action]');
-    if (!target?.isConnected || target.disabled) return;
-    applied.push(target.dataset.action);
-  });
-
-  const send = control('bulk-xp');
-  render();
-  assert.equal(send.isConnected, false, 'a tray rebuild removes the button that was pressed');
-  for (const action of ['bulk-xp', 'bulk-coins', 'bulk-coins-clear', 'bulk-inspiration', 'bulk-tokens', 'bulk-undo']) {
-    const button = control(action);
-    dispatch('pointerdown', {button: 0, target: button});
-    dispatch('change', {target: {name: 'xp', value: '12'}});
-    assert.equal(button.isConnected, true, action);
-    dispatch('click', {target: button});
-    release();
-    assert.equal(button.isConnected, false, action);
+  for (const action of actions) {
+    field.value = action === 'set-track-volumes' ? '40' : '12';
+    const button = buttons[action];
+    button.isConnected = true;
+    pressed = () => {
+      assert.equal(button.isConnected, true, action);
+      if (!button.isConnected) return;
+      applied.push({action, value: field.value});
+    };
+    await persist(board => { board.last.allTrackVolume = Number(field.value); });
   }
-  assert.deepEqual(applied, ['bulk-xp', 'bulk-coins', 'bulk-coins-clear', 'bulk-inspiration', 'bulk-tokens', 'bulk-undo']);
+  assert.deepEqual(applied, actions.map(action => ({action, value: action === 'set-track-volumes' ? '40' : '12'})));
+
+  field.value = '55';
+  slider.isConnected = true;
+  slider.value = '0.25';
+  pressed = () => {
+    assert.equal(slider.isConnected, true, 'now playing volume');
+    if (!slider.isConnected) return;
+    slider.value = '0.7';
+    applied.push({action: 'track-volume', value: field.value, level: slider.value});
+  };
+  await persist(board => { board.last.allTrackVolume = Number(field.value); });
+
+  blind.isConnected = true;
+  blind.checked = false;
+  pressed = () => {
+    assert.equal(blind.isConnected, true, 'blind roll');
+    if (!blind.isConnected) return;
+    blind.checked = true;
+    applied.push({action: 'blind', checked: true});
+  };
+  await persist(board => { board.last.check = {blind: true}; });
+
+  assert.deepEqual(applied.slice(-2), [
+    {action: 'track-volume', value: '55', level: '0.7'},
+    {action: 'blind', checked: true}
+  ]);
+
+  pressed = null;
+  const rendersBefore = slider.isConnected;
+  rebuildFromOutside();
+  assert.equal(rendersBefore, true);
+  assert.equal(slider.isConnected, false, 'a board change from outside the tray still rebuilds it');
+  assert.equal(playlistHooks.length, 1);
 });
