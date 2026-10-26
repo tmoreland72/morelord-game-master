@@ -45,19 +45,23 @@ async function press(target, work) {
   finally { if (target.isConnected) target.disabled = false; }
 }
 let localBoardWrite = 0;
+let ownBoardJSON = "";
+let trayPointer = 0;
 function persist(change) {
   // Serialize settings writes so fast clicks cannot overwrite a previous save.
   saving = saving.catch(() => {}).then(async () => {
     const next = foundry.utils.deepClone(state);
     change(next);
     if (JSON.stringify(next.triggers) !== JSON.stringify(state.triggers)) await saveGlobalTriggers(next.triggers);
-    // Blur saves this board value during mousedown, before click. The setting
-    // hook would rebuild the tray and drop that click. This write is the field
-    // the user just edited, so the open tray already shows it.
+    // Blur saves this board value during mousedown, before click. Rebuilding
+    // the tray there replaces the button under the pointer. The open tray
+    // already shows the edited field, including when the setting echo arrives
+    // after this write resolves.
     localBoardWrite++;
     try { await game.settings.set(ID, "board", next); }
     finally { localBoardWrite--; }
-    state = next;
+    state = foundry.utils.deepClone(get("board"));
+    ownBoardJSON = JSON.stringify(state);
   });
   return saving;
 }
@@ -98,6 +102,14 @@ Hooks.once("ready", async () => {
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
+  root.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    trayPointer++;
+    let held = true;
+    const release = () => { if (!held) return; held = false; trayPointer--; };
+    window.addEventListener("pointercancel", release, {once: true, capture: true});
+    window.addEventListener("pointerup", () => setTimeout(release, 0), {once: true, capture: true});
+  }, true);
   root.addEventListener("click", event => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
@@ -673,7 +685,7 @@ Hooks.on("updateSetting", setting => {
   if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
-    if (localBoardWrite) return;
+    if (localBoardWrite || trayPointer || JSON.stringify(state) === ownBoardJSON) return;
     if (open && ["rolls", "sound", "triggers", "party", "settings", "macros", "bulk"].includes(tab)) render();
   }
   if (SPECIALTIES.some(specialty => setting.key === `${ID}.${specialty.setting}`)) refreshTray(["rolls", "settings"]);

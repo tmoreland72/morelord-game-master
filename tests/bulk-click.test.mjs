@@ -64,7 +64,11 @@ function loadBoardSave(root, onSave) {
   vm.runInContext(`${source.slice(persistStart, persistEnd)}\n${source.slice(hookStart, hookEnd)}`, context);
   return {
     persist: vm.runInContext('persist', context),
-    rebuildFromOutside: () => hooks.updateSetting[0]({key: `${ID}.board`}),
+    echoBoard: () => hooks.updateSetting[0]({key: `${ID}.board`}),
+    rebuildFromOutside: () => {
+      stored = {...stored, outside: (stored.outside ?? 0) + 1};
+      hooks.updateSetting[0]({key: `${ID}.board`});
+    },
     playlistHooks: hooks.updatePlaylistSound ?? []
   };
 }
@@ -90,7 +94,7 @@ test('typing in a tray field and clicking once applies the control under the poi
   const slider = control('', {sound: 'rain', playlist: 'bed', value: '0.25'});
   const blind = control('', {name: 'blind'});
   let pressed = null;
-  const {persist, rebuildFromOutside, playlistHooks} = loadBoardSave(root, () => { pressed?.(); });
+  const {persist, echoBoard, rebuildFromOutside, playlistHooks} = loadBoardSave(root, () => { pressed?.(); });
 
   const applied = [];
   for (const action of actions) {
@@ -133,6 +137,8 @@ test('typing in a tray field and clicking once applies the control under the poi
   ]);
 
   pressed = null;
+  echoBoard();
+  assert.equal(slider.isConnected, true, 'the setting echo after a field edit leaves the button in place');
   const rendersBefore = slider.isConnected;
   rebuildFromOutside();
   assert.equal(rendersBefore, true);
