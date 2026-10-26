@@ -7,8 +7,7 @@
     "test": "node --test tests/*.test.mjs",
     "test:browser": "node tests/browser-smoke.mjs",
     "changelog": "node scripts/changelog.cjs",
-    "changelog:check": "node scripts/changelog.cjs --check",
-    "companion": "node companion/server.mjs"
+    "changelog:check": "node scripts/changelog.cjs --check"
   },
   "engines": {
     "node": ">=22"

@@ -1,7 +1,7 @@
 {
   "id": "morelord-game-master",
   "title": "Morelord Game Master",
-  "description": "A GM tray for roll requests, sound, macros, triggers, and campaign assistance.",
+  "description": "A GM tray for roll requests, sound, macros, and triggers.",
   "version": "0.1.14",
   "authors": [
     {

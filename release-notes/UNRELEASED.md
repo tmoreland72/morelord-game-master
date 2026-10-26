@@ -2,4 +2,4 @@
 
 ## What Changed
 
-No pending changes.
+- Removed Campaign AI from the GM tray, including its tab, Foundry settings, local service, and provider configuration.

@@ -18,7 +18,7 @@ Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API.
 
 - **Player Settings:** select the characters in scope once. Party requests and selected-token requests use that scope. Core supplies character identities, eligible players, and GM fallback routing.
 - **Roll Requests:** the check builder stays on one line: type, skill or ability, DC, and who rolls (the whole party, selected party tokens, or one character), then Blind roll and the dice button. Specialty requests sit below it in a card grid: three columns when the tray is wide, two when it is medium, and one when it is very narrow. Each card shows its name, then one row: the selector fills the space, Blind roll follows it, and the dice button is at the right. The check builder uses the same card surface. Encounter Check uses the die. Delerium Search uses the Craftworks search area. Foraging Check uses the terrain. Death Save uses the character. Roll of Fate is labeled and public; Who rolls is Party or Selected tokens. The last choices are remembered. GM Settings can hide any specialty, and a hidden card leaves no empty grid cell.
-- **GM Settings:** a separate tab from Player Settings. Each specialty request can be hidden for this world, and dragging a row reorders the Roll Requests cards. Hidden requests keep their place. New worlds and upgrades keep every current specialty visible until a GM turns it off. Those choices stay on this tab, under the same world setting keys. Ambience and Campaign AI configuration stay in Foundry Game Settings.
+- **GM Settings:** a separate tab from Player Settings. Each specialty request can be hidden for this world, and dragging a row reorders the Roll Requests cards. Hidden requests keep their place. New worlds and upgrades keep every current specialty visible until a GM turns it off. Those choices stay on this tab, under the same world setting keys. Ambience configuration stays in Foundry Game Settings.
 - **Visibility:** Blind defaults off and is remembered separately for the builder and each specialty request. Blind results and summaries go only to GMs and Assistant GMs; switching it off makes both public. Requests never contain private totals. Blind death saves keep sheet counters unchanged, while public death saves use native counter updates.
 - **Encounter:** select d4, d6, d8, d10, d12, or d20 from the dropdown on the Encounter Check card; default d8.
 - **Checks:** skill checks, ability checks, and saving throws use an optional DC, native automatic modifiers, and DIS / Roll / ADV chat controls. Complete-only summary cards include individual totals, pass/fail when a DC is set, and averages, including a single character.
@@ -27,34 +27,8 @@ Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API.
 - **Bulk Actions:** precedes Macros. Enter coins once, then use **Split amount amongst party members**, **Give amount to all party members**, **Split removal amongst party members**, or **Take amount from all party members** for the characters configured on Player Settings. Removal uses personal coins first, then the shared Party/Group purse, and reports any remaining deficit in a standard public chat card. See [Bulk Actions](#bulk-actions).
 - **Macros:** immediately after Bulk Actions, starts empty. Drag a macro into the panel to pin it. Drag a pin to reorder; the new order is saved immediately for the world, and that drag does not run the macro. Click to execute, or right-click and choose Remove. Each pin is a compact row with the icon on the left and the name on the right. A long name truncates with an ellipsis, and the full name is on hover. The Macros tab has no outer frame. There is no ten-slot limit. Pins are world-specific and shared by GMs in that world; unpinning does not delete the underlying macro.
 - **Triggers:** the tab does not create triggers. Trigger behavior stays in module code. Each card is only as tall as its content. One header row shows the name, scope, status icon, and play/pause control. When and Then sit tightly under that row. The card does not also print Running or Stopped. Edit and Delete are hidden. Supports item-use → roll table, Sorcerer-source spell → player d20 request → conditional roll table, and qualifying weapon hit → native Sneak Attack damage. Triggers operate while the tray is hidden. The configured Sneak Attack and Wild Magic rules now apply to every matching character, including Grim Shara and Rhyndor. Legacy character bindings are ignored for these two rule types; rule IDs and existing surge counters are preserved. Item-use rules remain character-specific.
-- **Campaign AI:** a private companion-backed campaign library, PDF/TXT/Markdown uploads, campaign notes and rules editions, separate durable conversations, optional scene/party names, and Markdown conversation export. OpenAI API is the initial working adapter; provider credentials must be configured separately.
 
-Saved roll requests, macro pins, sound buttons, and remembered options live in world settings. Trigger definitions are global across worlds on the same Foundry installation. AI documents and conversations live only in the companion's private data directory, outside Foundry's public data tree. The companion token stays in browser session storage, scoped to this browser tab; provider API keys never enter Foundry settings.
-
-## Campaign companion
-
-Requires Node.js 22 or newer (Node 24 is already installed on this computer). It has no npm dependencies.
-
-Run `node companion/server.mjs` from this module directory. The terminal prints a local URL and a generated **companion token**. Enter both in **Game Settings → Configure Settings → Morelord Game Master → Configure**, then choose **Connect companion** on Campaign AI. Keep the terminal running while using campaign tools. Stop with Ctrl+C. A new launch generates a new token unless `MLGM_TOKEN` is set.
-
-The library works without an AI key. To enable answers, set these environment variables **in the companion process**, then restart it:
-
-| Variable | Purpose |
-| --- | --- |
-| `OPENAI_API_KEY` | Your OpenAI API credential; never put it in this module directory or a public Foundry file. |
-| `OPENAI_MODEL` | Exact ID of a Responses API model supporting your PDF inputs. There is no assumed/default model. |
-| `MLGM_ORIGINS` | Comma-separated exact Foundry browser origins. Defaults to `http://localhost:31400,http://127.0.0.1:31400`. Add the actual Foundry address shown in your browser if different. |
-| `MLGM_DATA_DIR` | Private storage directory; defaults to `.morelord-game-master` in the operating-system user's home directory. Back up this directory to preserve campaigns. Do not place it under Foundry's served Data directory. |
-| `MLGM_TOKEN` | Optional persistent companion token, at least 24 characters; otherwise generated at launch. |
-| `MLGM_PORT` | Local service port; default `31401`. |
-
-The companion binds only to `127.0.0.1` on the GM's computer. Browser permissions for local network access may need to be granted. Remote service deployment, TLS termination, and multiple-GM account isolation are not part of this initial local companion. Anyone with the companion token can access its campaigns; use a separate companion for a different private library.
-
-Each campaign supports up to 20 files, 10 MB per file, and 25 MB total. Upload validates file type/header and saves the original bytes; it does not establish successful PDF extraction. The UI labels files **Stored**, and the provider reads them when answering. Remove a same-named document before uploading a replacement. Removing a file excludes its bytes from future requests; previous answers may still quote it.
-
-Sending a question transmits this campaign's files, notes, rules, optional scene/party names, and the most recent 20 conversation messages to OpenAI. Full conversation history remains on disk and can be exported; older messages are not automatically included in model context. Put important long-term facts in campaign notes. The service uses `store: false` and sends no Foundry action tools. Failed/incomplete provider requests do not append a partial conversation. Large PDFs or long contexts can exceed the selected model's limits; errors leave stored files/history intact.
-
-The first adapter follows OpenAI's [file-input documentation](https://developers.openai.com/api/docs/guides/file-inputs). Files are supplied per request; this build does not claim a background search index, reliable OCR of every scan, or direct attachment to a ChatGPT project.
+Saved roll requests, macro pins, sound buttons, and remembered options live in world settings. Trigger definitions are global across worlds on the same Foundry installation.
 
 ## Trigger bindings
 
@@ -70,20 +44,13 @@ await game.modules.get("morelord-game-master").api.addTrigger({
 
 Message-based triggers execute once per source message on the active GM. The Wild Magic rule matches characters with the Sorcerer class and Wild Magic subclass identifiers and requests a blind d20 in chat after the spell attack roll (or after casting for spells without an attack roll), for spells sourced from `class:sorcerer`, including cantrips. A 1 initially rolls the requested Wild Magic Surge table. Each missed d20 raises the threshold by one (2 or lower, then 3 or lower, up to 20); a surge resets it to 1. Thresholds persist per actor/trigger, and pending requests use the current threshold when resolved. A retry reuses its existing d20 and prevents duplicate table results. Racial spells do not trigger it. The Sneak Attack rule matches the Rogue class and Sneak Attack feature identifiers and requires a targeted hit with a Finesse or Ranged weapon, advantage or an eligible adjacent ally, and no disadvantage. It waits for the linked weapon damage card before rolling. It uses native Sneak Attack scaling and critical damage, once per character per combat turn. Without a target, a hit and eligibility cannot be verified automatically. Trigger results are private to GMs and Assistant GMs.
 
-## Deliberately unresolved design items
-
-- Claude/Grok adapters, local Codex/Claude session reuse, external-project import/sync, and MCP sharing.
-- Automatic journal ingestion, indexed PDF retrieval, and model-specific OCR/limit validation.
-
-These were open decisions in the supplied checkpoint, rather than configured campaign behavior. The original design materials remain unchanged in `P:\Gaming\TTRPG\Morelord Gaming\Modules\Morelord Game Master`.
-
 ## Verification
 
 Run `npm test` for the dependency-free Node checks. Run `node tests/browser-smoke.mjs` for a headless Chrome interaction check (`CHROME_PATH` can select another Chrome/Edge executable). Screenshots are written to `test-results/`.
 
-The browser harness exercises actual module handlers with real Core UI/services, mocked Foundry documents, and a real local companion with a simulated provider. It checks chat-only results, duplicate clicks, saved controls, sound, macros, triggers, campaign switching, file upload/removal, chat, and hotbar restoration. It does **not** establish live multiplayer/Foundry integration or successful paid provider calls.
+The browser harness exercises actual module handlers with real Core UI/services and mocked Foundry documents. It checks chat-only results, duplicate clicks, saved controls, sound, macros, triggers, and hotbar restoration. It does **not** establish live multiplayer/Foundry integration.
 
-Before using this in a session: enable it in the development world, make a request with a second player client, check a real playlist and ambience mix, run a harmless macro, and verify your trigger binding and PDF/model combination. Run the module-owned in-game checks through Core’s runner as described below. Real AI-provider validation requires your credentials.
+Before using this in a session: enable it in the development world, make a request with a second player client, check a real playlist and ambience mix, run a harmless macro, and verify your trigger binding. Run the module-owned in-game checks through Core’s runner as described below.
 
 ## In-game regression checks
 
