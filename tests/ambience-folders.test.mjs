@@ -25,17 +25,34 @@ function worldSettings({legacy, legacyStored = true, folders, migrated = false, 
     ambienceMigrated: migrated
   };
   const writes = [];
-  const world = new Map();
-  if (legacyStored && legacy !== undefined) world.set(`${MODULE}.ambienceFolder`, {value: legacy});
+  const documents = new Map();
+  let nextId = 1;
+  const remember = (key, value) => {
+    const settingKey = `${MODULE}.${key}`;
+    const existing = [...documents.values()].find(document => document.key === settingKey);
+    if (existing) existing.value = value;
+    else documents.set(`Setting${nextId++}`, {_id: `Setting${nextId}`, key: settingKey, value});
+  };
+  if (legacyStored && legacy !== undefined) remember('ambienceFolder', legacy);
+  const world = {
+    get(id) { return documents.get(id); },
+    values() { return documents.values(); },
+    getSetting(key) { return [...documents.values()].find(document => document.key === key); },
+    getItem(key) {
+      const document = this.getSetting(key);
+      return document ? JSON.stringify(document.value) : null;
+    }
+  };
   const settings = {
     storage: storage ? {get(scope) { if (scope !== 'world') return undefined; return world; }} : undefined,
     get(_id, key) { return data[key]; },
     async set(_id, key, value) {
       data[key] = value;
       writes.push(key);
+      if (storage) remember(key, value);
     }
   };
-  return {data, writes, settings};
+  return {data, writes, settings, world};
 }
 
 test('an unset legacy folder leaves the ambience list in place', async () => {
@@ -51,11 +68,29 @@ test('a stored legacy folder is copied once and replaces the unsaved default', a
   const folders = await ensureAmbienceFolders(store.settings, MODULE);
   assert.deepEqual(folders, [{source: 'data', path: 'Tavern'}]);
   assert.equal(store.data.ambienceMigrated, true);
-  assert.deepEqual(store.writes, ['ambienceFolders', 'ambienceMigrated']);
+  assert.deepEqual(store.writes, ['ambienceFolders', 'ambienceMigrated', 'ambienceFolder']);
+  assert.equal(store.data.ambienceFolder, '');
   store.writes.length = 0;
   store.data.ambienceFolders = [];
   const again = await ensureAmbienceFolders(store.settings, MODULE);
   assert.deepEqual(again, []);
+  assert.deepEqual(store.writes, []);
+});
+
+test('the legacy folder is read by setting key, not by document id', async () => {
+  const store = worldSettings({legacy: 'modules/psfx-ambience/library/ambient', folders: []});
+  assert.equal(store.world.get(`${MODULE}.ambienceFolder`), undefined);
+  assert.equal(store.world.getSetting(`${MODULE}.ambienceFolder`).value, 'modules/psfx-ambience/library/ambient');
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), [{source: 'data', path: 'modules/psfx-ambience/library/ambient'}]);
+});
+
+test('a migrated empty list is repaired once from the legacy folder that is still stored', async () => {
+  const store = worldSettings({legacy: 'modules/psfx-ambience/library/ambient', folders: [], migrated: true});
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), [{source: 'data', path: 'modules/psfx-ambience/library/ambient'}]);
+  assert.equal(store.data.ambienceFolder, '');
+  store.data.ambienceFolders = [];
+  store.writes.length = 0;
+  assert.deepEqual(await ensureAmbienceFolders(store.settings, MODULE), []);
   assert.deepEqual(store.writes, []);
 });
 

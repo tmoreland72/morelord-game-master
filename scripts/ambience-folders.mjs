@@ -59,42 +59,100 @@ export function migrateAmbienceFolders({legacy, legacyStored, folders, migrated}
   return {folders: path ? [{source: 'data', path}] : [], migrated: true};
 }
 
-function settingValue(document) {
-  if (typeof document === 'string') return document;
-  if (document && typeof document.get === 'function') {
+function settingKey(document) {
+  if (!document || typeof document !== 'object') return '';
+  if (typeof document.key === 'string') return document.key;
+  if (typeof document.get === 'function') {
     try {
-      const value = document.get('value');
-      if (typeof value === 'string') return value;
-    } catch { /* The value property below is the fallback. */ }
+      const key = document.get('key');
+      if (typeof key === 'string') return key;
+    } catch { /* A plain value property is the fallback. */ }
   }
-  if (document && typeof document === 'object' && 'value' in document) return document.value ?? '';
   return '';
 }
 
+function settingValue(document) {
+  let value;
+  if (typeof document === 'string') value = document;
+  else if (document && typeof document.get === 'function') {
+    try { value = document.get('value'); }
+    catch { /* The value property below is the fallback. */ }
+  }
+  if (value === undefined && document && typeof document === 'object' && 'value' in document) value = document.value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed === 'string') return parsed;
+      } catch { /* The stored value is already a plain path. */ }
+    }
+    return value;
+  }
+  return value ?? '';
+}
+
+function settingDocuments(world) {
+  if (typeof world.values === 'function') return [...world.values()];
+  if (Array.isArray(world.contents)) return world.contents;
+  if (typeof world.filter === 'function') return world.filter(() => true);
+  return [];
+}
+
+// WorldSettings#get retrieves a Setting by document id. The legacy folder is
+// found with getSetting, or by the setting's key field.
+function findSetting(world, key) {
+  if (!world) return null;
+  if (typeof world.getSetting === 'function') {
+    try {
+      const found = world.getSetting(key);
+      if (found != null) return found;
+    } catch { /* A missing setting can throw from a strict collection. */ }
+  }
+  const match = settingDocuments(world).find(entry => settingKey(entry) === key);
+  if (match) return match;
+  if (typeof world.getItem === 'function') {
+    try {
+      const raw = world.getItem(key);
+      if (typeof raw === 'string') return {value: raw};
+    } catch { /* No serialized item for this key. */ }
+  }
+  return null;
+}
+
 export function readLegacyAmbienceFolder(settings, moduleId = ID) {
-  let world;
-  try { world = settings?.storage?.get?.('world'); }
+  const key = `${moduleId}.${LEGACY_AMBIENCE_FOLDER}`;
+  let world = null;
+  try { world = settings?.storage?.get?.('world') ?? null; }
   catch { world = null; }
-  if (!world || typeof world.get !== 'function') {
+  const searchable = world && (typeof world.getSetting === 'function' || typeof world.values === 'function' || typeof world.getItem === 'function' || typeof world.filter === 'function' || Array.isArray(world.contents));
+  if (!searchable) {
     const value = settings.get(moduleId, LEGACY_AMBIENCE_FOLDER);
     const path = normalizePath(value);
     if (!path || path === LEGACY_AMBIENCE_DEFAULT) return {stored: false, value: ''};
     return {stored: true, value};
   }
-  const document = world.get(`${moduleId}.${LEGACY_AMBIENCE_FOLDER}`);
+  const document = findSetting(world, key);
   if (document == null) return {stored: false, value: ''};
   const value = settingValue(document);
-  return {stored: true, value: value === undefined ? settings.get(moduleId, LEGACY_AMBIENCE_FOLDER) : value};
+  return {stored: true, value: value ?? ''};
 }
 
 export async function ensureAmbienceFolders(settings, moduleId = ID) {
   const migrated = settings.get(moduleId, AMBIENCE_MIGRATED) === true;
   const existing = normalizeAmbienceFolders(settings.get(moduleId, AMBIENCE_FOLDERS) ?? []);
-  if (migrated) return existing;
   const legacy = readLegacyAmbienceFolder(settings, moduleId);
-  const next = migrateAmbienceFolders({legacy: legacy.value, legacyStored: legacy.stored, folders: existing, migrated: false}).folders;
+  const legacyPath = normalizePath(legacy.value);
+  // An earlier migration looked the setting up by document id, saved an empty
+  // list, and marked the world migrated while this path was still stored.
+  const recover = migrated && existing.length === 0 && legacy.stored && Boolean(legacyPath);
+  const next = !migrated
+    ? migrateAmbienceFolders({legacy: legacy.value, legacyStored: legacy.stored, folders: existing, migrated: false}).folders
+    : recover ? [{source: 'data', path: legacyPath}] : existing;
   if (JSON.stringify(next) !== JSON.stringify(existing)) await settings.set(moduleId, AMBIENCE_FOLDERS, next);
-  await settings.set(moduleId, AMBIENCE_MIGRATED, true);
+  if (!migrated) await settings.set(moduleId, AMBIENCE_MIGRATED, true);
+  // Clearing the stored path keeps a folder the GM removes from coming back.
+  if (legacy.stored && legacyPath) await settings.set(moduleId, LEGACY_AMBIENCE_FOLDER, '');
   return next;
 }
 
