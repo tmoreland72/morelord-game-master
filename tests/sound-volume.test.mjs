@@ -45,6 +45,16 @@ test('bulk volume covers playing and stopped tracks, skips empty playlists, and 
   assert.equal(vm.runInContext('percentFromVolume(volumeFromPercent(65))',context),65);
   assert.equal(vm.runInContext('percentFromVolume(volumeFromPercent(0))',context),0);
   assert.equal(vm.runInContext('percentFromVolume(volumeFromPercent(100))',context),100);
+  for (let percentValue = 0; percentValue <= 100; percentValue += 1) {
+    const stored = vm.runInContext(`volumeFromPercent(${percentValue})`, context);
+    assert.equal(vm.runInContext(`percentFromVolume(${stored})`, context), percentValue, `percent ${percentValue}`);
+    assert.equal(Math.round(stored * 1000) / 1000, stored);
+  }
+  assert.equal(vm.runInContext('volumeFromPercent(37)', context), 0.225);
+  assert.equal(vm.runInContext('percentFromVolume(0.225)', context), 37);
+  assert.equal(vm.runInContext('percentFromVolume(0.23)', context), 38);
+  assert.equal(vm.runInContext('volumeFromPercent(30)', context), 0.164);
+  assert.equal(vm.runInContext('percentFromVolume(0.16)', context), 29);
   assert.throws(()=>vm.runInContext('volumeFromPercent(101)',context),/between 0 and 100/);
   const board={volumeScale:undefined,last:{allTrackVolume:25,playlist:{volume:0.5},ambience:{files:[{path:'a.ogg',volume:0.4}]}},saved:[{type:'playlist',config:{volume:0.65}},{type:'ambience',config:{files:[{volume:0}]}},{type:'group',config:{dc:10}}]};
   assert.equal(vm.runInContext('migrateSoundVolumes',context)(board),true);
@@ -57,6 +67,14 @@ test('bulk volume covers playing and stopped tracks, skips empty playlists, and 
   assert.equal(board.saved[2].config.dc,10);
   assert.equal(vm.runInContext('migrateSoundVolumes',context)(board),false);
   assert.equal(board.last.playlist.volume,0.5**1.5);
-  assert.match(source,/volumeToInput\(Number\(s\.volume\)/);
-  assert.match(source,/volumeFromPercent\(Number\(el\.value\) \* 100\)/);
+  assert.match(source,/percentFromVolume\(s\.volume\)/);
+  assert.match(source,/value="\$\{\(percent \/ 100\)\.toFixed\(2\)\}"/);
+  assert.match(source,/volumeFromPercent\(Math\.round\(Number\(el\.value\) \* 100\)\)/);
+  const volumeField = {options: {step: 0.01}};
+  context.foundry.documents = {BasePlaylistSound: {schema: {fields: {volume: volumeField}}}};
+  percent = 37;
+  await vm.runInContext('setTrackVolumes()', context);
+  assert.equal(volumeField.options.step, 0.001);
+  assert.equal(writes.at(-1).updates[0].volume, 0.225);
+  assert.equal(vm.runInContext('percentFromVolume(0.225)', context), 37);
 });

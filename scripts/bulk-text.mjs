@@ -73,7 +73,7 @@ export const BULK_STRINGS = {
   'tokens.field.alpha': 'opacity',
   'tokens.field.ring': 'dynamic ring',
   'tokens.field.occludable': 'occlusion',
-  'tokens.sync': 'Sync prototype tokens',
+  'tokens.sync': 'Apply',
   'tokens.card': 'Prototype Token Sync',
   'tokens.updated': 'Prototype token updated.',
   'tokens.skipped': 'No token on the current scene.',

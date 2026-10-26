@@ -74,6 +74,7 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true} =
 }
 
 Hooks.once("init", () => {
+  keepPlaylistVolumePrecision();
   promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { closeTrayForSettings(); settings().catch(fail); return this; }
@@ -225,7 +226,7 @@ function content() {
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
-    const cards = playing.map(({p,s})=>{const level=foundry.audio.AudioHelper.volumeToInput(Number(s.volume)||0),percent=Math.round(level*100);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${level}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
+    const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
       + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks, ambience, and saved playback buttons.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
@@ -513,17 +514,38 @@ async function onChange(event) {
     await persist(n => { n.last[card.dataset.rollCard] = config; if (card.dataset.rollCard === "encounter") n.last.die = config.die; });
     return;
   }
-  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Number(el.value) * 100) }); }
+  if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Math.round(Number(el.value) * 100)) }); }
 }
 function volumeFromPercent(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Volume must be between 0 and 100.");
-  return foundry.audio.AudioHelper.inputToVolume(n / 100);
+  const percent = Math.round(n);
+  const curve = foundry.audio.AudioHelper.inputToVolume(percent / 100);
+  const step = 0.001;
+  const snap = volume => Number((Math.round(volume / step) * step).toFixed(3));
+  let chosen = snap(curve);
+  if (percentFromVolume(chosen) === percent) return chosen;
+  for (let delta = 1; delta <= 20; delta++) {
+    for (const sign of [1, -1]) {
+      const candidate = snap(curve + sign * delta * step);
+      if (candidate >= 0 && candidate <= 1 && percentFromVolume(candidate) === percent) return candidate;
+    }
+  }
+  return Math.min(1, Math.max(0, curve));
 }
 function percentFromVolume(volume) {
   const level = Number(volume);
   if (!Number.isFinite(level)) return 0;
   return Math.round(foundry.audio.AudioHelper.volumeToInput(Math.min(1, Math.max(0, level))) * 100);
+}
+function keepPlaylistVolumePrecision() {
+  const models = [foundry.documents?.BasePlaylistSound, globalThis.PlaylistSound];
+  for (const model of models) {
+    const field = model?.schema?.fields?.volume;
+    const step = Number(field?.options?.step);
+    // A 0.01 gain step turns slider 37 into 38 and slider 30 into 29.
+    if (field?.options && Number.isFinite(step) && step > 0.001) field.options.step = 0.001;
+  }
 }
 function migrateSoundVolumes(board) {
   if (!board || board.volumeScale === "foundry") return false;
@@ -539,6 +561,7 @@ function migrateSoundVolumes(board) {
 }
 async function setTrackVolumes() {
   gm();
+  keepPlaylistVolumePrecision();
   if (settingTrackVolumes) return;
   const field = root.querySelector('#ml-game-master-track-volume');
   if (!field?.reportValidity()) return;
@@ -791,10 +814,21 @@ function bindAmbienceFolderEditor(dialog) {
         add.insertAdjacentHTML("beforebegin", ambienceFolderRow(folder));
       };
       const show = async current => {
+        const atRoot = !current?.path;
+        const previousDirectory = atRoot ? Picker.LAST_BROWSED_DIRECTORY : undefined;
+        if (atRoot) Picker.LAST_BROWSED_DIRECTORY = "";
         const picker = new Picker(ambiencePickerOptions(current, callback));
         activePicker = picker;
-        await picker.render({force: true});
-        picker.bringToFront?.();
+        try {
+          if (atRoot && picker.browse) {
+            try { await picker.browse(""); }
+            catch (error) { console.warn(`${ID} |`, error); }
+          }
+          await picker.render({force: true});
+          picker.bringToFront?.();
+        } finally {
+          if (atRoot) Picker.LAST_BROWSED_DIRECTORY = previousDirectory ?? "";
+        }
       };
       try { await show(target); }
       catch (error) {

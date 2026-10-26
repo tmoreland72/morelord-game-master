@@ -121,6 +121,9 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /data-action="bulk-coins"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-xp"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-inspiration"[^>]*>Apply</);
+    assert.match(html, /data-action="bulk-tokens"[^>]*>Apply</);
+    assert.match(html, /Prototype Token Sync/);
+    assert.match(html, /Undo Last Action/);
     assert.doesNotMatch(html, />Send</);
     const removal = bulkPanel({actorIds: ['a'], coinAction: 'each-remove', undo: null});
     assert.match(removal, /data-action="bulk-coins"[^>]*>Take</);

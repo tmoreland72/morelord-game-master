@@ -69,7 +69,7 @@
   "morelord-game-master.tokens.field.alpha": "opacity",
   "morelord-game-master.tokens.field.ring": "dynamic ring",
   "morelord-game-master.tokens.field.occludable": "occlusion",
-  "morelord-game-master.tokens.sync": "Sync prototype tokens",
+  "morelord-game-master.tokens.sync": "Apply",
   "morelord-game-master.tokens.card": "Prototype Token Sync",
   "morelord-game-master.tokens.updated": "Prototype token updated.",
   "morelord-game-master.tokens.skipped": "No token on the current scene.",

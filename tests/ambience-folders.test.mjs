@@ -264,6 +264,8 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   assert.match(settings, /FilePicker\.implementation/);
   assert.match(settings, /resolveAmbiencePickerPath/);
   assert.match(settings, /new Picker\(ambiencePickerOptions/);
+  assert.match(settings, /LAST_BROWSED_DIRECTORY = ""/);
+  assert.match(settings, /await picker\.browse\(""\)/);
   assert.match(settings, /instance \?\? activePicker/);
   assert.match(settings, /await picker\.render\(\{force: true\}\)/);
   assert.match(settings, /bringToFront\?\.\(\)/);
@@ -451,6 +453,7 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   let releaseRender = () => {};
   const renderGate = new Promise(resolve => { releaseRender = resolve; });
   class FilePicker {
+    static LAST_BROWSED_DIRECTORY = 'Music/last-used';
     static browse(source, target) {
       browsed.push({source, target});
       if (target === 'Ambience') throw new Error('The directory Ambience does not exist');
@@ -459,7 +462,12 @@ test('selecting a folder adds it to the list that Save persists', async () => {
     constructor(options) {
       this.options = options;
       this.activeSource = 'data';
+      this.lastAtConstruct = this.constructor.LAST_BROWSED_DIRECTORY;
       constructed.push(this);
+    }
+    browse(target) {
+      this.browsedTarget = target;
+      return Promise.resolve(this);
     }
     render(options) {
       renders.push(options);
@@ -499,12 +507,14 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   });
   let opened = false;
   pending.then(() => { opened = true; });
-  for (let i = 0; i < 8 && constructed.length < 1; i += 1) await Promise.resolve();
+  for (let i = 0; i < 20 && renders.length < 1; i += 1) await Promise.resolve();
   assert.equal(opened, false);
   assert.equal(constructed.length, 1);
   assert.equal(constructed[0].constructor, FilePickerImplementation);
   assert.equal(constructed[0].options.type, 'folder');
   assert.equal(constructed[0].options.current, '');
+  assert.equal(constructed[0].lastAtConstruct, '');
+  assert.equal(constructed[0].browsedTarget, '');
   assert.equal(constructed[0].front, undefined);
   assert.equal(typeof constructed[0].options.callback, 'function');
   assert.deepEqual(Object.keys(constructed[0].options).sort(), ['callback', 'current', 'type']);
@@ -515,6 +525,7 @@ test('selecting a folder adds it to the list that Save persists', async () => {
   assert.deepEqual(Object.keys(renders[0]), ['force']);
   releaseRender();
   await pending;
+  assert.equal(FilePickerImplementation.LAST_BROWSED_DIRECTORY, 'Music/last-used');
   assert.equal(opened, true);
   assert.equal(constructed[0].front, true);
   assert.deepEqual(failures, []);
