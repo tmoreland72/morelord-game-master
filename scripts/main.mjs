@@ -4,16 +4,13 @@ import {rollOfFate} from './roll-of-fate.mjs';
 import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs";
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
-import { ID, escapeHTML as e, companionURL } from "./core.mjs";
+import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, bulkCoinsContent, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 
-const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", ai: "Campaign AI", settings: "GM Settings", party: "Player Settings" };
+const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
-let campaign, campaigns = [], connection, aiBusy = false;
-const drafts = new Map();
-let campaignSelection = 0;
 let terrainOptions = [];
 let settingTrackVolumes = false;
 let bulkCoinsBusy = false;
@@ -55,7 +52,7 @@ function persist(change) {
   return saving;
 }
 async function form(title, content, actions = [["ok", "Save"]]) {
-  return foundry.applications.api.DialogV2.wait({ modal: true, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|campaign|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
+  return foundry.applications.api.DialogV2.wait({ modal: true, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
     content: `<div><div class="ml-app ml-app-shell ml-dialog-shell">${content}</div></div>`, rejectClose: false,
     buttons: actions.map(([action, text], i) => ({ action, label: text, default: i === 0,
       callback: (_event, btn) => ({ action, data: new FormData(btn.form) }) })) });
@@ -65,13 +62,12 @@ Hooks.once("init", () => {
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { settings().catch(fail); return this; }
   }
-  game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience and Campaign AI settings.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
+  game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience settings.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
   game.settings.register(ID, "board", { scope: "world", config: false, type: Object,
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
   game.settings.register(ID,"macros",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,type:Array,default:[]});
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "A folder in Foundry's user data containing audio files.", scope: "world", config: false, type: String, default: "Ambience" });
-  game.settings.register(ID, "companion", { name: "Campaign AI companion URL", hint: "The local Morelord companion service. Provider keys stay on the service.", scope: "client", config: false, type: String, default: "http://127.0.0.1:31401" });
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
@@ -115,7 +111,6 @@ Hooks.once("ready", async () => {
     if (next) { event.preventDefault(); tab = next; render(); root.querySelector(`#mlgm-tab-${next}`).focus(); }
   });
   root.addEventListener("input", event => {
-    if (event.target.id === "mlgm-prompt") drafts.set(event.target.dataset.campaign,event.target.value);
     const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
     if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
@@ -179,10 +174,9 @@ function render() {
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
-    <section id="mlgm-panel" class="${["sound","ai"].includes(tab) ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
+    <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
   core().ui.applyPageLayout({element:root});
-  if (root.querySelector("#mlgm-prompt")) root.querySelector("#mlgm-prompt").value = drafts.get(campaign?.id) ?? "";
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
@@ -198,7 +192,7 @@ function content() {
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks, ambience, and saved playback buttons.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
-  return aiContent();
+  return "";
 }
 function partyActorIds() {
   const eligible=core().ui.participation.listCharacterActors();
@@ -371,8 +365,6 @@ async function act(action, id) {
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
   if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
   if (action === "trigger-toggle") await persist(n => { const t = n.triggers.find(x => x.id === id); if (t) t.enabled = !t.enabled; });
-
-  if (action.startsWith("ai-")) return aiAction(action, id);
   render();
 }
 async function onChange(event) {
@@ -408,12 +400,6 @@ async function onChange(event) {
     return;
   }
   if (el.dataset.sound) { gm(); await game.playlists.get(el.dataset.playlist)?.sounds.get(el.dataset.sound)?.update({ volume: volumeFromPercent(Number(el.value) * 100) }); }
-  if (el.id === "mlgm-campaign") {
-    const sequence = ++campaignSelection;
-    const selected = el.value ? await api(`/campaigns/${encodeURIComponent(el.value)}`) : null;
-    if (sequence === campaignSelection) { campaign = selected; render(); }
-  }
-  if (el.id === "mlgm-upload") await uploadFiles(el.files);
 }
 function volumeFromPercent(value) {
   const n = Number(value);
@@ -645,59 +631,8 @@ function triggerCards() {
 }
 
 async function settings() {
-  const result = await form("Game Master settings",label("Ambience folder",input("folder",get("ambienceFolder"))) + label("AI companion URL",input("url",get("companion"),'type="url" required')) + label("Companion token (this tab only)",input("token",sessionStorage.getItem(`${ID}.token`) ?? "",'type="password" autocomplete="off"')) + '<p>Provider API keys belong in the companion environment, never in Foundry settings.</p>');
+  const result = await form("Game Master settings",label("Ambience folder",input("folder",get("ambienceFolder"))));
   if (!result) return;
-  const url = companionURL(result.data.get("url"));
   await game.settings.set(ID,"ambienceFolder",result.data.get("folder").trim());
-  await game.settings.set(ID,"companion",url);
-  sessionStorage.setItem(`${ID}.token`,result.data.get("token").trim()); connection = null; campaign = null; campaigns = []; render();
-}
-async function api(path, method="GET", body) {
-  const response = await fetch(companionURL(get("companion")) + path, {method, headers:{"Content-Type":"application/json",Authorization:`Bearer ${sessionStorage.getItem(`${ID}.token`) ?? ""}`}, body:body === undefined ? undefined : JSON.stringify(body), signal:AbortSignal.timeout(180000)});
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || `Companion returned ${response.status}.`);
-  return data;
-}
-function aiContent() {
-  return column("Campaign context", `${button("ai-connect",connection ? "Refresh connection" : "Connect companion")}<p class="notes">${connection ? e(connection.configured ? `OpenAI API · ${connection.model}` : "Library connected · API model/key not configured") : "Not connected. Open Game settings to enter your companion token."}</p><label class="ml-field-label" for="mlgm-campaign">Campaign</label><select id="mlgm-campaign"><option value="">Select a campaign</option>${campaigns.map(c => option(c.id,c.name,campaign?.id)).join("")}</select>${button("ai-create","＋ New campaign","",connection ? "" : "disabled")}${campaign ? `<p>${e(campaign.rules)}</p>${button("ai-edit","Edit notes & rules")}<h3 class="ml-field-label">Campaign files</h3><label class="ml-field-label" for="mlgm-upload">Upload PDFs or text</label><input id="mlgm-upload" type="file" accept=".pdf,.txt,.md" multiple ${aiBusy ? "disabled" : ""}>${campaign.files.map(f => `<div class="ml-card ml-stack"><strong>${e(f.name)}</strong><p class="notes">Stored · ${Math.ceil(f.size/1024)} KB · supplied with each question</p>${deleteButton("ai-remove-file",f.id,f.name)}</div>`).join("")}<p class="notes">Files are stored privately by the companion. PDF readability is checked by the provider when you ask a question.</p>` : ""}`)
-    + column("Ask your campaign assistant", `<div class="ml-item-row"><span class="notes">GM private · ${e(campaign?.name ?? "Choose a campaign")}</span>${button("ai-export","Export conversation","",campaign ? "" : "disabled")}</div><div class="gm-chat" role="log" aria-live="polite">${campaign?.messages.map(m => `<article class="ml-card ml-stack"><strong>${m.role === "user" ? "You" : "Game Master assistant"}</strong><br>${e(m.content)}</article>`).join("") || '<p class="notes">Campaign notes, files, and conversation stay separate for each campaign.</p>'}</div><label class="ml-field-label" for="mlgm-prompt">Message</label><textarea id="mlgm-prompt" data-campaign="${e(campaign?.id)}" rows="2" maxlength="12000" placeholder="Ask about your campaign, a rule, or the next encounter…"></textarea><label class="ml-check"><input type="checkbox" id="mlgm-scene"><span>Include current scene and party</span></label>${button("ai-send",aiBusy ? "Thinking…" : "Send","",(!campaign || !connection?.configured || aiBusy) ? "disabled" : 'class="ml-button" data-tone="accent" data-variant="outline"')}<p class="notes">Sending shares this campaign’s notes, files and recent conversation with OpenAI. No Foundry actions are executed by AI.</p>`,"gm-span");
-}
-async function aiAction(action,id) {
-  if (action === "ai-connect") { connection = await api("/health"); campaigns = await api("/campaigns"); if (campaign) campaign = await api(`/campaigns/${campaign.id}`); notify("Campaign companion connected."); }
-  if (action === "ai-create" || action === "ai-edit") {
-    const existing = action === "ai-edit" ? campaign : null;
-    const result = await form(existing ? "Campaign notes" : "New campaign", label("Campaign name",input("name",existing?.name ?? "",'required maxlength="100"')) + label("Rules edition",select("rules",["D&D 5e · 2024","D&D 5e · 2014","Other"].map(x => option(x,x,existing?.rules)).join(""))) + label("Durable campaign notes / instructions",`<textarea name="notes" rows="8" maxlength="50000">${e(existing?.notes ?? "")}</textarea>`));
-    if (!result) return;
-    const body = Object.fromEntries(result.data);
-    campaign = await api(existing ? `/campaigns/${existing.id}` : "/campaigns",existing ? "PATCH" : "POST",body);
-    campaigns = await api("/campaigns");
-  }
-  if (action === "ai-remove-file" && campaign) { await api(`/campaigns/${campaign.id}/files/${id}`,"DELETE"); campaign = await api(`/campaigns/${campaign.id}`); }
-  if (action === "ai-send" && campaign && !aiBusy) {
-    const prompt = root.querySelector("#mlgm-prompt").value.trim();
-    if (!prompt) return;
-    const campaignId = campaign.id;
-    const context = root.querySelector("#mlgm-scene").checked ? {scene:canvas.scene?.name ?? "",party:core().ui.participation.listCharacterActors().map(a => a.name)} : undefined;
-    aiBusy = true; render(); notify("Waiting for the campaign assistant…");
-    try { const updated = await api(`/campaigns/${campaignId}/chat`,"POST",{prompt,context}); drafts.delete(campaignId); if (campaign?.id === campaignId) campaign = updated; notify("Campaign answer received."); }
-    finally { aiBusy = false; render(); }
-  }
-  if (action === "ai-export" && campaign) {
-    const text = `# ${campaign.name}\n\n${campaign.rules}\n\n${campaign.notes}\n\n${campaign.messages.map(m => `## ${m.role}\n\n${m.content}`).join("\n\n")}`;
-    const url = URL.createObjectURL(new Blob([text],{type:"text/markdown"})), a = document.createElement("a");
-    a.href = url; a.download = `${campaign.name.replace(/[^\w -]/g,"") || "campaign"}.md`; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
-  }
   render();
-}
-async function uploadFiles(files) {
-  if (!campaign) throw new Error("Choose a campaign first.");
-  const id = campaign.id;
-  for (const file of files) {
-    if (file.size > 10*1024*1024) throw new Error("Each file must be 10 MB or smaller.");
-    notify(`Uploading ${file.name}…`);
-    const data = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(",")[1]); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
-    await api(`/campaigns/${id}/files`,"POST",{name:file.name,data});
-  }
-  if (campaign?.id === id) campaign = await api(`/campaigns/${id}`);
-  notify("Campaign files stored."); render();
 }

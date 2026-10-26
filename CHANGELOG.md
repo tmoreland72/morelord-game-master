@@ -128,7 +128,7 @@ Previously verified Foundry compatibility remains 14.368. This code-only release
 
 ## 0.1.1
 
-Initial GitHub-only distribution of the GM tray: roll requests, macro pins, sound controls, managed trigger macros, and optional Campaign AI companion.
+Initial GitHub-only distribution of the GM tray: roll requests, macro pins, sound controls, and managed trigger macros.
 
 - Includes Game Master Macros and Game Master Roll Tables under Morelord Gaming / Game Master.
 - Includes independent escalating Wild Magic and Volatile Magic checks, selected-token Roll of Fate, and start/stop trigger controls.
