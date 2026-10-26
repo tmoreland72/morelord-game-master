@@ -57,3 +57,19 @@ body.mlgm-open #hotbar { display:none!important; }
 @container gm-bulk (min-width: 24rem) { #mlgm .gm-bulk-pair { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 #mlgm .gm-bulk-coin-fields > button { align-self:end; }
+
+#mlgm .gm-cheat { display:flex; flex-direction:column; gap:var(--ml-space-3); min-width:0; }
+#mlgm .gm-cheat-section { min-width:0; margin:0; border:0; padding:0; }
+#mlgm .gm-cheat-section > summary { cursor:pointer; margin:0 0 var(--ml-space-1); color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
+#mlgm .gm-cheat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(8.25rem,1fr)); gap:var(--ml-space-1); min-width:0; }
+#mlgm .gm-cheat-chip { appearance:none; display:flex; align-items:center; justify-content:center; width:100%; min-width:0; min-height:1.65rem; margin:0; padding:0.12rem 0.45rem; border:1px solid var(--ml-color-border, var(--color-light-6, #6b5a3e)); border-radius:999px; background:var(--ml-color-surface-raised, transparent); color:inherit; font:inherit; font-size:var(--ml-font-size-xs, 0.75rem); line-height:1.2; text-align:center; cursor:help; }
+#mlgm .gm-cheat-chip:focus-visible { outline:2px solid var(--ml-color-focus, var(--color-border-highlight, #c9a227)); outline-offset:1px; }
+#mlgm .gm-cheat-note { margin:var(--ml-space-2) 0 0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); line-height:1.35; }
+#tooltip.mlgm-cheat-tip, #tooltip.mlgm-cheat-tip .tooltip-text { max-width:min(24rem, 70vw); white-space:normal; text-align:left; }
+#tooltip.mlgm-cheat-tip .mlgm-cheat-tip__body { text-align:left; }
+#tooltip.mlgm-cheat-tip p { margin:0 0 0.35rem; }
+#tooltip.mlgm-cheat-tip ul { margin:0.2rem 0 0; padding-left:1.1rem; }
+#tooltip.mlgm-cheat-tip li + li { margin-top:0.15rem; }
+#tooltip.mlgm-cheat-tip table { width:100%; margin-top:0.35rem; border-collapse:collapse; font-size:var(--ml-font-size-xs, 0.75rem); }
+#tooltip.mlgm-cheat-tip caption { caption-side:bottom; margin-top:0.2rem; color:var(--ml-color-muted); text-align:left; }
+#tooltip.mlgm-cheat-tip th, #tooltip.mlgm-cheat-tip td { border:1px solid currentColor; padding:0.1rem 0.3rem; text-align:left; vertical-align:top; }

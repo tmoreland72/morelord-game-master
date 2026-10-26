@@ -21,8 +21,7 @@ function rejectSceneTokenFields(update) {
 describe('bulk actions', {concurrency: 1}, () => {
   test('English strings match the language file', () => {
     const english = JSON.parse(fs.readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
-    const localized = Object.fromEntries(Object.entries(english).map(([key, value]) => [key.slice('morelord-game-master.'.length), value]));
-    assert.deepEqual(localized, BULK_STRINGS);
+    for (const [key, value] of Object.entries(BULK_STRINGS)) assert.equal(english[`morelord-game-master.${key}`], value, key);
   });
 
   test('XP splits give the whole remainder to one member and each gives the full amount', () => {

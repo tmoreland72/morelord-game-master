@@ -13,8 +13,9 @@ import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
+import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 
-const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", settings: "GM Settings", party: "Player Settings" };
+const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
 let terrainOptions = [];
 let settingTrackVolumes = false;
@@ -145,6 +146,8 @@ Hooks.once("ready", async () => {
     const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
     if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
+  root.addEventListener("focusin", event => { activateCheatTooltip(event.target); });
+  root.addEventListener("focusout", event => { deactivateCheatTooltip(event); });
   render();
   core().ui.activateCardSelection({element:root});
 });
@@ -209,11 +212,13 @@ function restoreControls(container, drafts) {
 function render() {
   if (!root) return;
   const controls = snapshotControls(root);
+  rememberCheatSheet(root);
+  const tabLabel = id => id === "cheat" ? cheatText("tab") : tabs[id];
   root.innerHTML = `<button type="button" data-action="toggle" class="ml-tray-handle gm-handle" aria-expanded="${open}" aria-controls="mlgm-tray" title="${open ? "Close" : "Open"} Game Master"><i class="fa-solid fa-chevron-${open ? "down" : "up"}" aria-hidden="true"></i><span>Game Master</span></button>
     <section id="mlgm-tray" class="window-content gm-tray" ${open ? "" : "hidden"}><div class="ml-app ml-app-shell"><header class="ml-hero"><i class="fa-solid fa-dice-d20 ml-hero__icon" aria-hidden="true"></i><div class="ml-hero__body"><h1>Morelord Game Master</h1><p>Your table, within reach.</p></div><div class="ml-actions">${button("documentation", "Documentation")}</div></header>
 
-    <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.entries(tabs).map(([id, name]) => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(name)}</a>`).join("")}</nav>
-    <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
+    <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.keys(tabs).map(id => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(tabLabel(id))}</a>`).join("")}</nav>
+    <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings","cheat"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
   core().ui.applyPageLayout({element:root});
 }
@@ -223,6 +228,7 @@ function content() {
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
+  if (tab === "cheat") return renderCheatSheet();
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
