@@ -8,12 +8,30 @@ export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
 export function bulkXpChoice(value) {
   return Object.hasOwn(XP_ACTIONS, value) ? value : 'split';
 }
-// PrototypeTokenData is TokenData without these fields. A placed token's source
-// still has them, and Actor.updateDocuments throws if they are written onto the
-// prototype. position is canvas data and is not part of TokenData.
+// Foundry 14 PrototypeToken settings that describe how a token looks and behaves.
+// movementAction is the token's current movement, and level is a scene level id.
 // https://foundryvtt.com/api/v14/types/foundry.documents.types.PrototypeTokenData.html
-export const TOKEN_EXCLUDE = ['_id', 'actorId', 'delta', 'x', 'y', 'elevation', 'shape', 'sort', 'hidden', 'locked', '_movementHistory', '_regions', 'position'];
-const excluded = new Set(TOKEN_EXCLUDE);
+export const TOKEN_FIELDS = [
+  ['name', 'tokens.field.name'],
+  ['displayName', 'tokens.field.displayName'],
+  ['actorLink', 'tokens.field.actorLink'],
+  ['texture', 'tokens.field.texture'],
+  ['width', 'tokens.field.width'],
+  ['height', 'tokens.field.height'],
+  ['depth', 'tokens.field.depth'],
+  ['disposition', 'tokens.field.disposition'],
+  ['displayBars', 'tokens.field.displayBars'],
+  ['bar1', 'tokens.field.bar1'],
+  ['bar2', 'tokens.field.bar2'],
+  ['sight', 'tokens.field.sight'],
+  ['detectionModes', 'tokens.field.detectionModes'],
+  ['light', 'tokens.field.light'],
+  ['lockRotation', 'tokens.field.lockRotation'],
+  ['rotation', 'tokens.field.rotation'],
+  ['alpha', 'tokens.field.alpha'],
+  ['ring', 'tokens.field.ring'],
+  ['occludable', 'tokens.field.occludable']
+];
 let channel;
 
 export function readXp(value, {allowZero = false} = {}) {
@@ -70,14 +88,17 @@ function placedTokenSource(token) {
   return null;
 }
 
+export function tokenFieldList() {
+  const labels = TOKEN_FIELDS.map(([, key]) => bulkText(key));
+  if (labels.length < 2) return labels.join('');
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
+}
+
 export function prototypeTokenChanges(token) {
   const source = placedTokenSource(token);
   if (!source) return null;
   const changes = {};
-  for (const [key, value] of Object.entries(source)) {
-    if (excluded.has(key) || key.startsWith('_') || value === undefined) continue;
-    changes[key] = value;
-  }
+  for (const [key] of TOKEN_FIELDS) if (source[key] !== undefined) changes[key] = source[key];
   return Object.keys(changes).length ? changes : null;
 }
 
@@ -198,7 +219,7 @@ function inspirationContent(action, busy, actorIds) {
 }
 
 function tokenContent(busy, actorIds) {
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><p>${bulkHTML('tokens.hint')}</p><button type="button" data-action="bulk-tokens" ${busy || !actorIds.length ? 'disabled' : ''}>${bulkHTML('tokens.sync')}</button></section>`;
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><p>${bulkHTML('tokens.hint', {fields: tokenFieldList()})}</p><button type="button" data-action="bulk-tokens" ${busy || !actorIds.length ? 'disabled' : ''}>${bulkHTML('tokens.sync')}</button></section>`;
 }
 
 function undoContent(snapshot, busy) {

@@ -5,16 +5,17 @@ import {BULK_STRINGS} from '../scripts/bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
 import {applyBulkCoins, initializeBulkCoins} from '../scripts/bulk-coins.mjs';
 import {
-  TOKEN_EXCLUDE, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice,
-  chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, readXp, xpShares
+  TOKEN_FIELDS, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice,
+  chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, readXp, tokenFieldList, xpShares
 } from '../scripts/bulk-actions.mjs';
 
 const ID = 'morelord-game-master';
 
 function rejectSceneTokenFields(update) {
   if (!update.prototypeToken) return;
-  const illegal = Object.keys(update.prototypeToken).filter(key => TOKEN_EXCLUDE.includes(key) || key.startsWith('_'));
-  if (illegal.length) throw new Error(`PrototypeToken may not contain ${illegal.join(', ')}`);
+  const allowed = new Set(TOKEN_FIELDS.map(([key]) => key));
+  const illegal = Object.keys(update.prototypeToken).filter(key => !allowed.has(key));
+  if (illegal.length) throw new Error(`PrototypeToken sync copied ${illegal.join(', ')}`);
 }
 
 describe('bulk actions', {concurrency: 1}, () => {
@@ -59,20 +60,30 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.throws(() => planInspiration(actors, 'maybe'), /grant or clear/);
   });
 
-  test('prototype token copy keeps scene placement and identity off the prototype', () => {
-    const sceneOnly = {
+  test('prototype token copy keeps the allowlisted prototype settings', () => {
+    const ignored = {
       _id: 'token', actorId: 'a', x: 4, y: 8, elevation: 2, position: {x: 4, y: 8},
-      shape: 1, sort: 100, hidden: true, locked: true,
+      shape: 1, sort: 100, hidden: true, locked: true, flags: {dnd5e: {token: true}},
+      movementAction: 'fly', level: 'Level.ground',
       delta: {name: 'Synthetic', items: [{_id: 'item'}]}, _movementHistory: [{x: 1}], _regions: ['region'], _stats: {coreVersion: '14'}
     };
-    const copied = {actorLink: false, flags: {dnd5e: {token: true}}, name: 'Placed', texture: {src: 'icons/placed.webp'}, sight: {enabled: true}, width: 1, height: 1};
-    const changes = prototypeTokenChanges({toObject() { return {...sceneOnly, ...copied}; }});
-    for (const key of TOKEN_EXCLUDE) assert.equal(Object.hasOwn(changes, key), false);
-    assert.equal(Object.hasOwn(changes, '_stats'), false);
+    const copied = {
+      name: 'Placed', displayName: 50, actorLink: false, texture: {src: 'icons/placed.webp', scaleX: 1.2, scaleY: 0.8},
+      width: 1, height: 1, depth: 0, disposition: 1, displayBars: 20, bar1: {attribute: 'hp'}, bar2: {attribute: 'ac'},
+      sight: {enabled: true}, detectionModes: {basicSight: {id: 'basicSight', enabled: true, range: 10}}, light: {bright: 20},
+      lockRotation: true, rotation: 90, alpha: 0.5, ring: {enabled: true}, occludable: {radius: 0}
+    };
+    const changes = prototypeTokenChanges({toObject() { return {...ignored, ...copied}; }});
+    assert.deepEqual(Object.keys(changes), TOKEN_FIELDS.map(([key]) => key));
     assert.deepEqual(changes, copied);
-    assert.deepEqual(prototypeTokenChanges({toObject() { return {...sceneOnly, actorLink: true, flags: {}, name: 'Linked'}; }}), {actorLink: true, flags: {}, name: 'Linked'});
+    assert.deepEqual(prototypeTokenChanges({toObject() { return {...ignored, actorLink: true, name: 'Linked'}; }}), {name: 'Linked', actorLink: true});
     assert.equal(prototypeTokenChanges(null), null);
     assert.equal(prototypeTokenChanges({toObject() { throw new Error('Unable to materialize ActorDelta'); }}), null);
+    const listed = tokenFieldList();
+    assert.equal(listed, TOKEN_FIELDS.map(([, key]) => BULK_STRINGS[key]).slice(0, -1).join(', ') + ', and ' + BULK_STRINGS[TOKEN_FIELDS.at(-1)[1]]);
+    for (const file of ['../README.md', '../AGENTS.md', '../release-notes/RELEASE-NOTES-0.2.0.md']) {
+      assert.ok(fs.readFileSync(new URL(file, import.meta.url), 'utf8').includes(listed), file);
+    }
     const placed = [{id: 'b'}, {id: 'a'}, {id: 'c'}];
     assert.equal(chooseSceneToken(placed).id, 'a');
     assert.equal(chooseSceneToken(placed, ['c', 'b']).id, 'b');
@@ -97,6 +108,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
+    assert.match(html, new RegExp(tokenFieldList().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(html, /not copied|left off|omits/i);
     assert.match(html, /data-action="bulk-coins"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-xp"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-inspiration"[^>]*>Apply</);
@@ -229,10 +242,11 @@ describe('bulk actions', {concurrency: 1}, () => {
       await applyBulkTokens('token-operation-0001');
       const tokenUpdate = writes.at(-1)[0];
       assert.equal(tokenUpdate._id, 'a');
-      for (const key of TOKEN_EXCLUDE) assert.equal(Object.hasOwn(tokenUpdate.prototypeToken, key), false);
+      assert.deepEqual(Object.keys(tokenUpdate.prototypeToken).filter(key => !TOKEN_FIELDS.some(([field]) => field === key)), []);
       assert.equal(actors.get('a').prototypeToken.name, 'Placed');
       assert.equal(actors.get('a').prototypeToken.actorLink, false);
-      assert.deepEqual(actors.get('a').prototypeToken.flags, {world: {tint: '#fff'}});
+      assert.deepEqual(actors.get('a').prototypeToken.texture, {src: 'icons/placed.webp'});
+      assert.equal(actors.get('a').prototypeToken.flags, undefined);
       assert.equal(actors.get('a').prototypeToken.delta, undefined);
       assert.equal(actors.get('a').prototypeToken.sort, undefined);
       assert.equal(actors.get('a').prototypeToken.x, 9);
