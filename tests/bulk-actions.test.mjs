@@ -60,6 +60,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(['pp', 'gp', 'ep', 'sp', 'cp'].map(key => [key, {label: key}]))}};
     const html = bulkPanel({actorIds: ['a'], coins: {gp: 2}, coinAction: 'split-add', xp: 4, xpAction: 'each', inspiration: 'clear', busy: false, undo: null});
     assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'undo']);
+    const pair = html.slice(html.indexOf('<div class="gm-bulk-pair">'), html.indexOf('data-mlgm-bulk="undo"'));
+    assert.deepEqual([...pair.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['inspiration', 'tokens']);
+    assert.ok(html.indexOf('data-mlgm-bulk="xp"') < html.indexOf('gm-bulk-pair'));
+    const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
+    assert.match(css, /#mlgm \.gm-bulk-pair \{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+    assert.match(css, /@container gm-bulk \(min-width: 24rem\) \{ #mlgm \.gm-bulk-pair \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\); \} \}/);
     assert.match(html, /Give amount to each party member/);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);

@@ -48,7 +48,11 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule dd { margin:0; }
 
 /* Compact action selector above the single scrollable coin row. */
+#mlgm .gm-bulk { container: gm-bulk / inline-size; min-width:0; }
 #mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,6.5rem) repeat(2,minmax(4rem,max-content)); gap:var(--ml-space-4); }
 #mlgm .gm-bulk-coin-action { width:min(100%,26rem); }
+#mlgm .gm-bulk-pair { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; align-items:stretch; }
+#mlgm .gm-bulk-pair > .ml-card { height:100%; min-width:0; }
+@container gm-bulk (min-width: 24rem) { #mlgm .gm-bulk-pair { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
 #mlgm .gm-bulk-coin-fields > button { align-self:end; }
