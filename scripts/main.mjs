@@ -74,7 +74,7 @@ Hooks.once("init", () => {
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, type: String, default: LEGACY_AMBIENCE_DEFAULT });
   game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, type: Array, default: [] });
   game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, type: Boolean, default: false });
-  game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: Object, default: {empty: true}});
+  game.settings.register(ID, BULK_UNDO, {scope: "world", config: false, type: String, default: ""});
   for (const specialty of SPECIALTIES) game.settings.register(ID, specialty.setting, { name: `Show ${specialty.label}`, hint: "Show this specialty request on the Roll Requests tab for this world.", scope: "world", config: false, type: Boolean, default: true });
   game.keybindings.register(ID, "toggle", { name: "Toggle Game Master tray", restricted: true,
     editable: [{ key: "KeyG", modifiers: ["Alt"] }], onDown: () => { toggle(); return true; } });
@@ -196,7 +196,7 @@ function render() {
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "bulk") return bulkPanel({actorIds: partyActorIds(), coins: state.last.bulkCoins, coinAction: state.last.bulkCoinAction, xp: state.last.bulkXp, xpAction: state.last.bulkXpAction, inspiration: state.last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo()});
+  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo()}); }
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;

@@ -223,7 +223,7 @@ Inspiration and Prototype Token Sync share one row of compact cards, in that ord
 
 ### Undo Last Action
 
-Undo restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, using the before-values stored for this world. There is no earlier history. The button is disabled when nothing is stored, and the snapshot is cleared after a successful undo. It remains available after a reload. A prototype sync that updates nobody leaves the previous snapshot in place.
+Undo restores only the most recent Coins, XP, Inspiration, or Prototype Token Sync change, using the before-values stored for this world. There is no earlier history. The button enables as soon as the action finishes, without reopening the tray, and is disabled when nothing is stored. The snapshot is cleared after a successful undo. It remains available after a reload. A prototype sync that updates nobody leaves the previous snapshot in place.
 
 XP, Inspiration, Prototype Token Sync, and Undo each post one short public chat card, the same way Coins does.
 

@@ -2,7 +2,8 @@ import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {BULK_STRINGS} from '../scripts/bulk-text.mjs';
-import {readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
+import {BULK_UNDO, readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
+import {applyBulkCoins, initializeBulkCoins} from '../scripts/bulk-coins.mjs';
 import {
   TOKEN_EXCLUDE, applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel,
   chooseSceneToken, initializeBulkActions, planInspiration, planXp, prototypeTokenChanges, readXp, xpShares
@@ -233,6 +234,176 @@ describe('bulk actions', {concurrency: 1}, () => {
       globalThis.canvas.scene = null;
       initializeBulkActions(() => ['a']);
       await assert.rejects(applyBulkTokens('token-operation-0003'), /current scene/);
+    } finally { Math.random = random; }
+  });
+
+  test('each bulk action enables undo immediately, then undo restores the previous values', async () => {
+    const source = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+    assert.match(source, /register\(ID, BULK_UNDO, \{scope: "world", config: false, type: String, default: ""\}\)/);
+    const gm = {id: 'gm', isGM: true, active: true};
+    const character = (id, xp) => ({
+      id, uuid: `Actor.${id}`, name: id, type: 'character', tokens: [],
+      system: {details: {xp: {value: xp}}, attributes: {inspiration: false}, currency: {gp: 5}},
+      prototypeToken: {name: 'Old', texture: {src: 'old'}, x: 9, _id: 'proto'},
+      getDependentTokens() { return this.tokens; }
+    });
+    const actors = new Map(['a', 'b', 'c'].map(id => [id, character(id, id === 'a' ? 10 : id === 'b' ? 20 : 30)]));
+    const messages = [], registrations = new Map(), saved = new Map();
+    let live = false;
+    const key = `${ID}.${BULK_UNDO}`;
+    const channel = {on(type, handler, options) { registrations.set(type, {handler, options}); }, executeAsUser(type, data, userId) {
+      assert.equal(userId, gm.id);
+      return registrations.get(type).handler(data, {senderUserId: game.user.id});
+    }};
+    globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(Object.entries({pp: 0.1, gp: 1, ep: 2, sp: 10, cp: 100}).map(([denomination, conversion]) => [denomination, {conversion, label: denomination}]))}};
+    globalThis.game = {
+      user: gm, actors, users: new Map([[gm.id, gm]]), messages,
+      dnd5e: {applications: {CurrencyManager: {getActorCurrencyUpdates: () => { throw Error('Additions do not make change.'); }}}},
+      settings: {
+        get(namespace, setting) {
+          if (`${namespace}.${setting}` !== key) return undefined;
+          if (!live) return {empty: true};
+          return saved.get(key) ?? '';
+        },
+        async set(namespace, setting, value, options) {
+          assert.equal(`${namespace}.${setting}`, key);
+          assert.equal(options?.diff, false);
+          saved.set(key, typeof value === 'string' ? value : {empty: true});
+        }
+      },
+      modules: new Map([['morelord-core', {active: true}]]),
+      i18n: {localize: text => text}
+    };
+    globalThis.MorelordCore = {
+      users: {list: () => [gm]},
+      socket: {createChannel: () => channel},
+      ui: {participation: {primaryPartyGroup: () => null}, actorIdentity: ({actorUuid}) => '<span class="ml-actor-identity">' + actorUuid + '</span>'},
+      rolls: {skill() { return null; }}
+    };
+    globalThis.foundry = {utils: {randomID: () => 'test-operation-0001', deepClone: value => structuredClone(value)}};
+    globalThis.ui = {notifications: {warn() {}}};
+    globalThis.canvas = {scene: {id: 'scene'}, tokens: {controlled: []}};
+    globalThis.Actor = {async updateDocuments(updates) {
+      return updates.map(update => {
+        const actor = actors.get(update._id);
+        if (update['system.details.xp.value'] != null) actor.system.details.xp.value = update['system.details.xp.value'];
+        if ('system.attributes.inspiration' in update) actor.system.attributes.inspiration = update['system.attributes.inspiration'];
+        if (update['system.currency']) actor.system.currency = {...update['system.currency']};
+        if (update.prototypeToken) actor.prototypeToken = {...actor.prototypeToken, ...update.prototypeToken};
+        return actor;
+      });
+    }};
+    globalThis.ChatMessage = {async create(data) {
+      const message = {id: String(messages.length), author: gm, content: data.content, flags: structuredClone(data.flags), getFlag: (_namespace, flag) => message.flags[ID][flag], async update(change) {
+        if (change.content) message.content = change.content;
+        for (const [path, value] of Object.entries(change)) {
+          if (!path.startsWith('flags.')) continue;
+          const parts = path.split('.');
+          let target = message;
+          for (const part of parts.slice(0, -1)) target = target[part] ??= {};
+          target[parts.at(-1)] = value;
+        }
+      }};
+      messages.push(message);
+      return message;
+    }};
+    const undoSection = () => {
+      const html = bulkPanel({actorIds: ['a', 'b', 'c'], undo: readBulkUndo(), busy: false});
+      return html.slice(html.indexOf('data-mlgm-bulk="undo"'));
+    };
+    const assertUndoReady = label => {
+      for (const section of [undoSection(), undoSection()]) {
+        assert.equal(section.includes('Nothing to undo'), false, label);
+        assert.equal(section.includes('disabled'), false, label);
+        assert.equal(section.includes(`Last action: ${label}`), true, label);
+      }
+    };
+    const assertUndoEmpty = () => {
+      const section = undoSection();
+      assert.equal(section.includes('Nothing to undo.'), true);
+      assert.equal(section.includes('disabled'), true);
+    };
+    const savedSnapshot = () => {
+      const value = saved.get(key);
+      assert.equal(typeof value, 'string');
+      return value ? JSON.parse(value) : null;
+    };
+    const random = Math.random;
+    Math.random = () => 0.99;
+    try {
+      initializeBulkCoins(() => ['a', 'b', 'c']);
+      initializeBulkActions(() => ['a', 'b', 'c']);
+      assertUndoEmpty();
+      const rounds = [
+        {
+          label: 'Split amount amongst party members',
+          kind: 'xp',
+          apply: () => applyBulkXp('split', 10, 'xp-split-round-0001'),
+          applied: () => [13, 23, 34],
+          restored: () => [10, 20, 30],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).system.details.xp.value)
+        },
+        {
+          label: 'Give amount to each party member',
+          kind: 'xp',
+          apply: () => applyBulkXp('each', 5, 'xp-each-round-00001'),
+          applied: () => [15, 25, 35],
+          restored: () => [10, 20, 30],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).system.details.xp.value)
+        },
+        {
+          label: 'Set all party XP to this amount',
+          kind: 'xp',
+          apply: () => applyBulkXp('set', 7, 'xp-set-round-000001'),
+          applied: () => [7, 7, 7],
+          restored: () => [10, 20, 30],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).system.details.xp.value)
+        },
+        {
+          label: 'Give amount to all party members',
+          kind: 'coins',
+          apply: () => applyBulkCoins('each-add', {gp: 3}, 'coin-each-round-0001'),
+          applied: () => [8, 8, 8],
+          restored: () => [5, 5, 5],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).system.currency.gp)
+        },
+        {
+          label: 'Grant Heroic Inspiration',
+          kind: 'inspiration',
+          apply: () => applyBulkInspiration('grant', 'inspiration-round-001'),
+          applied: () => [true, true, true],
+          restored: () => [false, false, false],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).system.attributes.inspiration)
+        },
+        {
+          label: 'Prototype Token Sync',
+          kind: 'tokens',
+          async apply() {
+            const placed = {id: 'token-b', toObject() { return {_id: 'token-b', actorId: 'a', x: 3, y: 4, elevation: 5, position: {x: 3}, delta: {}, _movementHistory: [], _regions: [], name: 'Placed', texture: {src: 'icons/placed.webp'}, width: 2, height: 2}; }};
+            actors.get('a').tokens = [placed];
+            globalThis.canvas.tokens.controlled = [{id: 'token-b'}];
+            await applyBulkTokens('token-round-0000001');
+          },
+          applied: () => ['Placed', 'Old', 'Old'],
+          restored: () => ['Old', 'Old', 'Old'],
+          read: () => ['a', 'b', 'c'].map(id => actors.get(id).prototypeToken.name)
+        }
+      ];
+      let undoId = 0;
+      for (const round of rounds) {
+        live = false;
+        await round.apply();
+        assert.deepEqual(round.read(), round.applied(), round.label);
+        assert.equal(savedSnapshot().kind, round.kind, round.label);
+        assertUndoReady(round.label);
+        live = true;
+        assert.equal(readBulkUndo().kind, round.kind, round.label);
+        assertUndoReady(round.label);
+        await applyBulkUndo(`undo-round-${String(++undoId).padStart(8, '0')}`);
+        assert.deepEqual(round.read(), round.restored(), round.label);
+        assert.equal(savedSnapshot(), null);
+        assertUndoEmpty();
+      }
     } finally { Math.random = random; }
   });
 });
