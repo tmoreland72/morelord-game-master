@@ -4,7 +4,7 @@ export const panelChecks=[{
   id:'morelord-game-master.panel-layout',
   async run() {
     assert(game.world.id === 'dev1', 'Dev1 required.');
-    let dialog, playlistDialog;
+    let dialog, playlistDialog, windowApp;
     let previousTab;
     const api=game.modules.get('morelord-game-master').api;
     const wasOpen=document.body.classList.contains('mlgm-open');
@@ -27,14 +27,29 @@ export const panelChecks=[{
       document.body.append(above);
       const covered=document.elementFromPoint(bounds.left+5,bounds.top+5);
       assert(root.contains(covered),'Tray remains above the Foundry window layer.');
-      dialog = new foundry.applications.api.DialogV2({window:{title:'Game Master stacking fixture'},content:'<p>Disposable foreground regression window.</p>',buttons:[{action:'close',label:'Close'}]});
-      await dialog.render({force:true});
-      for (let index=0;index<3;index++) {
-        dialog.bringToFront();
-        const rect=dialog.element.getBoundingClientRect();
-        dialog.setPosition({left:bounds.left,top:bounds.top,width:Math.min(rect.width,bounds.width),height:Math.min(rect.height,bounds.height)});
-        assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Opened and refocused native windows cannot cover the tray.');
+      class TrayStackWindow extends foundry.applications.api.ApplicationV2 {
+        static DEFAULT_OPTIONS = {id:"mlgm-stack-window", tag:"section", window:{title:"Game Master window stacking fixture"}, position:{width:240, height:160}};
+        async _renderHTML() { const node = document.createElement("p"); node.textContent = "Disposable window."; return node; }
       }
+      windowApp = new TrayStackWindow();
+      await windowApp.render({force:true});
+      for (let index=0;index<3;index++) {
+        windowApp.bringToFront();
+        const rect=windowApp.element.getBoundingClientRect();
+        windowApp.setPosition({left:bounds.left,top:bounds.top,width:Math.min(rect.width || 240,bounds.width),height:Math.min(rect.height || 160,bounds.height)});
+        assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Opened and refocused native windows cannot cover the tray.');
+        assert(Number(getComputedStyle(windowApp.element).zIndex) < Number(getComputedStyle(root).zIndex), 'A focused window stays below the tray.');
+      }
+      dialog = new foundry.applications.api.DialogV2({id:"mlgm-stack-dialog", modal:false, window:{title:'Game Master stacking fixture'},content:'<p>Disposable dialog.</p>',buttons:[{action:'close',label:'Close'}]});
+      await dialog.render({force:true});
+      dialog.bringToFront();
+      const dialogRect=dialog.element.getBoundingClientRect();
+      dialog.setPosition({left:bounds.left+80,top:bounds.top,width:Math.min(dialogRect.width || 280,bounds.width-80),height:Math.min(dialogRect.height || 160,bounds.height)});
+      assert(dialog.element.contains(document.elementFromPoint(bounds.left+100,bounds.top+20)), 'Dialogs open above the tray.');
+      assert(Number(getComputedStyle(dialog.element).zIndex) > Number(getComputedStyle(root).zIndex), 'Dialog z-index is above the tray.');
+      windowApp.bringToFront();
+      assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Focusing a window after a dialog does not cover the tray.');
+      assert(dialog.element.contains(document.elementFromPoint(bounds.left+100,bounds.top+20)), 'The dialog stays above the tray when a window is focused.');
       previousTab=root.querySelector('[data-action="tab"][aria-selected="true"]')?.dataset.id;
       root.querySelector('[data-action="tab"][data-id="sound"]').click();
       root.querySelector('[data-action="playlist"]').click();
@@ -58,6 +73,6 @@ export const panelChecks=[{
         else playlistDialog.querySelector('[data-action="close"]')?.click();
       }
       if(previousTab) document.querySelector(`#mlgm [data-action="tab"][data-id="${previousTab}"]`)?.click();
-      await dialog?.close();below.remove();above.remove();api.toggle(wasOpen); }
+      await dialog?.close();await windowApp?.close();below.remove();above.remove();api.toggle(wasOpen); }
   }
 }];

@@ -1,7 +1,7 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
-/* Above Foundry windows and dialogs; tooltips and notifications retain their native layers. */
+/* Above the Foundry window layer and the sidebar. Popups are raised above this in tray-stack.mjs. Tooltips and notifications keep their layers. */
 .ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); }
-#mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-tooltip) - 1); pointer-events:auto; }
+#mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; --mlgm-window-gap:1000; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-window) + var(--mlgm-window-gap)); pointer-events:auto; }
 #mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.gm-macro):not(.ml-stepper button),
 .ml-window .ml-dialog-shell button:not(.ml-icon-button),
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }

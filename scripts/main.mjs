@@ -18,6 +18,7 @@ import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSh
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 import {openDialog, percentIssue} from './dialog.mjs';
+import {installTrayStack} from './tray-stack.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -120,6 +121,7 @@ Hooks.once("ready", async () => {
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
+  try { installTrayStack(root); } catch (error) { console.error(`${ID} | Tray stacking`, error); }
   root.addEventListener("pointerdown", event => {
     if (event.button !== 0) return;
     trayPointer++;

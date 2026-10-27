@@ -52,9 +52,12 @@ test('opening Game Settings closes the tray and leaves it able to reopen', () =>
   assert.match(source, /class GameMasterSettings extends foundry\.applications\.api\.ApplicationV2 \{\s*render\(\) \{ closeTrayForSettings\(\);/);
 });
 
-test('the tray stacks above Foundry windows', () => {
-  assert.match(css, /z-index:\s*calc\(var\(--z-index-tooltip\)\s*-\s*1\)/);
+test('the tray stacks above Foundry windows and below popups', () => {
+  assert.match(css, /--mlgm-window-gap:\s*1000/);
+  assert.match(css, /z-index:\s*calc\(var\(--z-index-window\)\s*\+\s*var\(--mlgm-window-gap\)\)/);
+  assert.doesNotMatch(css, /z-index:\s*calc\(var\(--z-index-tooltip\)/);
   assert.doesNotMatch(css, /2147483647/);
+  assert.match(source, /installTrayStack\(root\)/);
   assert.match(source, /const notify = text => ui\.notifications\.info\(text\)/);
   assert.doesNotMatch(source, /createChatMessage|deleteChatMessage|updateChatMessage/);
   assert.match(source, /refreshTray\(\["sound"\]\)/);
