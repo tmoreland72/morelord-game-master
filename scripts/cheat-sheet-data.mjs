@@ -235,12 +235,36 @@ export const CHEAT_SECTIONS = [
     id: "dcs",
     title: "Typical DCs",
     items: [
-      { id: "very-easy", label: "Very easy 5", lines: ["DC 5. The GM sets ability-check DCs. Matching or beating the DC succeeds."] },
-      { id: "easy", label: "Easy 10", lines: ["DC 10. The GM sets ability-check DCs. Matching or beating the DC succeeds."] },
-      { id: "medium", label: "Medium 15", lines: ["DC 15. The GM sets ability-check DCs. Matching or beating the DC succeeds."] },
-      { id: "hard", label: "Hard 20", lines: ["DC 20. The GM sets ability-check DCs. Matching or beating the DC succeeds."] },
-      { id: "very-hard", label: "Very hard 25", lines: ["DC 25. The GM sets ability-check DCs. Matching or beating the DC succeeds."] },
-      { id: "nearly-impossible", label: "Nearly impossible 30", lines: ["DC 30. The GM sets ability-check DCs. Matching or beating the DC succeeds."] }
+      { id: "very-easy", label: "Very easy 5", lines: [
+        "Climb a knotted rope. Strength (Athletics).",
+        "Notice a campfire across an open field. Wisdom (Perception).",
+        "Recall which nation a famous king ruled. Intelligence (History)."
+      ] },
+      { id: "easy", label: "Easy 10", lines: [
+        "Tie a knot with rope. Dexterity (Sleight of Hand).",
+        "Calm a tame horse. Wisdom (Animal Handling).",
+        "Follow fresh tracks through mud. Wisdom (Survival)."
+      ] },
+      { id: "medium", label: "Medium 15", lines: [
+        "Climb a slippery surface with few handholds. Strength (Athletics).",
+        "Pick an ordinary lock with Thieves' Tools. Dexterity (Sleight of Hand).",
+        "Find obscure information in a book. Intelligence (Investigation)."
+      ] },
+      { id: "hard", label: "Hard 20", lines: [
+        "Burst a rope. Strength (Athletics).",
+        "Slip free of manacles. Dexterity (Sleight of Hand).",
+        "Read a practiced liar's intentions. Wisdom (Insight)."
+      ] },
+      { id: "very-hard", label: "Very hard 25", lines: [
+        "Burst a set of manacles. Strength (Athletics).",
+        "Recall lore about a rare magic item. Intelligence (Arcana).",
+        "Follow faint tracks across hard stone. Wisdom (Survival)."
+      ] },
+      { id: "nearly-impossible", label: "Nearly impossible 30", lines: [
+        "Stay afloat in a storm-driven sea. Strength (Athletics).",
+        "Convince a hostile foe to stand down. Charisma (Persuasion).",
+        "Recall lore that almost no one still knows. Intelligence (History)."
+      ] }
     ]
   },
   {
@@ -295,18 +319,15 @@ export const CHEAT_SECTIONS = [
         "The condition is cumulative. Each time you receive it, you gain 1 Exhaustion level.",
         "On a D20 Test, the roll is reduced by 2 times your Exhaustion level.",
         "Your Speed is reduced by 5 feet times your Exhaustion level.",
-        "You die if your Exhaustion level is 6."
+        "You die if your Exhaustion level is 6.",
+        "Finishing a Long Rest removes 1 Exhaustion level. At 0, the condition ends."
       ] },
       { id: "level-1", label: "Level 1", lines: ["D20 Tests are reduced by 2. Speed is reduced by 5 feet."] },
       { id: "level-2", label: "Level 2", lines: ["D20 Tests are reduced by 4. Speed is reduced by 10 feet."] },
       { id: "level-3", label: "Level 3", lines: ["D20 Tests are reduced by 6. Speed is reduced by 15 feet."] },
       { id: "level-4", label: "Level 4", lines: ["D20 Tests are reduced by 8. Speed is reduced by 20 feet."] },
       { id: "level-5", label: "Level 5", lines: ["D20 Tests are reduced by 10. Speed is reduced by 25 feet."] },
-      { id: "level-6", label: "Level 6", lines: ["You die."] },
-      { id: "long-rest", label: "Long rest", lines: [
-        "Finishing a Long Rest removes 1 Exhaustion level.",
-        "When your Exhaustion level reaches 0, the condition ends."
-      ] }
+      { id: "level-6", label: "Level 6", lines: ["You die."] }
     ]
   },
   {

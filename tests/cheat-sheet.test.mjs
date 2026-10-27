@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CHEAT_ATTRIBUTION, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
-import {activateCheatTooltip, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
+import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
 
 const section = id => CHEAT_SECTIONS.find(entry => entry.id === id);
 const item = (group, id) => group.items.find(entry => entry.id === id);
@@ -30,6 +30,13 @@ test('the cheat sheet has every SRD 5.2 section and the required items', () => {
   assert.deepEqual(section('dcs').items.map(entry => entry.label), [
     'Very easy 5', 'Easy 10', 'Medium 15', 'Hard 20', 'Very hard 25', 'Nearly impossible 30'
   ]);
+  const dcLines = section('dcs').items.map(entry => entry.lines);
+  for (const lines of dcLines) assert.ok(lines.length >= 2 && lines.length <= 3);
+  assert.equal(new Set(dcLines.map(lines => lines.join('\n'))).size, dcLines.length);
+  assert.match(dcLines[0].join(' '), /knotted rope/);
+  assert.match(dcLines[2].join(' '), /ordinary lock/);
+  assert.match(dcLines[2].join(' '), /obscure information/);
+  assert.doesNotMatch(dcLines.flat().join(' '), /The GM sets ability-check DCs/);
   for (const id of ['half', 'three-quarters', 'total', 'lightly', 'heavily', 'blindsight', 'darkvision', 'truesight']) {
     assert.ok(item(section('cover'), id), id);
   }
@@ -51,9 +58,10 @@ test('exhaustion uses the SRD 5.2 cumulative penalties', () => {
   assert.match(rule, /reduced by 2 times your Exhaustion level/);
   assert.match(rule, /5 feet times your Exhaustion level/);
   assert.match(rule, /die if your Exhaustion level is 6/);
+  assert.match(rule, /Finishing a Long Rest removes 1 Exhaustion level/);
+  assert.equal(item(section('exhaustion'), 'long-rest'), undefined);
   assert.equal(text(item(section('exhaustion'), 'level-1')), 'D20 Tests are reduced by 2. Speed is reduced by 5 feet.');
   assert.equal(text(item(section('exhaustion'), 'level-6')), 'You die.');
-  assert.match(text(item(section('exhaustion'), 'long-rest')), /Long Rest removes 1 Exhaustion level/);
   const exhaustion = section('exhaustion').items.map(text).join(' ');
   assert.doesNotMatch(exhaustion, /Hit point maximum halved|Speed halved|Disadvantage on ability checks/);
 });
@@ -127,6 +135,19 @@ test('localization keys expand without a string also being a parent', () => {
   const english = JSON.parse(readFileSync(new URL('../lang/en.json', import.meta.url), 'utf8'));
   assert.deepEqual(localizationCollisions(english), []);
   assert.doesNotThrow(() => expandLocalization(english));
+});
+
+test('Drakkenheim chips keep a faint purple and the theme text color', () => {
+  assert.equal(cheatChipClass({ id: 'conditions' }, { id: 'blinded' }), 'gm-cheat-chip');
+  assert.equal(cheatChipClass({ id: 'contamination', origin: 'drakkenheim' }, { id: 'level-1' }), 'gm-cheat-chip gm-cheat-chip--drakkenheim');
+  assert.equal(cheatChipClass({ id: 'drakkenheim-mutations' }, { id: 'minor' }), 'gm-cheat-chip gm-cheat-chip--drakkenheim');
+  const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
+  const rule = css.match(/#mlgm \.gm-cheat-chip--drakkenheim \{[^}]+\}/)?.[0] ?? '';
+  assert.match(rule, /rgba\(146,\s*96,\s*176,\s*0\.22\)/);
+  assert.match(rule, /color:\s*inherit/);
+  assert.doesNotMatch(rule, /color:\s*#(?:000|111|222)\b/i);
+  const html = renderCheatSheet();
+  assert.doesNotMatch(html, /gm-cheat-chip--drakkenheim/);
 });
 
 test('chips expose Foundry HTML tooltips and keyboard focus activates them', () => {
