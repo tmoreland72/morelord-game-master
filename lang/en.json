@@ -361,5 +361,7 @@
   "morelord-game-master.cheat.item.high-jump.label": "High jump",
   "morelord-game-master.cheat.item.high-jump.lines.0": "With at least 10 feet of movement first, you leap a number of feet equal to 3 plus your Strength modifier, minimum 0. A standing jump covers half that distance.",
   "morelord-game-master.cheat.item.high-jump.lines.1": "Each foot you jump costs a foot of movement.",
-  "morelord-game-master.cheat.item.high-jump.lines.2": "You can reach above you by the height of the jump plus 1½ times your height."
+  "morelord-game-master.cheat.item.high-jump.lines.2": "You can reach above you by the height of the jump plus 1½ times your height.",
+  "morelord-game-master.cheat.group.drakkenheim": "Drakkenheim",
+  "morelord-game-master.cheat.section.drakkenheim-contamination": "Contamination"
 }

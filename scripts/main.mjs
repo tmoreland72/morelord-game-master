@@ -14,6 +14,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
+import {openDrakkenheimDocument, scheduleDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -120,7 +121,7 @@ Hooks.once("ready", async () => {
     const target = event.target.closest("[data-action]");
     if (!target || target.disabled) return;
     if (suppressMacroClick && target.dataset.action === "macro") return;
-    press(target, () => act(target.dataset.action, target.dataset.id));
+    press(target, () => act(target.dataset.action, target.dataset.id, target));
   });
   new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',[{name:"Remove",icon:'<i class="fa-solid fa-trash"></i>',callback:element=>act("unpin-macro",element.dataset.macroUuid).catch(fail)}],{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
@@ -228,7 +229,7 @@ function content() {
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
-  if (tab === "cheat") return renderCheatSheet();
+  if (tab === "cheat") { scheduleDrakkenheimCheat(() => { if (tab === "cheat") render(); }); return renderCheatSheet(); }
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
@@ -441,8 +442,9 @@ async function dropMacro(event) {
   await game.settings.set(ID,"macros",pinned);render();
 }
 
-async function act(action, id) {
+async function act(action, id, target) {
   gm();
+  if (action === "cheat-document") return openDrakkenheimDocument(id, target?.dataset?.page);
   if (action === "toggle") return toggle();
   if (action === "tab") { tab = id; render(); return; }
   if (action === "send-check") return sendCheck();

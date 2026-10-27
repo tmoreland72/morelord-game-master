@@ -59,6 +59,8 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk-coin-fields > button { align-self:end; }
 
 #mlgm .gm-cheat { display:flex; flex-direction:column; gap:var(--ml-space-3); min-width:0; }
+#mlgm .gm-cheat-group { display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
+#mlgm .gm-cheat-kicker { margin:var(--ml-space-1) 0 0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-cheat-section { min-width:0; margin:0; border:0; padding:0; }
 #mlgm .gm-cheat-section > summary { cursor:pointer; margin:0 0 var(--ml-space-1); color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-cheat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(8.25rem,1fr)); gap:var(--ml-space-1); min-width:0; }

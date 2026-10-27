@@ -1,6 +1,7 @@
 // Paraphrased D&D quick reference from the System Reference Document 5.2.1.
 // The English strings are the fallback when Foundry's language file has not loaded.
 // Keep lang/en.json aligned with cheatStringEntries().
+import { DRAKKENHEIM_STRINGS } from "./cheat-sheet-drakkenheim.mjs";
 
 export const CHEAT_ATTRIBUTION = "This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. Rules text is paraphrased.";
 
@@ -368,5 +369,6 @@ export function cheatStringEntries(sections = CHEAT_SECTIONS) {
       }
     }
   }
+  entries.push(...DRAKKENHEIM_STRINGS);
   return entries;
 }
