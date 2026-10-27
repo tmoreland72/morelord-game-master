@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CHEAT_ATTRIBUTION, CHEAT_CLOSING_SECTIONS, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
 import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
-import {DRAKKENHEIM_CONTENT_PACK_ID, DRAKKENHEIM_CORE_MODULE_ID, collectContaminationSections, contaminationLevelsFromHTML, openDrakkenheimDocument, resetDrakkenheimCheat, setDrakkenheimSections} from '../scripts/cheat-sheet-drakkenheim.mjs';
+import {DRAKKENHEIM_CONTENT_PACK_ID, DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MONSTERS_MODULE_ID, collectContaminationSections, collectDrakkenheimSections, contaminationLevelsFromHTML, openDrakkenheimDocument, pageTopic, resetDrakkenheimCheat, setDrakkenheimSections} from '../scripts/cheat-sheet-drakkenheim.mjs';
 
 const section = id => CHEAT_SECTIONS.find(entry => entry.id === id);
 const item = (group, id) => group.items.find(entry => entry.id === id);
@@ -346,6 +346,79 @@ test('a missing contamination journal can fall back to the pack roll table', asy
   const source = readFileSync(new URL('../scripts/cheat-sheet-drakkenheim.mjs', import.meta.url), 'utf8');
   const literals = source.match(/(['"`])(?:\\.|(?!\1)[\s\S])*?\1/g) ?? [];
   for (const literal of literals) assert.ok(literal.length < 200, literal.slice(0, 80));
+  assert.doesNotMatch(source, /Rampant Mutation|Purge Contamination|Gibbering Mouther/);
+});
+
+test('search, values, mutations, and madness stay empty until the pack can supply them', async () => {
+  assert.equal(DRAKKENHEIM_MONSTERS_MODULE_ID, 'drakkenheim-monsters');
+  assert.equal(pageTopic('Contamination Symptoms'), '');
+  assert.equal(pageTopic('Mutations'), 'mutations');
+  assert.equal(pageTopic('Madness'), 'madness');
+  assert.equal(pageTopic('Searching for Delerium'), 'search');
+  assert.equal(pageTopic('Delerium Crystals'), 'values');
+  const hidden = journalPack([{id: 'abc', name: 'Mutations', pages: [{name: 'Mutations', text: {content: '<p>Hidden.</p>'}}]}]);
+  assert.deepEqual(await collectDrakkenheimSections(drakkenheimGame({access: false, packs: [hidden]})), []);
+  const broken = drakkenheimGame();
+  broken.modules.get = () => ({active: true, api: {deleriumSearch: {hasAccess: true, getZones() { throw new Error('missing'); }}}});
+  assert.deepEqual(await collectDrakkenheimSections(broken), []);
+});
+
+test('Drakkenheim chips read search rules from Craftworks and the other topics from pack documents', async () => {
+  const journal = journalPack([{
+    id: 'abc',
+    name: 'Appendix C: Contamination',
+    pages: [
+      {id: 'sym', name: 'Contamination Symptoms', uuid: 'Compendium.journal.sym', text: {content: '<h3>Level 1</h3><p>Fixture alpha.</p>'}},
+      {id: 'mut', name: 'Mutations', uuid: 'Compendium.journal.mut', text: {content: '<h3>Fixture Mutation</h3><p>Fixture change.</p>'}},
+      {id: 'mad', name: 'Madness', uuid: 'Compendium.journal.mad', text: {content: '<p>Fixture dread.</p>'}}
+    ]
+  }]);
+  const items = {
+    documentName: 'Item',
+    collection: 'drakkenheim-monsters.items',
+    metadata: {packageName: 'drakkenheim-monsters', name: 'items'},
+    async getIndex() { return [{_id: 'chip', name: 'Delerium Chip'}, {_id: 'dust', name: 'Delerium Dust'}, {_id: 'other', name: 'Rope'}]; },
+    async getDocument(id) {
+      if (id === 'chip') return {id, name: 'Delerium Chip', uuid: 'Compendium.item.chip', system: {price: {value: 50, denomination: 'gp'}, description: {value: '<p>Fixture crystal.</p>'}}};
+      if (id === 'dust') return {id, name: 'Delerium Dust', system: {}};
+      return {id, name: 'Rope', system: {price: {value: 1, denomination: 'gp'}, description: {value: '<p>Not a crystal.</p>'}}};
+    }
+  };
+  const game = drakkenheimGame({packs: [journal, items]});
+  game.modules.get = id => id === 'morelord-craftworks' ? {active: true, api: {deleriumSearch: {
+    hasAccess: true,
+    getZones: () => [{id: 'outer', name: 'Outer City', dc: 15}],
+    getSkillOptions: () => [{id: 'arc', label: 'Arcana'}, {id: 'inv', label: 'Investigation'}, {id: 'sur', label: 'Survival'}]
+  }}} : {active: false};
+  const sections = await collectDrakkenheimSections(game);
+  assert.deepEqual(sections.map(section => section.id), ['drakkenheim-contamination', 'drakkenheim-search', 'drakkenheim-values', 'drakkenheim-mutations', 'drakkenheim-madness']);
+  assert.equal(sections[0].items[0].documentPath, 'drakkenheim-core.journals:Appendix C: Contamination / Contamination Symptoms');
+  assert.equal(sections[1].items[0].documentPath, 'morelord-craftworks:delerium-search');
+  assert.match(sections[1].items[0].tipHTML, /DC 15/);
+  assert.match(sections[1].items[0].tipHTML, /Arcana, Investigation, or Survival/);
+  const values = sections.find(section => section.id === 'drakkenheim-values');
+  assert.deepEqual(values.items.map(item => item.labelText), ['Delerium Chip']);
+  assert.equal(values.items[0].documentPath, 'drakkenheim-monsters.items:Delerium Chip');
+  assert.match(values.items[0].tipHTML, /Price: 50 GP/);
+  assert.match(values.items[0].tipHTML, /Fixture crystal/);
+  const mutations = sections.find(section => section.id === 'drakkenheim-mutations');
+  assert.equal(mutations.items[0].labelText, 'Fixture Mutation');
+  assert.equal(mutations.items[0].documentPath, 'drakkenheim-core.journals:Appendix C: Contamination / Mutations');
+  const madness = sections.find(section => section.id === 'drakkenheim-madness');
+  assert.match(madness.items[0].tipHTML, /Fixture dread/);
+  assert.equal(madness.items[0].documentPath, 'drakkenheim-core.journals:Appendix C: Contamination / Madness');
+  setDrakkenheimSections(sections);
+  try {
+    const html = renderCheatSheet();
+    assert.match(html, /data-cheat-section="drakkenheim-search"/);
+    assert.match(html, /gm-cheat-chip--drakkenheim/);
+    const group = html.indexOf('data-cheat-group="drakkenheim"');
+    const mounted = html.indexOf('data-cheat-section="mounted-underwater"');
+    const note = html.indexOf('class="gm-cheat-note"');
+    assert.ok(group < mounted && mounted < note);
+  } finally {
+    resetDrakkenheimCheat();
+  }
 });
 
 test('the tray adds Cheat Sheet after Triggers and does not register a new setting', () => {

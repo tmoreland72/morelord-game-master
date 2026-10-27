@@ -400,5 +400,9 @@
   "morelord-game-master.cheat.item.underwater.lines.1": "A ranged attack roll with a weapon automatically misses a target beyond the weapon's normal range, and the roll has Disadvantage against a target within normal range.",
   "morelord-game-master.cheat.item.underwater.lines.2": "Anything underwater has Resistance to Fire damage.",
   "morelord-game-master.cheat.group.drakkenheim": "Drakkenheim",
-  "morelord-game-master.cheat.section.drakkenheim-contamination": "Contamination"
+  "morelord-game-master.cheat.section.drakkenheim-contamination": "Contamination",
+  "morelord-game-master.cheat.section.drakkenheim-search": "Delerium search",
+  "morelord-game-master.cheat.section.drakkenheim-values": "Delerium values",
+  "morelord-game-master.cheat.section.drakkenheim-mutations": "Mutations",
+  "morelord-game-master.cheat.section.drakkenheim-madness": "Madness"
 }
