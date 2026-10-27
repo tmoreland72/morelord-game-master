@@ -41,6 +41,8 @@ function loadBoardSave(root, onSave) {
     tab: 'sound',
     root,
     BULK_UNDO: 'bulkUndo',
+    RUN_ON_LOAD_FOR_EVERYONE: 'runOnLoadForEveryone',
+    RUN_ON_LOAD_FOR_ME: 'runOnLoadForMe',
     SPECIALTIES: [],
     JSON,
     Promise,
@@ -82,11 +84,28 @@ test('typing in a tray field and clicking once applies the control under the poi
   assert.ok(coins.indexOf('reportValidity') < coins.indexOf('await saving'));
   assert.match(source, /ml-game-master-track-volume[\s\S]*allTrackVolume/);
   assert.match(source, /data-sound/);
+  const closesAfter = snippet => {
+    const at = source.indexOf(snippet);
+    assert.ok(at >= 0, snippet);
+    assert.match(source.slice(at, at + snippet.length + 30), /closeTray\(\)/);
+  };
+  closesAfter('buildCheckRequest({...draft, type: draft.checkType, actorIds}));');
+  closesAfter("notify('Party coins updated. See the chat card for changes and deficits.');");
+  closesAfter("notify(bulkText('xp.updated'));");
+  closesAfter("notify(bulkText('inspiration.updated'));");
+  closesAfter("notify(bulkText('tokens.updatedNotice'));");
+  closesAfter("notify(bulkText('undo.done'));");
+  closesAfter('await createRequest(config);');
+  closesAfter('await rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});');
+  closesAfter('await m.execute(); notify(`Launched ${m.name}.`);');
+  const playlistRun = source.slice(source.indexOf('if (type === "playlist")'), source.indexOf('if (type === "ambience")'));
+  assert.doesNotMatch(playlistRun, /closeTray/);
+  assert.ok(coins.indexOf('if (result?.unchanged)') < coins.indexOf('closeTray()'));
 
   const {control, root} = tray();
   const field = {id: 'ml-game-master-track-volume', value: '25'};
   const actions = [
-    'set-track-volumes', 'stop-sound', 'stop-music', 'stop-ambience', 'playlist', 'ambience', 'saved',
+    'set-track-volumes', 'set-ambience-volumes', 'stop-all-sound', 'stop-sound', 'stop-music', 'stop-ambience', 'playlist', 'ambience', 'saved',
     'bulk-xp', 'bulk-coins', 'bulk-coins-clear', 'bulk-inspiration', 'bulk-tokens', 'bulk-undo',
     'send-check', 'quick-request', 'macro', 'trigger-toggle', 'tab'
   ];

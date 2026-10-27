@@ -14,7 +14,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
-import {openDrakkenheimDocument, scheduleDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {openDrakkenheimDocument, scheduleDrakkenheimCheat, stopDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
@@ -176,9 +176,12 @@ function toggle(value = !open, {focus = true} = {}) {
   open = Boolean(value); document.body.classList.toggle("mlgm-open", open); render();
   if (focus) root.querySelector(open ? "[role=tab][aria-selected=true]" : ".gm-handle")?.focus();
 }
-function closeTrayForSettings() {
+function closeTray() {
   if (!open) return;
   toggle(false, {focus: false});
+}
+function closeTrayForSettings() {
+  closeTray();
 }
 Hooks.on("renderSettingsConfig", (_application, _element, _context, options) => {
   if (options?.isFirstRender === false) return;
@@ -230,6 +233,7 @@ function restoreControls(container, drafts) {
 }
 function render() {
   if (!root) return;
+  if (tab !== "cheat") stopDrakkenheimCheat();
   const controls = snapshotControls(root);
   rememberCheatSheet(root);
   const tabLabel = id => id === "cheat" ? cheatText("tab") : tabs[id];
@@ -251,9 +255,10 @@ function content() {
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
-    return column("Playlists",`${button("playlist","Start Playlist")}${saved("playlist")}`)
-      + column("Ambience",`${button("ambience","Play Ambience")}${saved("ambience")}`)
-      + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every playlist track, including stopped tracks, ambience, and saved playback buttons.</small></div>${column("Now Playing",cards + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
+    const stopAll = button("stop-all-sound","Stop All Sound");
+    return column("Playlists",`${button("playlist","Add Playlist")}${saved("playlist")}`)
+      + column("Ambience",`<div class="gm-ambience-actions">${button("ambience","Add Ambience")}${saved("ambience")}</div>`,"gm-ambience-column")
+      + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every song in every playlist, including stopped tracks.</small>${label("Ambience volume (%)",input("ambienceVolume",state.last.ambienceVolume ?? 40,'id="ml-game-master-ambience-volume" type="number" min="0" max="100" step="1" required'))}${button("set-ambience-volumes","Set Ambience Volumes")}<small>Sets every ambience layer that is playing now.</small></div>${column("Now Playing",cards + stopAll + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
   return "";
@@ -339,6 +344,7 @@ async function sendCheck() {
   const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds()});
   await persist(n => { n.last.check = draft; });
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
+  closeTray();
 }
 async function sendBulkCoins(operation) {
   if (bulkBusy) return;
@@ -355,6 +361,7 @@ async function sendBulkCoins(operation) {
     for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
     await persist(n => { n.last.bulkCoins = readCoins(); });
     notify('Party coins updated. See the chat card for changes and deficits.');
+    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkXp(operation) {
@@ -373,6 +380,7 @@ async function sendBulkXp(operation) {
     if (input) input.value = '0';
     await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
     notify(bulkText('xp.updated'));
+    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkInspiration(action) {
@@ -386,6 +394,7 @@ async function sendBulkInspiration(action) {
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     await persist(n => { n.last.bulkInspiration = action; });
     notify(bulkText('inspiration.updated'));
+    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkTokens() {
@@ -398,6 +407,7 @@ async function sendBulkTokens() {
     if (result?.unchanged) { notify(result.notice); return; }
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     notify(bulkText('tokens.updatedNotice'));
+    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkUndo() {
@@ -409,6 +419,7 @@ async function sendBulkUndo() {
     const result = await applyBulkUndo();
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     notify(bulkText('undo.done'));
+    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendQuick(id) {
@@ -418,12 +429,15 @@ async function sendQuick(id) {
   if (!config.actorIds.length) throw new Error(id === "death" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
   await persist(n => { n.last[id] = config; if (id === "encounter") n.last.die = config.die; });
   await createRequest(config);
+  closeTray();
 }
 async function sendFate() {
   const card = root.querySelector('[data-roll-card="fate"]');
   const scope = card && new FormData(card).get("scope") === "party" ? "party" : "tokens";
   if (card) await persist(n => { n.last.fate = {scope}; });
-  return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
+  const result = await rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
+  closeTray();
+  return result;
 }
 function macroRunLabel(key) {
   const full = `morelord-game-master.macros.${key}`;
@@ -522,9 +536,11 @@ async function act(action, id, target) {
   if (action === "playlist") return playlistForm();
   if (action === "ambience") return ambienceForm();
   if (action === "set-track-volumes") return setTrackVolumes();
+  if (action === "set-ambience-volumes") return setAmbienceVolumes();
+  if (action === "stop-all-sound") { for (const p of game.playlists) await p.stopAll(); }
   if (action === "stop-music" || action === "stop-ambience") for (const p of game.playlists) if (Boolean(p.getFlag(ID,"ambience")) === (action === "stop-ambience")) await p.stopAll();
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
-  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
+  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); closeTray(); }
   if (action === "trigger-toggle") await persist(n => { const t = n.triggers.find(x => x.id === id); if (t) t.enabled = !t.enabled; });
   render();
 }
@@ -549,6 +565,11 @@ async function onChange(event) {
     gm();
     const percent = Number(el.value);
     await persist(n=>{n.last.allTrackVolume=percent;});return;
+  }
+  if (el.id === "ml-game-master-ambience-volume" && el.checkValidity()) {
+    gm();
+    const percent = Number(el.value);
+    await persist(n=>{n.last.ambienceVolume=percent;});return;
   }
   if (tab === "party" && el.name === "actorUuids") {
     const ids=[...root.querySelectorAll('[name="actorUuids"]:checked')].map(el=>el.value.split('.').at(-1));
@@ -640,15 +661,13 @@ async function setTrackVolumes() {
     await persist(n=>{
       n.volumeScale="foundry";
       n.last.allTrackVolume=percent;
-      // Playback buttons reapply their own level on start, so they have to keep this one.
+      // Playlist buttons reapply their own level on start, so they keep this one.
       if (n.last.playlist) n.last.playlist.volume=volume;
-      for (const file of n.last.ambience?.files ?? []) file.volume=volume;
       for (const saved of n.saved ?? []) {
         if (saved.type==="playlist" && saved.config) saved.config.volume=volume;
-        if (saved.type==="ambience") for (const file of saved.config?.files ?? []) file.volume=volume;
       }
     });
-    const playlists = [...(game.playlists.contents ?? game.playlists)];
+    const playlists = [...(game.playlists.contents ?? game.playlists)].filter(playlist => playlist?.getFlag?.(ID, "ambience") !== true);
     let count = 0;
     for (const playlist of playlists) {
       const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])].filter(sound => sound?.id);
@@ -682,8 +701,29 @@ async function setTrackVolumes() {
     render();
   }
 }
+async function setAmbienceVolumes() {
+  gm();
+  const field = root.querySelector("#ml-game-master-ambience-volume");
+  if (!field?.reportValidity()) return;
+  const percent = Number(field.value);
+  const volume = volumeFromPercent(percent);
+  await persist(n => { n.last.ambienceVolume = percent; });
+  let count = 0;
+  for (const playlist of [...(game.playlists.contents ?? game.playlists)]) {
+    if (playlist?.getFlag?.(ID, "ambience") !== true) continue;
+    const sounds = [...(playlist.sounds?.contents ?? playlist.sounds ?? [])].filter(sound => sound?.playing && sound?.id);
+    if (!sounds.length) continue;
+    await playlist.updateEmbeddedDocuments("PlaylistSound", sounds.map(sound => ({_id: sound.id, volume})), {diff: false});
+    count += sounds.length;
+  }
+  ui.notifications.info(`Set ${count} playing ambience layers to ${percent}%.`);
+  render();
+}
 async function run(type, config) {
-  if (["group", "player", "death"].includes(type)) await createRequest({...config,...(type === "group" ? {actorIds:partyActorIds()} : {}),kind:type === "death" ? "death" : "skill"});
+  if (["group", "player", "death"].includes(type)) {
+    await createRequest({...config,...(type === "group" ? {actorIds:partyActorIds()} : {}),kind:type === "death" ? "death" : "skill"});
+    closeTray();
+  }
   if (type === "playlist") {
     const p = game.playlists.get(config.playlist);
     if (!p) throw new Error("The saved playlist no longer exists.");
@@ -749,12 +789,13 @@ async function encounter(die,name,selected) {
   await persist(n => {n.last.encounter = {actorIds};});
   await createRequest({kind:"encounter",die,name,actorIds});
   notify(`Requested blind 1d${die} encounter checks.`);
+  closeTray();
 }
 async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
   const last = state.last.playlist ?? { volume:volumeFromPercent(65) };
-  const result = await form("Start Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["start","Start"]]);
+  const result = await form("Add Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["add","Add"]]);
   if (!result) return;
   const config = {playlist:result.data.get("playlist"), volume:volumeFromPercent(result.data.get("volume"))};
   await saveAndRun("playlist", config);
@@ -768,7 +809,7 @@ async function ambienceForm() {
   const playable = presentAmbienceScan({files, errors}, {warn: error => console.warn(`${ID} |`, error), notify});
   if (!playable.length) return;
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Play Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); return `<div class="ml-card ml-item-row"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span title="${e(file.path)}">${e(file.label)}</span></label>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
+  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); const fileName = file.path.split("/").pop(); return `<div class="ml-card ml-item-row gm-ambience-layer"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(fileName)}</span></label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
   if (!result) return;
   const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
@@ -781,6 +822,7 @@ export async function requestCheck(config) {
   if (!actorIds) return;
   const message = await createRequest({...config,actorIds});
   notify("Check requested. Core routes online players and offline GM fallbacks.");
+  closeTray();
   render();
   return message;
 }

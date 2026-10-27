@@ -11,12 +11,11 @@ export const DRAKKENHEIM_MODULE_IDS = Object.freeze([
 const SOURCE_MODULES = DRAKKENHEIM_MODULE_IDS;
 
 export const DRAKKENHEIM_STRINGS = [
-  ["group.drakkenheim", "Drakkenheim"],
-  ["section.drakkenheim-contamination", "Contamination"],
-  ["section.drakkenheim-search", "Delerium search"],
-  ["section.drakkenheim-values", "Delerium values"],
-  ["section.drakkenheim-mutations", "Mutations"],
-  ["section.drakkenheim-madness", "Madness"]
+  ["loading", "Loading…"],
+  ["section.drakkenheim", "Drakkenheim"],
+  ["item.contamination.label", "Contamination"],
+  ["item.delerium-search.label", "Delerium Search"],
+  ["item.delerium.label", "Delerium"]
 ];
 
 const SKILL_NAMES = Object.freeze([
@@ -24,23 +23,33 @@ const SKILL_NAMES = Object.freeze([
   "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception",
   "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"
 ]);
+const CHIP_ORDER = Object.freeze(["contamination", "delerium-search", "delerium"]);
+const MAX_LEVEL = 6;
+const DEFAULT_POLL_MS = 1000;
 
-const DEFAULT_POLL_MS = 1500;
-const MAX_POLLS = 5;
-
-let sections = [];
-let appliedKey = null;
+let conditions = [];
+let items = [];
+let loading = false;
+let watching = false;
 let pendingKey = null;
 let pollTimer = null;
 let polls = 0;
 let pollDelay = DEFAULT_POLL_MS;
+let signature = "";
 
-export function drakkenheimSections() {
-  return sections;
+export function drakkenheimConditions() {
+  return conditions;
 }
 
-export function setDrakkenheimSections(next = []) {
-  sections = next ?? [];
+export function drakkenheimItems() {
+  return items;
+}
+
+export function setDrakkenheimContent({ conditions: nextConditions = [], items: nextItems = [] } = {}) {
+  conditions = nextConditions ?? [];
+  items = nextItems ?? [];
+  loading = false;
+  signature = contentSignature({ conditions, items });
 }
 
 export function setDrakkenheimPollDelay(ms = DEFAULT_POLL_MS) {
@@ -48,13 +57,31 @@ export function setDrakkenheimPollDelay(ms = DEFAULT_POLL_MS) {
 }
 
 export function resetDrakkenheimCheat() {
-  sections = [];
-  appliedKey = null;
+  conditions = [];
+  items = [];
+  loading = false;
+  watching = false;
   pendingKey = null;
   polls = 0;
   pollDelay = DEFAULT_POLL_MS;
+  signature = "";
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = null;
+}
+
+export function stopDrakkenheimCheat() {
+  watching = false;
+  pendingKey = null;
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = null;
+}
+
+export function drakkenheimStatus(game = globalThis.game) {
+  const ready = conditions.length || items.length;
+  if (loading && !ready) return "loading";
+  if (ready) return "ready";
+  if (drakkenheimContentActive(game)) return "loading";
+  return "off";
 }
 
 export function drakkenheimModuleIds(game = globalThis.game) {
@@ -68,94 +95,59 @@ export function drakkenheimContentActive(game = globalThis.game) {
 export function scheduleDrakkenheimCheat(rerender, game = globalThis.game) {
   const key = drakkenheimModuleIds(game).slice().sort().join(",");
   if (!key) {
-    pendingKey = null;
+    const had = conditions.length || items.length || loading;
+    stopDrakkenheimCheat();
     polls = 0;
-    if (pollTimer) clearTimeout(pollTimer);
-    pollTimer = null;
-    if (appliedKey || sections.length) {
-      appliedKey = null;
-      setDrakkenheimSections([]);
+    loading = false;
+    if (had) {
+      conditions = [];
+      items = [];
+      signature = "";
       rerender?.();
     }
     return;
   }
-  if (appliedKey === key || pendingKey === key) return;
+  watching = true;
+  if (!conditions.length && !items.length) loading = true;
+  if (pendingKey === key || pollTimer) return;
   pendingKey = key;
-  collectDrakkenheimSections(game).then(found => {
-    if (pendingKey !== key) return;
+  collectDrakkenheimContent(game).then(found => {
+    if (!watching || pendingKey !== key) return;
     pendingKey = null;
-    const ready = found.some(section => section.id === "drakkenheim-contamination") || (found.length && polls >= MAX_POLLS);
-    if (!found.length || !ready) {
-      if (found.length) {
-        setDrakkenheimSections(found);
-        rerender?.();
-      }
-      schedulePoll(rerender, game, key);
-      return;
-    }
-    polls = 0;
-    if (pollTimer) clearTimeout(pollTimer);
-    pollTimer = null;
-    setDrakkenheimSections(found);
-    appliedKey = key;
-    rerender?.();
+    const next = contentSignature(found);
+    const changed = next !== signature;
+    if (found.conditions.length || found.items.length) {
+      conditions = found.conditions;
+      items = found.items;
+      signature = next;
+      loading = false;
+    } else if (!conditions.length && !items.length) loading = true;
+    if (changed) rerender?.();
+    schedulePoll(rerender, game, key);
   }).catch(() => {
-    if (pendingKey !== key) return;
+    if (!watching || pendingKey !== key) return;
     pendingKey = null;
+    if (!conditions.length && !items.length) loading = true;
     schedulePoll(rerender, game, key);
   });
 }
 
 function schedulePoll(rerender, game, key) {
-  if (polls >= MAX_POLLS || pollTimer) return;
+  if (!watching || pollTimer) return;
+  const delay = Math.min(pollDelay * (2 ** Math.min(polls, 4)), Math.max(pollDelay, 15000));
   polls += 1;
   pollTimer = setTimeout(() => {
     pollTimer = null;
-    if (drakkenheimModuleIds(game).slice().sort().join(",") !== key) return;
-    appliedKey = null;
+    if (!watching || drakkenheimModuleIds(game).slice().sort().join(",") !== key) return;
     pendingKey = null;
     scheduleDrakkenheimCheat(rerender, game);
-  }, pollDelay);
+  }, delay);
 }
 
-export async function collectDrakkenheimSections(game = globalThis.game) {
-  if (!drakkenheimContentActive(game)) return [];
-  try {
-    const [contamination, topics] = await Promise.all([
-      collectContaminationSections(game),
-      collectTopicSections(game)
-    ]);
-    const byId = new Map();
-    for (const section of [...contamination, ...topics]) {
-      if (!section?.items?.length) continue;
-      const existing = byId.get(section.id);
-      if (!existing) byId.set(section.id, { ...section, items: uniqueChips(section.items) });
-      else existing.items = uniqueChips([...existing.items, ...section.items]);
-    }
-    const order = ["drakkenheim-contamination", "drakkenheim-search", "drakkenheim-values", "drakkenheim-mutations", "drakkenheim-madness"];
-    return order.map(id => byId.get(id)).filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-export async function collectContaminationSections(game = globalThis.game) {
-  if (!drakkenheimContentActive(game)) return [];
-  try {
-    const [journal, tables] = await Promise.all([
-      contaminationFromJournals(game),
-      contaminationFromTables(game)
-    ]);
-    const chips = uniqueChips([...journal, ...tables]);
-    if (!chips.length) return [];
-    return [{
-      id: "drakkenheim-contamination",
-      origin: "drakkenheim",
-      items: chips
-    }];
-  } catch {
-    return [];
-  }
+function contentSignature(found) {
+  const conditionIds = (found?.conditions ?? []).map(item => item.id).join(",");
+  const itemIds = (found?.items ?? []).map(item => item.id).join(",");
+  return conditionIds || itemIds ? `${conditionIds}|${itemIds}` : "";
 }
 
 export async function openDrakkenheimDocument(uuid, pageId, game = globalThis) {
@@ -171,310 +163,320 @@ export async function openDrakkenheimDocument(uuid, pageId, game = globalThis) {
   return true;
 }
 
-async function contaminationFromJournals(game) {
-  const chips = [];
-  for (const pack of modulePacks(game, "JournalEntry")) {
-    let index = [];
-    try { index = listOf(await pack.getIndex?.()); }
-    catch { continue; }
-    for (const row of index) {
-      let entry;
-      try { entry = await pack.getDocument?.(row._id ?? row.id); }
-      catch { continue; }
-      if (!entry) continue;
-      const pages = listOf(entry.pages?.contents ?? entry.pages);
-      const worthReading = pages.some(page => contaminationCandidate(entry.name || row?.name, page?.name, pageHtml(page)));
-      if (!worthReading && !contaminationName(entry.name) && !contaminationName(row?.name)) continue;
-      chips.push(...chipsFromEntry(pack, entry));
-    }
-  }
-  return uniqueChips(chips);
-}
-
-async function contaminationFromTables(game) {
-  const chips = [];
-  for (const pack of modulePacks(game, "RollTable")) {
-    let index = [];
-    try { index = listOf(await pack.getIndex?.()); }
-    catch { continue; }
-    for (const row of index) {
-      let table;
-      try { table = await pack.getDocument?.(row._id ?? row.id); }
-      catch { continue; }
-      if (!contaminationTable(table, row?.name)) continue;
-      const path = documentPath(pack, table.name);
-      const uuid = table.uuid || compendiumUuid(pack, "RollTable", table.id ?? row._id);
-      const results = listOf(table.results?.contents ?? table.results);
-      const levels = results.flatMap(result => {
-        const label = strip(result.name || result.text || "");
-        const level = levelNumber(label) || levelNumber(String(result.range?.[0] ?? ""));
-        if (!level) return [];
-        const text = strip(result.description || result.text || "");
-        return text ? [{ level, label: label || `Level ${level}`, text }] : [];
-      });
-      const chosen = levels.length ? levels : [{ label: table.name, text: strip(table.description) }];
-      for (const part of chosen) {
-        if (!part.text) continue;
-        chips.push(chip({
-          id: part.level ? `contamination-level-${part.level}` : "contamination-symptoms",
-          label: part.label,
-          text: part.text,
-          uuid,
-          path
-        }));
-      }
-    }
-  }
-  return uniqueChips(chips);
-}
-
-function chipsFromEntry(pack, entry) {
-  const pages = listOf(entry.pages?.contents ?? entry.pages);
-  const chosen = pages.filter(page => contaminationCandidate(entry.name, page?.name, page?.text?.content || page?.text?.markdown || ""));
-  const chips = [];
-  for (const page of chosen) {
-    const html = page?.text?.content || page?.text?.markdown || "";
-    const path = documentPath(pack, entry.name, page?.name);
-    const uuid = page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id);
-    const levels = contaminationLevelsFromHTML(html);
-    if (levels.length) {
-      for (const level of levels) {
-        if (!level.text) continue;
-        chips.push(chip({
-          id: `contamination-level-${level.level}`,
-          label: level.label,
-          text: level.text,
-          uuid,
-          pageId: page?.id ?? "",
-          path
-        }));
-      }
-      continue;
-    }
-    const text = strip(html);
-    if (!text) continue;
-    const level = levelNumber(page?.name);
-    chips.push(chip({
-      id: level ? `contamination-level-${level}` : "contamination-symptoms",
-      label: page?.name || entry.name,
-      text,
-      uuid,
-      pageId: page?.id ?? "",
-      path
-    }));
-  }
-  return chips;
-}
-
-export function contaminationLevelsFromHTML(html) {
-  const source = String(html ?? "");
-  const headings = [...source.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>([\s\S]*?)(?=<h[1-6][^>]*>|$)/gi)];
-  const fromHeadings = headings.flatMap(match => {
-    const label = strip(match[1]);
-    const level = levelNumber(label);
-    if (!level) return [];
-    return [{ level, label, text: strip(match[2]) }];
-  });
-  if (fromHeadings.length) return fromHeadings;
-  const fromInline = inlineLevels(source);
-  if (fromInline.length) return fromInline;
-  const fromTable = [];
-  for (const row of source.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells = [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => strip(cell[1]));
-    const level = levelNumber(cells[0] ?? "");
-    if (!level) continue;
-    const text = cells.slice(1).join(" ").trim();
-    if (text) fromTable.push({ level, label: cells[0], text });
-  }
-  return fromTable;
-}
-
-async function collectTopicSections(game) {
-  const grouped = { transformation: [], search: [], values: [], mutations: [], madness: [] };
-  await collectJournalTopics(game, grouped);
-  await collectTableTopics(game, grouped);
-  await collectValueItems(game, grouped);
-  return [
-    topicSection("drakkenheim-contamination", grouped.transformation),
-    topicSection("drakkenheim-search", grouped.search),
-    topicSection("drakkenheim-values", grouped.values),
-    topicSection("drakkenheim-mutations", grouped.mutations),
-    topicSection("drakkenheim-madness", grouped.madness)
-  ].filter(Boolean);
-}
-
-function topicSection(id, items) {
-  const unique = uniqueChips(items);
-  return unique.length ? { id, origin: "drakkenheim", items: unique } : null;
-}
-
-async function collectJournalTopics(game, grouped) {
-  for (const pack of modulePacks(game, "JournalEntry", SOURCE_MODULES)) {
-    let index = [];
-    try { index = listOf(await pack.getIndex?.()); }
-    catch { continue; }
-    for (const row of index) {
-      if (!/contaminat|appendix|deleri|deliri|madness|mutation|crystal|search|prospect/i.test(row?.name ?? "")) continue;
-      let entry;
-      try { entry = await pack.getDocument?.(row._id ?? row.id); }
-      catch { continue; }
-      if (!entry) continue;
-      const pages = listOf(entry.pages?.contents ?? entry.pages);
-      const entryTopic = pageTopic(entry.name);
-      const targets = pages.length ? pages : [entry];
-      for (const page of targets) {
-        const current = page === entry ? entry : page;
-        const html = current?.text?.content || current?.text?.markdown || "";
-        const topic = pageTopic(current?.name) || entryTopic;
-        const named = normalize(`${entry.name} ${current?.name}`);
-        const zones = /deleri|search|prospect/.test(named) ? searchZoneChips(pack, entry, current, html) : [];
-        if (zones.length) grouped.search.push(...zones);
-        if (!topic || !grouped[topic]) continue;
-        if (topic === "search" && zones.length) continue;
-        grouped[topic].push(...partsToChips(pack, entry, current, topic));
-      }
-    }
+export async function collectDrakkenheimContent(game = globalThis.game) {
+  if (!drakkenheimContentActive(game)) return { conditions: [], items: [] };
+  try {
+    const grouped = { contamination: [], search: [], values: [], conditions: [] };
+    const journals = await matchedDocuments(game, "JournalEntry", journalWorthOpening);
+    for (const entry of journals) addJournal(entry.pack, entry.doc, grouped);
+    const tables = await matchedDocuments(game, "RollTable", row => Boolean(tableKind(row?.name)));
+    for (const entry of tables) addTable(entry.pack, entry.doc, grouped);
+    const documents = await matchedDocuments(game, "Item", itemWorthOpening);
+    for (const entry of documents) addItem(entry.pack, entry.doc, grouped);
+    return {
+      conditions: uniqueChips(grouped.conditions),
+      items: CHIP_ORDER.map(id => mergeSummaries(grouped[id === "delerium-search" ? "search" : id === "delerium" ? "values" : id])).filter(Boolean)
+    };
+  } catch {
+    return { conditions: [], items: [] };
   }
 }
 
-async function collectTableTopics(game, grouped) {
-  for (const pack of modulePacks(game, "RollTable", SOURCE_MODULES)) {
-    let index = [];
-    try { index = listOf(await pack.getIndex?.()); }
-    catch { continue; }
-    for (const row of index) {
-      const topic = pageTopic(row?.name);
-      if (!topic || !grouped[topic]) continue;
-      let table;
-      try { table = await pack.getDocument?.(row._id ?? row.id); }
-      catch { continue; }
-      if (!table) continue;
-      grouped[topic].push(...tableToChips(pack, table, topic));
-    }
-  }
-}
-
-async function collectValueItems(game, grouped) {
-  for (const pack of modulePacks(game, "Item", SOURCE_MODULES)) {
-    let index = [];
-    try { index = listOf(await pack.getIndex?.()); }
-    catch { continue; }
-    for (const row of index) {
-      if (!/^deleri(?:um|ium)\b/i.test(row?.name ?? "")) continue;
-      let item;
-      try { item = await pack.getDocument?.(row._id ?? row.id); }
-      catch { continue; }
-      if (!item) continue;
-      const price = priceText(item.system);
-      const rawDescription = item.system?.description?.value ?? item.system?.description;
-      const description = typeof rawDescription === "string" ? strip(rawDescription) : "";
-      const text = [price ? `Price: ${price}.` : "", description].filter(Boolean).join(" ");
-      if (!text) continue;
-      grouped.values.push(chip({
-        id: `delerium-value-${slug(item.name)}`,
-        label: item.name,
+function addJournal(pack, entry, grouped) {
+  const entryIsConditions = /^conditions?\b/.test(normalize(entry?.name));
+  for (const page of pagesOf(entry)) {
+    const kind = pageKind(page?.name) || (entryIsConditions ? "condition" : "");
+    const html = pageHtml(page);
+    if (kind === "contamination") {
+      const summary = levelSummary(contaminationLevelsFromHTML(html));
+      if (summary) grouped.contamination.push(summaryChip(pack, entry, page, "contamination", "Contamination", summary));
+    } else if (kind === "search") {
+      const summary = zoneSummary(searchZonesFromHTML(html), skillsMentioned(strip(html)));
+      if (summary) grouped.search.push(summaryChip(pack, entry, page, "delerium-search", "Delerium Search", summary));
+    } else if (kind === "condition") {
+      const label = strip(page?.name);
+      const text = strip(html);
+      if (!shortLabel(label) || !text) continue;
+      grouped.conditions.push(chip({
+        id: `condition-${slug(label)}`,
+        label,
         text,
-        uuid: item.uuid || compendiumUuid(pack, "Item", item.id ?? row._id),
-        path: documentPath(pack, item.name)
+        uuid: page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id),
+        pageId: page?.id ?? "",
+        path: documentPath(pack, entry.name, page?.name)
       }));
     }
   }
 }
 
-function partsToChips(pack, entry, page, topic) {
-  const html = page?.text?.content || page?.text?.markdown || "";
-  const path = documentPath(pack, entry.name || page?.name, page?.name && page !== entry ? page.name : "");
-  const uuid = page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id);
-  const pageId = page !== entry ? (page?.id ?? "") : "";
-  const parts = structuredParts(html);
-  const chosen = parts.length ? parts : [];
-  return chosen.flatMap((part, index) => {
-    if (!part.text) return [];
-    const label = part.label || page?.name || entry.name;
-    return [chip({
-      id: `${topic}-${slug(label)}-${index}`,
-      label,
-      text: part.text,
-      uuid,
-      pageId,
-      path
-    })];
-  });
-}
-
-function tableToChips(pack, table, topic) {
+function addTable(pack, table, grouped) {
+  const kind = tableKind(table?.name);
   const path = documentPath(pack, table.name);
   const uuid = table.uuid || compendiumUuid(pack, "RollTable", table.id);
   const results = listOf(table.results?.contents ?? table.results);
-  if (topic === "search") {
+  if (kind === "contamination") {
+    const levels = [];
+    for (const result of results) {
+      const raw = strip(result?.name || result?.text || "");
+      const level = levelNumber(raw) || levelNumber(String(result?.range?.[0] ?? ""));
+      const text = strip(result?.description || "");
+      if (!level || !text) continue;
+      levels.push({ level, label: `Level ${level}`, text });
+    }
+    const chosen = levels.length === 1 || validLevelRun(levels) ? levels.filter(level => level.level <= MAX_LEVEL) : [];
+    const summary = levelSummary(chosen);
+    if (summary) grouped.contamination.push(chip({ id: "contamination", label: "Contamination", text: summary, uuid, path }));
+  }
+  if (kind === "search") {
     const pageSkills = skillsMentioned([table.name, table.description, ...results.map(result => `${result?.name ?? ""} ${result?.text ?? ""} ${result?.description ?? ""}`)].join(" "));
     const zones = results.flatMap(result => {
-      const label = strip(result.name || result.text || "");
-      const description = strip(result.description || "");
+      const label = strip(result?.name || result?.text || "");
+      const description = strip(result?.description || "");
       const dc = explicitDc(`${label} ${description}`);
       if (!label || !dc || headerLabel(label)) return [];
-      return [chip({
-        id: `delerium-search-${slug(label)}`,
-        label,
-        text: searchChipText({ dc, skills: skillsMentioned(`${label} ${description}`), extra: withoutDc(description) }, pageSkills),
-        uuid,
-        path
-      })];
+      return [{ label, dc, skills: skillsMentioned(`${label} ${description}`), extra: withoutDc(description) }];
     });
-    if (zones.length) return zones;
+    const summary = zoneSummary(zones, pageSkills);
+    if (summary) grouped.search.push(chip({ id: "delerium-search", label: "Delerium Search", text: summary, uuid, path }));
   }
-  const chips = results.flatMap((result, index) => {
-    const label = strip(result.name || result.text || "") || table.name;
-    const description = strip(result.description || "");
-    const text = description && description !== label ? description : strip(result.text || description || label);
-    if (!text) return [];
-    return [chip({ id: `${topic}-${slug(label)}-${index}`, label, text, uuid, path })];
-  });
-  if (chips.length) return chips;
-  const text = strip(table.description);
-  return text ? [chip({ id: `${topic}-${slug(table.name)}-0`, label: table.name, text, uuid, path })] : [];
 }
 
-function structuredParts(html) {
-  const source = String(html ?? "");
-  const headings = [...source.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>([\s\S]*?)(?=<h[1-6][^>]*>|$)/gi)];
-  const fromHeadings = headings.flatMap(match => {
-    const label = strip(match[1]);
-    const text = strip(match[2]);
-    return label && text ? [{ label, text }] : [];
-  });
-  if (fromHeadings.length) return fromHeadings;
-  const fromTable = [];
-  for (const row of source.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells = [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => strip(cell[1])).filter(Boolean);
-    if (cells.length < 2) continue;
-    const numbered = /^\d+$/.test(cells[0]);
-    const label = numbered ? cells[1] : cells[0];
-    const text = cells.slice(numbered ? 2 : 1).join(" ").trim();
-    if (label && text) fromTable.push({ label, text });
+function addItem(pack, item, grouped) {
+  if (isConditionItem(item)) {
+    const label = strip(item.name);
+    const text = descriptionText(item);
+    if (!shortLabel(label) || !text) return;
+    grouped.conditions.push(chip({
+      id: `condition-${slug(label)}`,
+      label,
+      text,
+      uuid: item.uuid || compendiumUuid(pack, "Item", item.id),
+      path: documentPath(pack, item.name)
+    }));
+    return;
   }
-  if (fromTable.length) return fromTable;
-  const items = [...source.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map(match => strip(match[1])).filter(Boolean);
-  if (items.length >= 2) {
-    return items.map(text => {
-      const split = text.match(/^(.{2,60}?)(?:\.|:)\s+\S/);
-      return { label: split ? split[1] : text.slice(0, 60), text };
-    });
-  }
-  const text = strip(source);
-  return text ? [{ label: "", text }] : [];
+  if (!/^deleri(?:um|ium)\b/i.test(item?.name ?? "")) return;
+  const price = priceText(item.system);
+  if (!price) return;
+  const weight = weightText(item.system);
+  const text = [item.name, `Price: ${price}.`, weight ? `Weight: ${weight}.` : "", descriptionText(item)].filter(Boolean).join(" ");
+  grouped.values.push(chip({
+    id: "delerium",
+    label: "Delerium",
+    text,
+    uuid: item.uuid || compendiumUuid(pack, "Item", item.id),
+    path: documentPath(pack, item.name)
+  }));
 }
 
-export function pageTopic(name) {
+function summaryChip(pack, entry, page, id, label, text) {
+  return chip({
+    id,
+    label,
+    text,
+    uuid: page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id),
+    pageId: page?.id ?? "",
+    path: documentPath(pack, entry.name, page?.name)
+  });
+}
+
+function mergeSummaries(chips) {
+  const parts = [];
+  const seen = new Set();
+  for (const entry of chips ?? []) {
+    const key = canonical(entry?.sourceText);
+    if (!entry?.sourceText || seen.has(key)) continue;
+    seen.add(key);
+    parts.push(entry.sourceText);
+  }
+  if (!parts.length) return null;
+  const base = chips[0];
+  return chip({
+    id: base.id,
+    label: base.labelText,
+    text: parts.join(" "),
+    uuid: base.uuid,
+    pageId: base.pageId,
+    path: base.documentPath
+  });
+}
+
+function levelSummary(levels) {
+  const unique = [];
+  for (const level of levels) {
+    const previous = unique.find(item => item.level === level.level);
+    if (!previous) unique.push(level);
+    else if ((level.text?.length ?? 0) > (previous.text?.length ?? 0)) previous.text = level.text;
+  }
+  unique.sort((a, b) => a.level - b.level);
+  if (!unique.length) return "";
+  return unique.map(level => `${level.label}: ${level.text}`).join(" ");
+}
+
+function zoneSummary(zones, pageSkills) {
+  if (!zones.length) return "";
+  return zones.map(zone => {
+    const skills = zone.skills.length ? zone.skills : pageSkills;
+    const skillText = skills.length ? ` Search with ${joinOr(skills)}.` : "";
+    const extra = zone.extra ? ` ${zone.extra}` : "";
+    return `${zone.label}: DC ${zone.dc}.${skillText}${extra}`;
+  }).join(" ");
+}
+
+export function contaminationLevelsFromHTML(html) {
+  const runs = [];
+  for (const rows of tableRows(html)) {
+    const levels = [];
+    for (const cells of rows) {
+      const levelCell = cells.find(cell => exactLevel(cell));
+      const level = exactLevel(levelCell);
+      if (!level) continue;
+      const text = cells.filter(cell => cell !== levelCell && !exactLevel(cell)).join(" ").trim();
+      if (!text) continue;
+      levels.push({ level, label: `Level ${level}`, text });
+    }
+    if (!validLevelRun(levels)) continue;
+    const headed = rows[0].some(cell => /^(?:levels?|effects?|symptoms?)$/i.test(cell.trim()));
+    runs.push({ headed, levels });
+  }
+  const chosen = runs.some(run => run.headed) ? runs.filter(run => run.headed) : runs;
+  return levelList(chosen.flatMap(run => run.levels));
+}
+
+function levelList(levels) {
+  const unique = [];
+  for (const level of levels) {
+    if (unique.some(item => item.level === level.level)) continue;
+    unique.push(level);
+  }
+  return unique.sort((a, b) => a.level - b.level);
+}
+
+export function searchZonesFromHTML(html) {
+  const zones = [];
+  for (const rows of tableRows(html)) {
+    if (!rows.length) continue;
+    const header = rows[0];
+    const dcIndex = header.findIndex(cell => /\bdc\b/i.test(cell) || /difficulty/i.test(cell));
+    const body = dcIndex >= 0 ? rows.slice(1) : rows;
+    for (const cells of body) {
+      let index = dcIndex;
+      let dc = index >= 0 ? dcValue(cells[index] ?? "") : 0;
+      if (!dc) {
+        index = cells.findIndex(cell => /^(?:dc\s*)?\d{1,2}$/i.test(cell.trim()));
+        dc = index >= 0 ? dcValue(cells[index]) : 0;
+      }
+      if (!dc) continue;
+      const label = cells.find((cell, cellIndex) => cellIndex !== index && !headerLabel(cell) && !skillsOnly(cell));
+      if (!label || headerLabel(label)) continue;
+      const extra = cells.filter((cell, cellIndex) => cell !== label && cellIndex !== index && !skillsOnly(cell)).join(" ");
+      zones.push({ label, dc, skills: skillsMentioned(cells.join(" ")), extra: withoutDc(extra) });
+    }
+  }
+  return zones;
+}
+
+async function matchedDocuments(game, documentName, predicate) {
+  const found = [];
+  for (const pack of modulePacks(game, documentName)) {
+    let index = [];
+    try { index = listOf(await pack.getIndex?.({ fields: ["type", "system.type"] })); }
+    catch { continue; }
+    const ids = [];
+    for (const row of index) {
+      if (!predicate(row)) continue;
+      const id = row?._id ?? row?.id;
+      if (id) ids.push(id);
+    }
+    for (const doc of await loadDocuments(pack, ids)) found.push({ pack, doc });
+  }
+  return found;
+}
+
+async function loadDocuments(pack, ids) {
+  if (!ids.length) return [];
+  if (typeof pack.getDocuments === "function") {
+    try {
+      const batch = listOf(await pack.getDocuments({ _id__in: ids })).filter(doc => ids.includes(doc?.id ?? doc?._id));
+      if (batch.length) return batch;
+    } catch { /* Fall back to one document at a time. */ }
+  }
+  const docs = [];
+  for (const id of ids) {
+    try {
+      const doc = await pack.getDocument?.(id);
+      if (doc) docs.push(doc);
+    } catch { /* Skip a document the pack cannot open yet. */ }
+  }
+  return docs;
+}
+
+function journalWorthOpening(row) {
+  const name = normalize(row?.name);
+  if (!name || /emberwood/.test(name) || /^appendix d\b/.test(name)) return false;
+  if (/mutation|madness|spell|long rest/.test(name) && !/appendix c\b/.test(name)) return false;
+  if (/^contaminat/.test(name) || /appendix c\b/.test(name)) return true;
+  if (/contamination symptoms|eldritch contamination/.test(name)) return true;
+  if (/deleri/.test(name) && /search|prospect/.test(name)) return true;
+  if (/^conditions?\b/.test(name)) return true;
+  return false;
+}
+
+function itemWorthOpening(row) {
+  if (/^deleri(?:um|ium)\b/i.test(row?.name ?? "")) return true;
+  const type = row?.type ?? row?.system?.type?.value ?? row?.system?.type;
+  return type === "condition";
+}
+
+function tableKind(name) {
   const normalized = normalize(name);
-  if (!normalized) return "";
-  if (/monstrous transformation/.test(normalized)) return "transformation";
-  if (/mutation/.test(normalized)) return "mutations";
-  if (/madness/.test(normalized)) return "madness";
+  if (/mutation|madness/.test(normalized)) return "";
   if (/deleri/.test(normalized) && /search|prospect/.test(normalized)) return "search";
-  if (/deleri/.test(normalized) && /value|crystal|price|worth/.test(normalized)) return "values";
-  if (normalized === "delerium" || normalized === "delirium") return "values";
+  if (/contaminat|symptom/.test(normalized)) return "contamination";
   return "";
+}
+
+function pageKind(name) {
+  const page = normalize(name);
+  if (!page || /mutation|madness|spell|long rest|transform/.test(page)) return "";
+  if (/symptom|eldritch contamination/.test(page) || /contaminat/.test(page)) return "contamination";
+  if (/deleri/.test(page) && /search|prospect/.test(page)) return "search";
+  return "";
+}
+
+function isConditionItem(item) {
+  const type = item?.type ?? item?.system?.type?.value ?? item?.system?.type;
+  return type === "condition";
+}
+
+function validLevelRun(levels) {
+  if (levels.length < 2 || levels.length > MAX_LEVEL) return false;
+  const nums = levels.map(level => level.level);
+  if (new Set(nums).size !== nums.length) return false;
+  const sorted = [...nums].sort((a, b) => a - b);
+  if (sorted[0] !== 1) return false;
+  return sorted.every((level, index) => level === index + 1);
+}
+
+function exactLevel(cell) {
+  const source = String(cell ?? "").trim();
+  const match = source.match(/^(?:contamination\s+)?(?:level|stage)\s+(\d+)$/i) || source.match(/^(\d+)[.)]?$/);
+  const level = Number(match?.[1]);
+  return level >= 1 && level <= 12 ? level : 0;
+}
+
+function levelNumber(label) {
+  const source = String(label ?? "").trim();
+  const match = source.match(/^(?:contamination\s+)?(?:level|stage)\s+(\d+)\b/i) || source.match(/^(\d+)[.)]?$/);
+  const level = Number(match?.[1]);
+  return level >= 1 && level <= 12 ? level : 0;
+}
+
+function tableRows(html) {
+  const tables = [...String(html ?? "").matchAll(/<table[\s\S]*?<\/table>/gi)].map(match => match[0]);
+  return tables.map(table => [...table.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(row => (
+    [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => strip(cell[1])).filter(cell => cell.length)
+  )).filter(cells => cells.length));
 }
 
 function joinOr(labels) {
@@ -498,12 +500,26 @@ function priceText(system) {
   return coins.join(", ");
 }
 
+function weightText(system) {
+  const weight = system?.weight?.value ?? system?.weight;
+  if (weight == null || weight === "") return "";
+  const number = Number(weight);
+  if (Number.isFinite(number)) return `${number} lb`;
+  return String(weight).trim();
+}
+
+function descriptionText(item) {
+  const raw = item?.system?.description?.value ?? item?.system?.description;
+  return typeof raw === "string" ? strip(raw) : "";
+}
+
 function chip({ id, label, text, uuid, pageId = "", path }) {
-  const excerpt = text.length > 320 ? `${text.slice(0, 320).trim()}…` : text;
+  const excerpt = text.length > 700 ? `${text.slice(0, 700).trim()}…` : text;
   return {
     id,
     origin: "drakkenheim",
     labelText: label,
+    sourceText: text,
     tipHTML: `<div class="mlgm-cheat-tip__body"><p><strong>${e(label)}</strong></p><p>${e(excerpt)}</p></div>`,
     uuid,
     pageId,
@@ -514,71 +530,11 @@ function chip({ id, label, text, uuid, pageId = "", path }) {
 function uniqueChips(chips) {
   const kept = new Map();
   for (const entry of chips) {
-    const key = normalize(entry.labelText) || entry.id;
+    const key = canonical(entry.labelText) || entry.id;
     const previous = kept.get(key);
     if (!previous || (entry.tipHTML?.length ?? 0) > (previous.tipHTML?.length ?? 0)) kept.set(key, entry);
   }
-  return [...kept.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-}
-
-function searchZoneChips(pack, entry, page, html) {
-  const zones = searchZonesFromHTML(html);
-  if (!zones.length) return [];
-  const path = documentPath(pack, entry.name || page?.name, page?.name && page !== entry ? page.name : "");
-  const uuid = page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id);
-  const pageId = page !== entry ? (page?.id ?? "") : "";
-  const pageSkills = skillsMentioned(strip(html));
-  return zones.map(zone => chip({
-    id: `delerium-search-${slug(zone.label)}`,
-    label: zone.label,
-    text: searchChipText(zone, pageSkills),
-    uuid,
-    pageId,
-    path
-  }));
-}
-
-export function searchZonesFromHTML(html) {
-  const fromTable = zonesFromTables(html);
-  if (fromTable.length) return fromTable;
-  const headings = [...String(html ?? "").matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>([\s\S]*?)(?=<h[1-6][^>]*>|$)/gi)];
-  return headings.flatMap(match => {
-    const label = strip(match[1]);
-    const body = strip(match[2]);
-    const dc = explicitDc(`${label} ${body}`);
-    if (!label || !dc || headerLabel(label)) return [];
-    return [{ label, dc, skills: skillsMentioned(`${label} ${body}`), extra: withoutDc(body) }];
-  });
-}
-
-function zonesFromTables(html) {
-  const blocks = [...String(html ?? "").matchAll(/<table[\s\S]*?<\/table>/gi)].map(match => match[0]);
-  const sources = blocks.length ? blocks : (/<tr[\s>]/i.test(html ?? "") ? [String(html)] : []);
-  const zones = [];
-  for (const source of sources) {
-    const rows = [...source.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(row => (
-      [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => strip(cell[1])).filter(Boolean)
-    )).filter(cells => cells.length);
-    if (!rows.length) continue;
-    const header = rows[0].map(cell => normalize(cell));
-    const dcIndex = header.findIndex(cell => cell === "dc" || /difficulty/.test(cell));
-    const body = dcIndex >= 0 ? rows.slice(1) : rows;
-    for (const cells of body) {
-      const dc = dcIndex >= 0 ? dcValue(cells[dcIndex] ?? "") : explicitDc(cells.join(" "));
-      if (!dc) continue;
-      const label = cells.find((cell, index) => index !== dcIndex && !headerLabel(cell) && !skillsOnly(cell));
-      if (!label || headerLabel(label)) continue;
-      const extra = cells.filter((cell, index) => cell !== label && index !== dcIndex && !skillsOnly(cell)).join(" ");
-      zones.push({ label, dc, skills: skillsMentioned(cells.join(" ")), extra: withoutDc(extra) });
-    }
-  }
-  return zones;
-}
-
-function searchChipText(zone, pageSkills) {
-  const skills = zone.skills.length ? zone.skills : pageSkills;
-  const skillText = skills.length ? `Search with ${joinOr(skills)}.` : "";
-  return [zone.dc ? `DC ${zone.dc}.` : "", skillText, zone.extra].filter(Boolean).join(" ");
+  return [...kept.values()].sort((a, b) => a.labelText.localeCompare(b.labelText, undefined, { numeric: true }));
 }
 
 function explicitDc(text) {
@@ -587,7 +543,7 @@ function explicitDc(text) {
 }
 
 function dcValue(text) {
-  return explicitDc(text) || boundedDc(String(text ?? "").trim().match(/^(\d{1,2})$/)?.[1]);
+  return explicitDc(text) || boundedDc(String(text ?? "").trim().match(/^(?:dc\s*)?(\d{1,2})$/i)?.[1]);
 }
 
 function boundedDc(value) {
@@ -600,7 +556,7 @@ function withoutDc(text) {
 }
 
 function headerLabel(label) {
-  return /^(area|zone|location|region|place|name|dc|difficulty|skills?|check)$/i.test(String(label ?? "").trim());
+  return /^(area|zone|location|region|place|name|dc|difficulty|check dc|skills?|check|effects?)$/i.test(String(label ?? "").trim());
 }
 
 function skillsMentioned(text) {
@@ -614,49 +570,24 @@ function skillsOnly(text) {
   return !/[a-z0-9]/i.test(remainder.replace(/\b(or|and)\b/gi, " "));
 }
 
-function contaminationName(name) {
-  const normalized = normalize(name);
-  if (!normalized || /mutation|madness|transformation/.test(normalized)) return false;
-  return /contaminat|appendix c|symptom/.test(normalized);
+function shortLabel(label) {
+  const text = String(label ?? "").trim();
+  const quoted = text.startsWith('"') || text.startsWith("'") || "“”‘’".includes(text[0] ?? "");
+  if (!text || text.length > 40 || /[.!?]$/.test(text) || quoted) return false;
+  if (/^\d+[.)]?$/.test(text) || /[,;:]/.test(text) || headerLabel(text)) return false;
+  return text.split(/\s+/).length <= 4;
 }
 
 function pageHtml(page) {
   return page?.text?.content || page?.text?.markdown || "";
 }
 
-function inlineLevels(source) {
-  const marks = [...source.matchAll(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi)];
-  const found = [];
-  for (const [index, mark] of marks.entries()) {
-    const label = strip(mark[1]);
-    const level = levelNumber(label);
-    if (!level) continue;
-    const start = mark.index + mark[0].length;
-    const end = marks[index + 1]?.index ?? source.length;
-    const text = strip(source.slice(start, end));
-    if (text) found.push({ level, label, text });
-  }
-  return found;
+function pagesOf(entry) {
+  return listOf(entry?.pages?.contents ?? entry?.pages);
 }
 
-function contaminationTable(table, rowName) {
-  if (contaminationName(table?.name) || contaminationName(rowName)) return true;
-  const results = listOf(table?.results?.contents ?? table?.results);
-  const levels = results.filter(result => levelNumber(strip(result?.name || result?.text || "")) || levelNumber(String(result?.range?.[0] ?? ""))).length;
-  return levels >= 2 && /contaminat/.test(normalize(`${table?.name} ${rowName} ${table?.description}`));
-}
-
-function contaminationCandidate(entryName, pageName, html) {
-  const page = normalize(pageName);
-  if (/mutation|madness|transformation/.test(page)) return false;
-  const levels = contaminationLevelsFromHTML(html);
-  if (contaminationName(pageName)) return levels.length > 0 || Boolean(strip(html));
-  if (!levels.length) return false;
-  return contaminationName(entryName) || /contaminat/.test(normalize(strip(html).slice(0, 800)));
-}
-
-function modulePacks(game, documentName, owners = SOURCE_MODULES) {
-  const allowed = new Set(owners);
+function modulePacks(game, documentName) {
+  const allowed = new Set(SOURCE_MODULES);
   return listOf(game?.packs).filter(pack => {
     if (pack?.documentName !== documentName) return false;
     const owner = pack.metadata?.packageName || pack.metadata?.package || String(pack.collection ?? "").split(".")[0];
@@ -664,15 +595,12 @@ function modulePacks(game, documentName, owners = SOURCE_MODULES) {
   });
 }
 
-function normalize(name) {
-  return String(name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+function canonical(value) {
+  return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[‘’‚‛ʼ]/g, "'").replace(/[“”„]/g, '"').replace(/[–—−]/g, "-");
 }
 
-function levelNumber(label) {
-  const source = String(label ?? "").trim();
-  const match = source.match(/^(?:contamination\s+)?(?:level|stage)\s+(\d+)\b/i) || source.match(/^(\d+)[.)]?$/);
-  const level = Number(match?.[1]);
-  return level >= 1 && level <= 12 ? level : 0;
+function normalize(name) {
+  return String(name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function strip(value) {

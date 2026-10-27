@@ -33,7 +33,7 @@ test('a tray action re-enables its button and shows a notification when it fails
   assert.deepEqual(notes, ['Add tracks to this playlist before starting it.']);
 });
 
-test('Start Playlist starts the chosen playlist at the dialog volume', async () => {
+test('Add Playlist starts the chosen playlist at the dialog volume', async () => {
   const fn = source.slice(source.indexOf('async function run(type, config)'), source.indexOf('async function ambienceForm'));
   const writes = [];
   const played = [];
@@ -86,8 +86,8 @@ test('Start Playlist starts the chosen playlist at the dialog volume', async () 
   });
   vm.runInContext(fn, context);
   await vm.runInContext('playlistForm()', context);
-  assert.equal(dialog.title, 'Start Playlist');
-  assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['start', 'Start']]);
+  assert.equal(dialog.title, 'Add Playlist');
+  assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['add', 'Add']]);
   assert.deepEqual(stopped, ['now']);
   assert.deepEqual(played, ['later']);
   const curved = 0.4 ** 1.5;

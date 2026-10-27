@@ -253,38 +253,81 @@ export const CHEAT_SECTIONS = [
     ]
   },
   {
-    id: "dcs",
-    title: "Typical DCs",
+    id: "misc",
+    title: "Misc",
     items: [
-      { id: "very-easy", label: "Very easy 5", lines: [
+      { id: "typical-dc", label: "Typical DC", lines: [
+        "Very easy 5.",
         "Climb a knotted rope. Strength (Athletics).",
         "Notice a campfire across an open field. Wisdom (Perception).",
-        "Recall which nation a famous king ruled. Intelligence (History)."
-      ] },
-      { id: "easy", label: "Easy 10", lines: [
+        "Recall which nation a famous king ruled. Intelligence (History).",
+        "Easy 10.",
         "Tie a knot with rope. Dexterity (Sleight of Hand).",
         "Calm a tame horse. Wisdom (Animal Handling).",
-        "Follow fresh tracks through mud. Wisdom (Survival)."
-      ] },
-      { id: "medium", label: "Medium 15", lines: [
+        "Follow fresh tracks through mud. Wisdom (Survival).",
+        "Medium 15.",
         "Climb a slippery surface with few handholds. Strength (Athletics).",
         "Pick an ordinary lock with Thieves' Tools. Dexterity (Sleight of Hand).",
-        "Find obscure information in a book. Intelligence (Investigation)."
-      ] },
-      { id: "hard", label: "Hard 20", lines: [
+        "Find obscure information in a book. Intelligence (Investigation).",
+        "Hard 20.",
         "Burst a rope. Strength (Athletics).",
         "Slip free of manacles. Dexterity (Sleight of Hand).",
-        "Read a practiced liar's intentions. Wisdom (Insight)."
-      ] },
-      { id: "very-hard", label: "Very hard 25", lines: [
+        "Read a practiced liar's intentions. Wisdom (Insight).",
+        "Very hard 25.",
         "Burst a set of manacles. Strength (Athletics).",
         "Recall lore about a rare magic item. Intelligence (Arcana).",
-        "Follow faint tracks across hard stone. Wisdom (Survival)."
-      ] },
-      { id: "nearly-impossible", label: "Nearly impossible 30", lines: [
+        "Follow faint tracks across hard stone. Wisdom (Survival).",
+        "Nearly impossible 30.",
         "Stay afloat in a storm-driven sea. Strength (Athletics).",
         "Convince a hostile foe to stand down. Charisma (Persuasion).",
         "Recall lore that almost no one still knows. Intelligence (History)."
+      ] },
+      { id: "exhaustion", label: "Exhaustion", lines: [
+        "The condition is cumulative. Each time you receive it, you gain 1 Exhaustion level.",
+        "On a D20 Test, the roll is reduced by 2 times your Exhaustion level.",
+        "Your Speed is reduced by 5 feet times your Exhaustion level.",
+        "You die if your Exhaustion level is 6.",
+        "Finishing a Long Rest removes 1 Exhaustion level. At 0, the condition ends.",
+        "Level 1. D20 Tests are reduced by 2. Speed is reduced by 5 feet.",
+        "Level 2. D20 Tests are reduced by 4. Speed is reduced by 10 feet.",
+        "Level 3. D20 Tests are reduced by 6. Speed is reduced by 15 feet.",
+        "Level 4. D20 Tests are reduced by 8. Speed is reduced by 20 feet.",
+        "Level 5. D20 Tests are reduced by 10. Speed is reduced by 25 feet.",
+        "Level 6. You die."
+      ] },
+      { id: "jumping", label: "Jumping", lines: [
+        "Long jump.",
+        "With at least 10 feet of movement first, you leap up to a number of feet equal to your Strength score. A standing jump covers half that distance.",
+        "Each foot you jump costs a foot of movement.",
+        "Landing in Difficult Terrain requires a DC 10 Dexterity (Acrobatics) check or you have the Prone condition.",
+        "The distance assumes the height does not matter, such as a stream or chasm. To clear a low obstacle no taller than a quarter of the jump, the GM can require a DC 10 Strength (Athletics) check. Otherwise you hit it.",
+        "High jump.",
+        "With at least 10 feet of movement first, you leap a number of feet equal to 3 plus your Strength modifier, minimum 0. A standing jump covers half that distance.",
+        "Each foot you jump costs a foot of movement.",
+        "You can reach above you by the height of the jump plus 1½ times your height."
+      ] },
+      { id: "travel", label: "Travel Pace", lines: [
+        "Fast.",
+        "Outside combat, the group travels 400 feet per minute, 4 miles per hour, or 30 miles per day.",
+        "Disadvantage on Wisdom (Perception or Survival) checks and on Dexterity (Stealth) checks.",
+        "Normal.",
+        "Outside combat, the group travels 300 feet per minute, 3 miles per hour, or 24 miles per day.",
+        "Disadvantage on Dexterity (Stealth) checks.",
+        "Slow.",
+        "Outside combat, the group travels 200 feet per minute, 2 miles per hour, or 18 miles per day.",
+        "Advantage on Wisdom (Perception or Survival) checks."
+      ] },
+      { id: "mounted", label: "Mounted", lines: [
+        "A willing creature at least one size larger than you, with a suitable anatomy, can serve as a mount.",
+        "During your move you can mount or dismount a creature within 5 feet. That costs movement equal to half your Speed (round down).",
+        "A controlled mount must be trained to accept a rider. Its Initiative matches yours, it moves on your turn as you direct, and it can only Dash, Disengage, or Dodge. It can move and act on the turn you mount it.",
+        "An independent mount keeps its own place in Initiative and moves and acts as it likes.",
+        "If an effect is about to move your mount against its will, or you or the mount are knocked Prone, succeed on a DC 10 Dexterity saving throw or fall off. You land Prone in an unoccupied space within 5 feet of the mount."
+      ] },
+      { id: "underwater", label: "Underwater", lines: [
+        "A melee attack roll with a weapon has Disadvantage if you lack a Swim Speed, unless the weapon deals Piercing damage.",
+        "A ranged attack roll with a weapon automatically misses a target beyond the weapon's normal range, and the roll has Disadvantage against a target within normal range.",
+        "Anything underwater has Resistance to Fire damage."
       ] }
     ]
   },
@@ -331,86 +374,10 @@ export const CHEAT_SECTIONS = [
         "You discern the true form of a creature or object transformed by magic, and you can see into the Ethereal Plane."
       ] }
     ]
-  },
-  {
-    id: "exhaustion",
-    title: "Exhaustion",
-    items: [
-      { id: "exhaustion-rule", label: "Exhaustion", lines: [
-        "The condition is cumulative. Each time you receive it, you gain 1 Exhaustion level.",
-        "On a D20 Test, the roll is reduced by 2 times your Exhaustion level.",
-        "Your Speed is reduced by 5 feet times your Exhaustion level.",
-        "You die if your Exhaustion level is 6.",
-        "Finishing a Long Rest removes 1 Exhaustion level. At 0, the condition ends."
-      ] },
-      { id: "level-1", label: "Level 1", lines: ["D20 Tests are reduced by 2. Speed is reduced by 5 feet."] },
-      { id: "level-2", label: "Level 2", lines: ["D20 Tests are reduced by 4. Speed is reduced by 10 feet."] },
-      { id: "level-3", label: "Level 3", lines: ["D20 Tests are reduced by 6. Speed is reduced by 15 feet."] },
-      { id: "level-4", label: "Level 4", lines: ["D20 Tests are reduced by 8. Speed is reduced by 20 feet."] },
-      { id: "level-5", label: "Level 5", lines: ["D20 Tests are reduced by 10. Speed is reduced by 25 feet."] },
-      { id: "level-6", label: "Level 6", lines: ["You die."] }
-    ]
-  },
-  {
-    id: "jumping",
-    title: "Jumping",
-    items: [
-      { id: "long-jump", label: "Long jump", lines: [
-        "With at least 10 feet of movement first, you leap up to a number of feet equal to your Strength score. A standing jump covers half that distance.",
-        "Each foot you jump costs a foot of movement.",
-        "Landing in Difficult Terrain requires a DC 10 Dexterity (Acrobatics) check or you have the Prone condition.",
-        "The distance assumes the height does not matter, such as a stream or chasm. To clear a low obstacle no taller than a quarter of the jump, the GM can require a DC 10 Strength (Athletics) check. Otherwise you hit it."
-      ] },
-      { id: "high-jump", label: "High jump", lines: [
-        "With at least 10 feet of movement first, you leap a number of feet equal to 3 plus your Strength modifier, minimum 0. A standing jump covers half that distance.",
-        "Each foot you jump costs a foot of movement.",
-        "You can reach above you by the height of the jump plus 1½ times your height."
-      ] }
-    ]
-  },
-  {
-    id: "travel",
-    title: "Travel pace",
-    items: [
-      { id: "fast", label: "Fast", lines: [
-        "Outside combat, the group travels 400 feet per minute, 4 miles per hour, or 30 miles per day.",
-        "Disadvantage on Wisdom (Perception or Survival) checks and on Dexterity (Stealth) checks."
-      ] },
-      { id: "normal", label: "Normal", lines: [
-        "Outside combat, the group travels 300 feet per minute, 3 miles per hour, or 24 miles per day.",
-        "Disadvantage on Dexterity (Stealth) checks."
-      ] },
-      { id: "slow", label: "Slow", lines: [
-        "Outside combat, the group travels 200 feet per minute, 2 miles per hour, or 18 miles per day.",
-        "Advantage on Wisdom (Perception or Survival) checks."
-      ] }
-    ]
   }
 ];
 
-// Rendered after any Drakkenheim group and before the attribution note.
-export const CHEAT_CLOSING_SECTIONS = [
-  {
-    id: "mounted-underwater",
-    title: "Mounted & underwater combat",
-    items: [
-      { id: "mounted", label: "Mounted", lines: [
-        "A willing creature at least one size larger than you, with a suitable anatomy, can serve as a mount.",
-        "During your move you can mount or dismount a creature within 5 feet. That costs movement equal to half your Speed (round down).",
-        "A controlled mount must be trained to accept a rider. Its Initiative matches yours, it moves on your turn as you direct, and it can only Dash, Disengage, or Dodge. It can move and act on the turn you mount it.",
-        "An independent mount keeps its own place in Initiative and moves and acts as it likes.",
-        "If an effect is about to move your mount against its will, or you or the mount are knocked Prone, succeed on a DC 10 Dexterity saving throw or fall off. You land Prone in an unoccupied space within 5 feet of the mount."
-      ] },
-      { id: "underwater", label: "Underwater", lines: [
-        "A melee attack roll with a weapon has Disadvantage if you lack a Swim Speed, unless the weapon deals Piercing damage.",
-        "A ranged attack roll with a weapon automatically misses a target beyond the weapon's normal range, and the roll has Disadvantage against a target within normal range.",
-        "Anything underwater has Resistance to Fire damage."
-      ] }
-    ]
-  }
-];
-
-export function cheatStringEntries(sections = [...CHEAT_SECTIONS, ...CHEAT_CLOSING_SECTIONS]) {
+export function cheatStringEntries(sections = CHEAT_SECTIONS) {
   const entries = [
     ["tab", "Cheat Sheet"],
     ["attribution", CHEAT_ATTRIBUTION]

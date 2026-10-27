@@ -256,8 +256,10 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
   const form = source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck'));
   const settings = source.slice(source.indexOf('function ambienceFolderRow'), source.length);
-  assert.match(form, /file\.label/);
-  assert.match(form, /title="\$\{e\(file\.path\)\}"/);
+  assert.match(form, /const fileName = file\.path\.split\("\/"\)\.pop\(\)/);
+  assert.match(form, /data-tooltip="\$\{e\(file\.path\)\}"/);
+  assert.match(form, /aria-label="\$\{e\(file\.path\)\}"/);
+  assert.doesNotMatch(form, /file\.label/);
   assert.doesNotMatch(form, /No audio files found in the configured Ambience folder\./);
   assert.match(settings, /data-mlgm-add-ambience/);
   assert.match(settings, /data-mlgm-remove-ambience/);

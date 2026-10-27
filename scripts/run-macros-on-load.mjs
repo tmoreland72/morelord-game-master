@@ -135,7 +135,7 @@ function mark(scope, classes, label) {
 export function macroRunMarks({ forMe = false, forEveryone = false, text = key => RUN_ON_LOAD_COPY[key] } = {}) {
   if (!forMe && !forEveryone) return "";
   const icons = [
-    forMe ? mark("user", "fa-solid fa-user", text("indicatorForMe")) : "",
+    forMe && !forEveryone ? mark("user", "fa-solid fa-user", text("indicatorForMe")) : "",
     forEveryone ? mark("world", "fa-solid fa-users", text("indicatorForEveryone")) : ""
   ].join("");
   return `<span class="gm-macro-runs">${icons}</span>`;

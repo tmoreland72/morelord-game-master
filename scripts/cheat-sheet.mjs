@@ -1,6 +1,6 @@
 import { escapeHTML as e } from "./core.mjs";
-import { drakkenheimSections } from "./cheat-sheet-drakkenheim.mjs";
-import { CHEAT_CLOSING_SECTIONS, CHEAT_SECTIONS, cheatStringEntries } from "./cheat-sheet-data.mjs";
+import { drakkenheimConditions, drakkenheimItems, drakkenheimStatus } from "./cheat-sheet-drakkenheim.mjs";
+import { CHEAT_SECTIONS, cheatStringEntries } from "./cheat-sheet-data.mjs";
 
 const STRINGS = new Map(cheatStringEntries());
 const closedSections = new Set();
@@ -43,27 +43,41 @@ export function cheatChipClass(section, item) {
   return drakkenheim ? "gm-cheat-chip gm-cheat-chip--drakkenheim" : "gm-cheat-chip";
 }
 
+function renderChip(section, item) {
+  const label = item.labelText ?? cheatText(`item.${item.id}.label`);
+  const tip = item.tipHTML ?? cheatTooltipHTML(item);
+  const origin = item.origin || section.origin || "";
+  const originAttr = origin === "drakkenheim" ? ' data-cheat-origin="drakkenheim"' : "";
+  const action = item.uuid ? ` data-action="cheat-document" data-id="${e(item.uuid)}"` : "";
+  const page = item.pageId ? ` data-page="${e(item.pageId)}"` : "";
+  const document = item.documentPath ? ` data-cheat-document="${e(item.documentPath)}"` : "";
+  return `<button type="button" class="${cheatChipClass(section, item)}" data-mlgm-cheat="${e(item.id)}"${originAttr}${action}${page}${document} data-tooltip="${e(label)}" data-tooltip-html="${e(tip)}" data-tooltip-class="mlgm-cheat-tip">${e(label)}</button>`;
+}
+
 function renderSection(section) {
-  const chips = section.items.map(item => {
-    const label = item.labelText ?? cheatText(`item.${item.id}.label`);
-    const tip = item.tipHTML ?? cheatTooltipHTML(item);
-    const origin = item.origin || section.origin || "";
-    const originAttr = origin === "drakkenheim" ? ' data-cheat-origin="drakkenheim"' : "";
-    const action = item.uuid ? ` data-action="cheat-document" data-id="${e(item.uuid)}"` : "";
-    const page = item.pageId ? ` data-page="${e(item.pageId)}"` : "";
-    const document = item.documentPath ? ` data-cheat-document="${e(item.documentPath)}"` : "";
-    return `<button type="button" class="${cheatChipClass(section, item)}" data-mlgm-cheat="${e(item.id)}"${originAttr}${action}${page}${document} data-tooltip="${e(label)}" data-tooltip-html="${e(tip)}" data-tooltip-class="mlgm-cheat-tip">${e(label)}</button>`;
-  }).join("");
+  const chips = section.items.map(item => renderChip(section, item)).join("");
   const open = closedSections.has(section.id) ? "" : " open";
   return `<details class="gm-cheat-section" data-cheat-section="${e(section.id)}"${open}><summary>${e(cheatText(`section.${section.id}`))}</summary><div class="gm-cheat-grid">${chips}</div></details>`;
 }
 
+function renderDrakkenheim(status, packItems) {
+  const open = closedSections.has("drakkenheim") ? "" : " open";
+  const section = { id: "drakkenheim", origin: "drakkenheim", items: packItems };
+  const loading = status === "loading" && !packItems.length ? `<p class="gm-cheat-loading" data-cheat-loading>${e(cheatText("loading"))}</p>` : "";
+  const chips = packItems.length ? `<div class="gm-cheat-grid">${packItems.map(item => renderChip(section, item)).join("")}</div>` : "";
+  return `<details class="gm-cheat-section" data-cheat-section="drakkenheim" data-cheat-status="${status}"${open}><summary>${e(cheatText("section.drakkenheim"))}</summary>${loading}${chips}</details>`;
+}
+
 export function renderCheatSheet() {
-  const standard = CHEAT_SECTIONS.map(renderSection).join("");
-  const extra = drakkenheimSections();
-  const group = extra.length ? `<div class="gm-cheat-group" data-cheat-group="drakkenheim"><p class="gm-cheat-kicker">${e(cheatText("group.drakkenheim"))}</p>${extra.map(renderSection).join("")}</div>` : "";
-  const closing = CHEAT_CLOSING_SECTIONS.map(renderSection).join("");
-  return `<div class="gm-cheat" id="mlgm-cheat">${standard}${group}${closing}<p class="gm-cheat-note">${e(cheatText("attribution"))}</p></div>`;
+  const status = drakkenheimStatus();
+  const packConditions = drakkenheimConditions();
+  const packItems = drakkenheimItems();
+  const standard = CHEAT_SECTIONS.map(section => {
+    if (section.id !== "conditions" || !packConditions.length) return renderSection(section);
+    return renderSection({ ...section, items: [...section.items, ...packConditions] });
+  }).join("");
+  const drakkenheim = status === "off" ? "" : renderDrakkenheim(status, packItems);
+  return `<div class="gm-cheat" id="mlgm-cheat">${standard}${drakkenheim}<p class="gm-cheat-note">${e(cheatText("attribution"))}</p></div>`;
 }
 
 export function activateCheatTooltip(target) {

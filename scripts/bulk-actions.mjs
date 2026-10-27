@@ -239,7 +239,7 @@ function undoContent(snapshot, busy) {
 }
 
 export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', busy = false, undo = null} = {}) {
-  return `<div class="ml-stack gm-bulk" data-gap="4">${bulkCoinsContent(actorIds, coins, busy, coinAction)}${xpContent(xp, xpAction, busy, actorIds)}<div class="gm-bulk-pair">${inspirationContent(inspiration, busy, actorIds)}${tokenContent(busy, actorIds)}</div>${undoContent(undo, busy)}</div>`;
+  return `<div class="gm-bulk">${bulkCoinsContent(actorIds, coins, busy, coinAction)}${xpContent(xp, xpAction, busy, actorIds)}${inspirationContent(inspiration, busy, actorIds)}${tokenContent(busy, actorIds)}${undoContent(undo, busy)}</div>`;
 }
 
 function skipNote(key, count) {

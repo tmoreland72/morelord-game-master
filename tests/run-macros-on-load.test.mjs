@@ -102,16 +102,18 @@ test('ready runs each flagged macro once for the right user and keeps going afte
   assert.equal(userCanRunMacro({...unseen, testUserPermission: () => true, canExecute: true}, player), true);
 });
 
-test('each Macros tab button keeps two separate indicators on the right', () => {
+test('a macro running for everyone shows only the everyone indicator', () => {
   assert.equal(macroRunMarks(), '');
   const marks = macroRunMarks({forMe: true, forEveryone: true, text: key => `${RUN_ON_LOAD_COPY[key]} "quoted"`});
   assert.match(marks, /^<span class="gm-macro-runs">/);
-  assert.match(marks, /class="gm-macro-run fa-solid fa-user"/);
+  assert.doesNotMatch(marks, /data-scope="user"/);
   assert.match(marks, /class="gm-macro-run fa-solid fa-users"/);
-  assert.match(marks, /data-scope="user"/);
   assert.match(marks, /data-scope="world"/);
-  assert.match(marks, /data-tooltip="Runs on load for you &quot;quoted&quot;"/);
   assert.match(marks, /aria-label="Runs on load for everyone &quot;quoted&quot;"/);
+  const mine = macroRunMarks({forMe: true, text: key => `${RUN_ON_LOAD_COPY[key]} "quoted"`});
+  assert.match(mine, /data-scope="user"/);
+  assert.match(mine, /data-tooltip="Runs on load for you &quot;quoted&quot;"/);
+  assert.doesNotMatch(mine, /data-scope="world"/);
   assert.match(marks, /data-tooltip-direction="UP"/);
   const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
   const rules = css.match(/#mlgm \.gm-macro-runs \{[\s\S]*?#mlgm \.gm-macro-run\[data-scope="world"\] \{[^}]+\}/)?.[0] ?? '';
