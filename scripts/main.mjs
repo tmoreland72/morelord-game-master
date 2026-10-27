@@ -257,6 +257,18 @@ function checkBuilder() {
   ].join("");
   return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)})}</section>`;
 }
+function refreshCheckSelect(card) {
+  const typeSelect = card.querySelector('[name="checkType"]');
+  const checkType = CHECK_TYPES.some(type => type.id === typeSelect?.value) ? typeSelect.value : "skill";
+  const choices = checkChoices(checkType, catalogs());
+  const select = card.querySelector('[name="checkId"]');
+  if (!select) return;
+  const label = select.closest("label")?.querySelector("span");
+  if (label) label.textContent = checkType === "skill" ? "Skill" : "Ability";
+  const checkId = defaultCheckId(checkType, choices, select.value);
+  select.innerHTML = choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("");
+  select.value = checkId;
+}
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
   const cards = visibleSpecialties(settings, get("specialtyOrder")).map(id => specialtyCard(id)).join("");
@@ -506,7 +518,13 @@ async function onChange(event) {
     return;
   }
   const card=el.closest('[data-roll-card]');
-  if (card?.dataset.rollCard === "check") { await persist(n => { n.last.check = readBuilder(); }); return; }
+  if (card?.dataset.rollCard === "check") {
+    // The tray stays in place so a field save does not swallow the next click.
+    // The second dropdown is the exception: its options belong to the new type.
+    if (el.name === "checkType") refreshCheckSelect(card);
+    await persist(n => { n.last.check = readBuilder(); });
+    return;
+  }
   if (card?.dataset.rollCard === "fate") { await persist(n => { n.last.fate = {scope: new FormData(card).get("scope") === "party" ? "party" : "tokens"}; }); return; }
   if (card && ["encounter","search","foraging","death"].includes(card.dataset.rollCard)) {
     const config = readQuick(card.dataset.rollCard);

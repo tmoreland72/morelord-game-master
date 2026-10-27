@@ -32,9 +32,15 @@ export function visibleSpecialties(settings = {}, order = []) {
   return specialtyOrder(order).filter(id => settings[SPECIALTIES.find(specialty => specialty.id === id).setting] !== false);
 }
 
+// D&D 2024 / SRD 5.2. Optional scores such as Honor and Sanity, and any other
+// configured skill, stay out of the request builder.
+const SRD_SKILL_IDS = ["acr", "ani", "arc", "ath", "dec", "his", "ins", "itm", "inv", "med", "nat", "prc", "prf", "per", "rel", "slt", "ste", "sur"];
+const SRD_ABILITY_IDS = ["str", "dex", "con", "int", "wis", "cha"];
+
 export function checkChoices(type, {skills = {}, abilities = {}} = {}) {
   const source = type === "skill" ? skills : abilities;
-  return Object.entries(source ?? {}).filter(([, entry]) => entry?.label).map(([id, entry]) => ({id, label: entry.label}));
+  const ids = type === "skill" ? SRD_SKILL_IDS : SRD_ABILITY_IDS;
+  return ids.filter(id => source?.[id]?.label).map(id => ({id, label: source[id].label}));
 }
 
 export function defaultCheckId(type, choices, current) {

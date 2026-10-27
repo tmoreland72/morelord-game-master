@@ -69,7 +69,7 @@ The check builder stays on one tray row. Specialty requests use compact cards in
 
 Foraging uses the saved Player Settings scope and remembers the selected terrain. Survival checks use Journeys' six terrain choices and current configured DCs, with one Roll button that calls the native Survival roll. After all rolls finish, a chat card, respecting the Blind roll toggle, lists each total and pass/fail, food found, meals still needed, and water availability. It does not modify an active journey or consume inventory.
 
-The check builder stays on one line and chooses a skill check, ability check, or saving throw. Specialty cards are Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. Blind roll defaults off for unconfigured private cards; saved choices remain sticky.
+The check builder stays on one line and chooses a skill check, ability check, or saving throw. Changing that type updates the next list: a skill check offers the SRD 5.2 skills, and an ability check or saving throw offers the six abilities. Specialty cards are Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. Blind roll defaults off for unconfigured private cards; saved choices remain sticky.
 
 Every trigger card, including Lucky Finds, keeps its name, scope, status icon, and play/pause control on one header row, with When and Then directly underneath. Card height follows that content, so a short rule is not stretched to match a taller neighbor. The status icon carries Running or Stopped; the words are not repeated on the card. Icons have tooltips and accessible labels. In Dev1, run `triggerFooterCheck` from `scripts/testing/trigger-footer.mjs` through Core’s shared in-game runner to verify the header row, the missing text status, and content-sized cards. The September 21 Dev1 run covered the earlier footer layout with Lucky Finds, Sneak Attack, and Wild Magic displayed together (Foundry 14.368 / D&D5e 6.0.3).
 
@@ -211,7 +211,7 @@ In Bulk Actions, Clear resets all five coin fields to zero and saves them withou
 
 ### XP
 
-XP sits under Coins. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. **Set all party XP to this amount** replaces each member's experience with that non-negative whole number. The action updates `system.details.xp.value`. Undo restores the previous values. A successful Apply clears the amount.
+XP sits under Coins. The Action label has a help icon; hovering it shows how the three actions differ. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. **Set all party XP to this amount** replaces each member's experience with that non-negative whole number. The action updates `system.details.xp.value`. Undo restores the previous values. A successful Apply clears the amount.
 
 ### Inspiration
 
@@ -219,7 +219,7 @@ Inspiration and Prototype Token Sync share one row of compact cards, in that ord
 
 ### Prototype Token Sync
 
-**Apply** copies each party character's placed token on the active GM's current scene onto that character's prototype token, whether that token is linked or unlinked. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. The copied settings are name, name display, actor link, image and scale, width, height, depth, disposition, resource bar display, primary resource bar, secondary resource bar, vision, detection modes, light, lock rotation, rotation, opacity, dynamic ring, and occlusion. The tray card stays short. Its help icon opens that list. Only settings that differ are written. A prototype that already matches is skipped, including when Foundry would treat the copy as unchanged.
+**Apply** copies each party character's placed token on the active GM's current scene onto that character's prototype token, whether that token is linked or unlinked. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. The copied settings are name, name display, actor link, image and scale, width, height, depth, disposition, resource bar display, primary resource bar, secondary resource bar, vision, detection modes, light, lock rotation, rotation, opacity, dynamic ring, and occlusion. The tray card stays short. Its help icon shows that description on hover and opens that list. Only settings that differ are written. A prototype that already matches is skipped, including when Foundry would treat the copy as unchanged.
 
 ### Undo Last Action
 

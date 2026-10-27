@@ -51,6 +51,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk { container: gm-bulk / inline-size; min-width:0; }
 #mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,6.5rem) repeat(2,minmax(4rem,max-content)); gap:var(--ml-space-4); }
 #mlgm .gm-bulk-coin-action { width:min(100%,26rem); }
+#mlgm .gm-label-help { display:inline-flex; align-items:center; gap:var(--ml-space-1); }
 #mlgm .gm-bulk-pair { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; align-items:stretch; }
 #mlgm .gm-bulk-pair > .ml-card { height:100%; min-width:0; }
 @container gm-bulk (min-width: 24rem) { #mlgm .gm-bulk-pair { grid-template-columns:repeat(2,minmax(0,1fr)); } }
