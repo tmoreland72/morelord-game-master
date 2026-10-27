@@ -15,6 +15,7 @@ import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePi
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 import {openDrakkenheimDocument, scheduleDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -84,6 +85,7 @@ Hooks.once("init", () => {
   game.settings.register(ID, "board", { scope: "world", config: false, restricted: true, type: Object,
     default: { saved: [], scenarios: [], last: {}, triggers: [] } });
   game.settings.register(ID,"macros",{scope:"world",config:false,restricted:true,type:Array,default:[]});
+  registerRunOnLoadSettings(game.settings, ID);
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,restricted:true,type:Array,default:[]});
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, restricted: true, type: String, default: LEGACY_AMBIENCE_DEFAULT });
   game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, restricted: true, type: Array, default: [] });
@@ -98,6 +100,14 @@ Hooks.once("ready", async () => {
   try {
     await applyTokenDistanceWorldSetting(game.settings, {storage: globalThis.localStorage, isGM: game.user?.isGM === true});
   } catch (error) { console.error(`${ID} | Token Distance Indicator`, error); }
+  try {
+    await runMacrosOnLoad({
+      forMe: game.settings.get(ID, RUN_ON_LOAD_FOR_ME),
+      forEveryone: game.settings.get(ID, RUN_ON_LOAD_FOR_EVERYONE),
+      user: game.user,
+      resolve: uuid => fromUuid(uuid)
+    });
+  } catch (error) { console.error(`${ID} | Could not run macros on load.`, error); }
   game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
   try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeBulkActions(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
@@ -123,7 +133,15 @@ Hooks.once("ready", async () => {
     if (suppressMacroClick && target.dataset.action === "macro") return;
     press(target, () => act(target.dataset.action, target.dataset.id, target));
   });
-  new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',[{name:"Remove",icon:'<i class="fa-solid fa-trash"></i>',callback:element=>act("unpin-macro",element.dataset.macroUuid).catch(fail)}],{jQuery:false,fixed:true});
+  new foundry.applications.ux.ContextMenu(root,'[data-macro-uuid]',macroContextEntries({
+    remove: element => act("unpin-macro", element.dataset.macroUuid).catch(fail),
+    toggleMe: element => toggleMacroRunOnLoad(RUN_ON_LOAD_FOR_ME, element.dataset.macroUuid).catch(fail),
+    toggleEveryone: element => toggleMacroRunOnLoad(RUN_ON_LOAD_FOR_EVERYONE, element.dataset.macroUuid).catch(fail),
+    isGM: () => game.user?.isGM === true,
+    runsForMe: uuid => uuidList(game.settings.get(ID, RUN_ON_LOAD_FOR_ME)).includes(uuid),
+    runsForEveryone: uuid => uuidList(game.settings.get(ID, RUN_ON_LOAD_FOR_EVERYONE)).includes(uuid),
+    text: macroRunLabel
+  }),{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
   root.addEventListener("change", event => onChange(event).catch(fail));
   root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
@@ -407,8 +425,25 @@ async function sendFate() {
   if (card) await persist(n => { n.last.fate = {scope}; });
   return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
 }
+function macroRunLabel(key) {
+  const full = `morelord-game-master.macros.${key}`;
+  try {
+    const value = game.i18n?.localize?.(full);
+    if (value && value !== full) return value;
+  } catch { /* The English catalog string remains. */ }
+  return RUN_ON_LOAD_COPY[key] ?? key;
+}
 function macroButtons() {
-  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span></button>`;}).join("");
+  const mine = new Set(uuidList(get(RUN_ON_LOAD_FOR_ME)));
+  const everyone = new Set(uuidList(get(RUN_ON_LOAD_FOR_EVERYONE)));
+  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span>${macroRunMarks({ forMe: mine.has(uuid), forEveryone: everyone.has(uuid), text: macroRunLabel })}</button>`;}).join("");
+}
+async function toggleMacroRunOnLoad(key, uuid) {
+  gm();
+  if (!uuid) return;
+  if (key === RUN_ON_LOAD_FOR_EVERYONE && game.user?.isGM !== true) return;
+  await game.settings.set(ID, key, toggledUuidList(game.settings.get(ID, key), uuid));
+  render();
 }
 function specialtySettings() {
   return specialtyOrder(get("specialtyOrder")).map(id => {
@@ -759,7 +794,7 @@ for (const hook of ["createMacro", "updateMacro", "deleteMacro"]) Hooks.on(hook,
 Hooks.on("updateUser", () => refreshTray(["party", "rolls", "bulk"]));
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
-  if (setting.key === `${ID}.macros`) refreshTray(["macros"]);
+  if (setting.key === `${ID}.macros` || setting.key === `${ID}.${RUN_ON_LOAD_FOR_EVERYONE}`) refreshTray(["macros"]);
   if (setting.key === `${ID}.specialtyOrder`) refreshTray(["settings", "rolls"]);
   if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
