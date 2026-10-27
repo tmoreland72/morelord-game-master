@@ -1,6 +1,6 @@
 import { escapeHTML as e } from "./core.mjs";
 import { drakkenheimSections } from "./cheat-sheet-drakkenheim.mjs";
-import { CHEAT_SECTIONS, cheatStringEntries } from "./cheat-sheet-data.mjs";
+import { CHEAT_CLOSING_SECTIONS, CHEAT_SECTIONS, cheatStringEntries } from "./cheat-sheet-data.mjs";
 
 const STRINGS = new Map(cheatStringEntries());
 const closedSections = new Set();
@@ -62,7 +62,8 @@ export function renderCheatSheet() {
   const standard = CHEAT_SECTIONS.map(renderSection).join("");
   const extra = drakkenheimSections();
   const group = extra.length ? `<div class="gm-cheat-group" data-cheat-group="drakkenheim"><p class="gm-cheat-kicker">${e(cheatText("group.drakkenheim"))}</p>${extra.map(renderSection).join("")}</div>` : "";
-  return `<div class="gm-cheat" id="mlgm-cheat">${standard}${group}<p class="gm-cheat-note">${e(cheatText("attribution"))}</p></div>`;
+  const closing = CHEAT_CLOSING_SECTIONS.map(renderSection).join("");
+  return `<div class="gm-cheat" id="mlgm-cheat">${standard}${group}${closing}<p class="gm-cheat-note">${e(cheatText("attribution"))}</p></div>`;
 }
 
 export function activateCheatTooltip(target) {

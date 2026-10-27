@@ -88,6 +88,17 @@ export const CHEAT_SECTIONS = [
         "You can equip or unequip one weapon before or after that attack. Equipping includes drawing or picking it up. Unequipping includes sheathing, stowing, or dropping it.",
         "If this action gives you more than one attack, you can move between those attacks."
       ] },
+      { id: "grapple", label: "Grapple", lines: [
+        "An Unarmed Strike against a creature within 5 feet. It works only if the target is no more than one size larger than you and you have a hand free. One hand or body part can grapple only one creature.",
+        "The target chooses a Strength or Dexterity saving throw. On a failure it has the Grappled condition. The save DC and the escape DC are 8 plus your Strength modifier and Proficiency Bonus.",
+        "While Grappled, its Speed is 0 and can't increase, and it has Disadvantage on attack rolls against any target other than you. You can drag or carry it, but each foot of that movement costs 1 extra foot unless it is Tiny or two or more sizes smaller.",
+        "It can use its action for a Strength (Athletics) or Dexterity (Acrobatics) check against the escape DC. The grapple also ends if you are Incapacitated, the distance exceeds the grapple's range, or you let go (no action required)."
+      ] },
+      { id: "shove", label: "Shove", lines: [
+        "An Unarmed Strike against a creature within 5 feet. It works only if the target is no more than one size larger than you.",
+        "The target chooses a Strength or Dexterity saving throw. The DC is 8 plus your Strength modifier and Proficiency Bonus.",
+        "On a failure, you either push it 5 feet away or give it the Prone condition."
+      ] },
       { id: "dash", label: "Dash", lines: [
         "You gain extra movement equal to your Speed after modifiers. A Speed of 30 feet lets you move up to 60 feet. If that Speed is 15 feet, you can move up to 30 feet.",
         "You can use a special speed, such as a Fly Speed, instead of your Speed. Choose each time you Dash."
@@ -194,9 +205,18 @@ export const CHEAT_SECTIONS = [
           ["17–20", "12d6", "18d10", "18d10"]
         ]
       } },
-      { id: "fall", label: "Fall", lines: [
+      { id: "fall", label: "Falling", lines: [
         "At the end of a fall, take 1d6 Bludgeoning for every 10 feet fallen, to a maximum of 20d6. You then have the Prone condition unless the fall dealt no damage.",
         "Falling into a liquid lets you use a Reaction for a DC 15 Strength (Athletics) or Dexterity (Acrobatics) check. Success halves the damage."
+      ] },
+      { id: "suffocating", label: "Suffocating", lines: [
+        "You can hold your breath for a number of minutes equal to 1 plus your Constitution modifier (minimum 30 seconds).",
+        "When you run out of breath or are choking, you gain 1 Exhaustion level at the end of each of your turns.",
+        "When you can breathe again, remove all the Exhaustion levels you gained from suffocating."
+      ] },
+      { id: "drowning", label: "Drowning", lines: [
+        "A creature that cannot breathe while underwater uses the Suffocation hazard.",
+        "Hold your breath for minutes equal to 1 plus your Constitution modifier (minimum 30 seconds). After that, gain 1 Exhaustion level at the end of each of your turns until you can breathe again."
       ] },
       { id: "burning", label: "Burning", lines: [
         "A burning creature or object takes 1d4 Fire damage at the start of each of its turns.",
@@ -347,10 +367,50 @@ export const CHEAT_SECTIONS = [
         "You can reach above you by the height of the jump plus 1½ times your height."
       ] }
     ]
+  },
+  {
+    id: "travel",
+    title: "Travel pace",
+    items: [
+      { id: "fast", label: "Fast", lines: [
+        "Outside combat, the group travels 400 feet per minute, 4 miles per hour, or 30 miles per day.",
+        "Disadvantage on Wisdom (Perception or Survival) checks and on Dexterity (Stealth) checks."
+      ] },
+      { id: "normal", label: "Normal", lines: [
+        "Outside combat, the group travels 300 feet per minute, 3 miles per hour, or 24 miles per day.",
+        "Disadvantage on Dexterity (Stealth) checks."
+      ] },
+      { id: "slow", label: "Slow", lines: [
+        "Outside combat, the group travels 200 feet per minute, 2 miles per hour, or 18 miles per day.",
+        "Advantage on Wisdom (Perception or Survival) checks."
+      ] }
+    ]
   }
 ];
 
-export function cheatStringEntries(sections = CHEAT_SECTIONS) {
+// Rendered after any Drakkenheim group and before the attribution note.
+export const CHEAT_CLOSING_SECTIONS = [
+  {
+    id: "mounted-underwater",
+    title: "Mounted & underwater combat",
+    items: [
+      { id: "mounted", label: "Mounted", lines: [
+        "A willing creature at least one size larger than you, with a suitable anatomy, can serve as a mount.",
+        "During your move you can mount or dismount a creature within 5 feet. That costs movement equal to half your Speed (round down).",
+        "A controlled mount must be trained to accept a rider. Its Initiative matches yours, it moves on your turn as you direct, and it can only Dash, Disengage, or Dodge. It can move and act on the turn you mount it.",
+        "An independent mount keeps its own place in Initiative and moves and acts as it likes.",
+        "If an effect is about to move your mount against its will, or you or the mount are knocked Prone, succeed on a DC 10 Dexterity saving throw or fall off. You land Prone in an unoccupied space within 5 feet of the mount."
+      ] },
+      { id: "underwater", label: "Underwater", lines: [
+        "A melee attack roll with a weapon has Disadvantage if you lack a Swim Speed, unless the weapon deals Piercing damage.",
+        "A ranged attack roll with a weapon automatically misses a target beyond the weapon's normal range, and the roll has Disadvantage against a target within normal range.",
+        "Anything underwater has Resistance to Fire damage."
+      ] }
+    ]
+  }
+];
+
+export function cheatStringEntries(sections = [...CHEAT_SECTIONS, ...CHEAT_CLOSING_SECTIONS]) {
   const entries = [
     ["tab", "Cheat Sheet"],
     ["attribution", CHEAT_ATTRIBUTION]

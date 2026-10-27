@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {CHEAT_ATTRIBUTION, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
+import {CHEAT_ATTRIBUTION, CHEAT_CLOSING_SECTIONS, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
 import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
 import {DRAKKENHEIM_CONTENT_PACK_ID, DRAKKENHEIM_CORE_MODULE_ID, collectContaminationSections, contaminationLevelsFromHTML, openDrakkenheimDocument, resetDrakkenheimCheat, setDrakkenheimSections} from '../scripts/cheat-sheet-drakkenheim.mjs';
 
@@ -10,7 +10,7 @@ const item = (group, id) => group.items.find(entry => entry.id === id);
 const text = entry => [...(entry.lines ?? []), ...(entry.table?.rows ?? []).flat()].join(' ');
 
 test('the cheat sheet has every SRD 5.2 section and the required items', () => {
-  assert.deepEqual(CHEAT_SECTIONS.map(entry => entry.id), ['conditions', 'actions', 'damage', 'dcs', 'cover', 'exhaustion', 'jumping']);
+  assert.deepEqual(CHEAT_SECTIONS.map(entry => entry.id), ['conditions', 'actions', 'damage', 'dcs', 'cover', 'exhaustion', 'jumping', 'travel']);
   const ids = CHEAT_SECTIONS.flatMap(entry => entry.items.map(entryItem => entryItem.id));
   assert.equal(new Set(ids).size, ids.length);
   for (const entry of CHEAT_SECTIONS) {
@@ -25,7 +25,7 @@ test('the cheat sheet has every SRD 5.2 section and the required items', () => {
     'blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible',
     'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious'
   ]);
-  for (const id of ['attack', 'magic', 'dash', 'disengage', 'dodge', 'help', 'hide', 'ready', 'search', 'utilize']) {
+  for (const id of ['attack', 'grapple', 'shove', 'magic', 'dash', 'disengage', 'dodge', 'help', 'hide', 'ready', 'search', 'utilize']) {
     assert.ok(item(section('actions'), id), id);
   }
   assert.deepEqual(section('dcs').items.map(entry => entry.label), [
@@ -49,8 +49,85 @@ test('the cheat sheet has every SRD 5.2 section and the required items', () => {
   assert.deepEqual(table.rows.map(row => row[0]), ['1–4', '5–10', '11–16', '17–20']);
   assert.deepEqual(table.rows[0].slice(1), ['1d6', '2d10', '2d10']);
   assert.deepEqual(table.rows.at(-1).slice(1), ['12d6', '18d10', '18d10']);
-  for (const id of ['fall', 'burning', 'pit', 'roof', 'statue', 'spikes', 'darts', 'stone', 'net']) {
+  for (const id of ['fall', 'suffocating', 'drowning', 'burning', 'pit', 'roof', 'statue', 'spikes', 'darts', 'stone', 'net']) {
     assert.ok(item(section('damage'), id).lines.length);
+  }
+  assert.equal(item(section('damage'), 'fall').label, 'Falling');
+});
+
+test('travel, grapple, shove, hazards, and mounted combat stay paraphrased SRD 5.2.1', () => {
+  const pace = section('travel');
+  assert.equal(pace.title, 'Travel pace');
+  assert.deepEqual(pace.items.map(entry => entry.label), ['Fast', 'Normal', 'Slow']);
+  assert.match(text(item(pace, 'fast')), /400 feet per minute, 4 miles per hour, or 30 miles per day/);
+  assert.match(text(item(pace, 'fast')), /Disadvantage on Wisdom \(Perception or Survival\)/);
+  assert.match(text(item(pace, 'fast')), /Dexterity \(Stealth\)/);
+  assert.match(text(item(pace, 'normal')), /300 feet per minute, 3 miles per hour, or 24 miles per day/);
+  assert.match(text(item(pace, 'normal')), /Disadvantage on Dexterity \(Stealth\)/);
+  assert.doesNotMatch(text(item(pace, 'normal')), /Perception/);
+  assert.match(text(item(pace, 'slow')), /200 feet per minute, 2 miles per hour, or 18 miles per day/);
+  assert.match(text(item(pace, 'slow')), /Advantage on Wisdom \(Perception or Survival\)/);
+
+  const grapple = text(item(section('actions'), 'grapple'));
+  assert.match(grapple, /8 plus your Strength modifier and Proficiency Bonus/);
+  assert.match(grapple, /Strength \(Athletics\) or Dexterity \(Acrobatics\)/);
+  assert.match(grapple, /Speed is 0/);
+  assert.match(grapple, /Disadvantage on attack rolls against any target other than you/);
+  assert.match(grapple, /1 extra foot/);
+  const shove = text(item(section('actions'), 'shove'));
+  assert.match(shove, /8 plus your Strength modifier and Proficiency Bonus/);
+  assert.match(shove, /push it 5 feet away or give it the Prone condition/);
+
+  const suffocating = text(item(section('damage'), 'suffocating'));
+  assert.match(suffocating, /1 plus your Constitution modifier \(minimum 30 seconds\)/);
+  assert.match(suffocating, /1 Exhaustion level at the end of each of your turns/);
+  assert.match(suffocating, /remove all the Exhaustion levels you gained from suffocating/);
+  const drowning = text(item(section('damage'), 'drowning'));
+  assert.match(drowning, /cannot breathe while underwater/);
+  assert.match(drowning, /Suffocation/);
+  assert.doesNotMatch(drowning, /\dd\d+/);
+
+  assert.deepEqual(CHEAT_CLOSING_SECTIONS.map(entry => entry.id), ['mounted-underwater']);
+  const mountedSection = CHEAT_CLOSING_SECTIONS[0];
+  assert.equal(mountedSection.title, 'Mounted & underwater combat');
+  const mounted = text(item(mountedSection, 'mounted'));
+  assert.match(mounted, /half your Speed \(round down\)/);
+  assert.match(mounted, /Dash, Disengage, or Dodge/);
+  assert.match(mounted, /DC 10 Dexterity saving throw/);
+  const underwater = text(item(mountedSection, 'underwater'));
+  assert.match(underwater, /Swim Speed/);
+  assert.match(underwater, /Piercing/);
+  assert.match(underwater, /beyond the weapon's normal range/);
+  assert.match(underwater, /Resistance to Fire damage/);
+
+  const ids = [...CHEAT_SECTIONS, ...CHEAT_CLOSING_SECTIONS].flatMap(entry => entry.items.map(entryItem => entryItem.id));
+  assert.equal(new Set(ids).size, ids.length);
+  const keys = cheatStringEntries().map(([key]) => key);
+  assert.equal(new Set(keys).size, keys.length);
+  assert.equal(keys.includes('item.grapple.label') && keys.includes('item.grappled.label'), true);
+  assert.equal(keys.some(key => key.startsWith('item.grapple.') && key.includes('grappled')), false);
+});
+
+test('mounted combat renders after Drakkenheim and before the attribution', () => {
+  setDrakkenheimSections([{
+    id: 'drakkenheim-contamination',
+    title: 'Contamination',
+    origin: 'drakkenheim',
+    items: [{id: 'contamination-level-1', labelText: 'Level 1', tipHTML: '<p>Fixture</p>', origin: 'drakkenheim'}]
+  }]);
+  try {
+    const html = renderCheatSheet();
+    const group = html.indexOf('data-cheat-group="drakkenheim"');
+    const mounted = html.indexOf('data-cheat-section="mounted-underwater"');
+    const note = html.indexOf('class="gm-cheat-note"');
+    const jumping = html.indexOf('data-cheat-section="jumping"');
+    const travel = html.indexOf('data-cheat-section="travel"');
+    assert.ok(jumping < travel && travel < group && group < mounted && mounted < note);
+    assert.match(html, /data-cheat-section="mounted-underwater" open/);
+    assert.match(html, />Mounted</);
+    assert.match(html, />Underwater</);
+  } finally {
+    resetDrakkenheimCheat();
   }
 });
 
@@ -154,13 +231,14 @@ test('Drakkenheim chips keep a faint purple and the theme text color', () => {
 test('chips expose Foundry HTML tooltips and keyboard focus activates them', () => {
   const html = renderCheatSheet();
   const chips = html.match(/data-mlgm-cheat=/g);
-  assert.equal(chips.length, CHEAT_SECTIONS.reduce((sum, entry) => sum + entry.items.length, 0));
+  const sheet = [...CHEAT_SECTIONS, ...CHEAT_CLOSING_SECTIONS];
+  assert.equal(chips.length, sheet.reduce((sum, entry) => sum + entry.items.length, 0));
   assert.match(html, /id="mlgm-cheat"/);
   assert.match(html, /data-tooltip=/);
   assert.match(html, /data-tooltip-html=/);
   assert.match(html, /data-tooltip-class="mlgm-cheat-tip"/);
   assert.match(html, /creativecommons\.org\/licenses\/by\/4\.0\/legalcode/);
-  for (const entry of CHEAT_SECTIONS) assert.match(html, new RegExp(`data-cheat-section="${entry.id}" open`));
+  for (const entry of [...CHEAT_SECTIONS, ...CHEAT_CLOSING_SECTIONS]) assert.match(html, new RegExp(`data-cheat-section="${entry.id}" open`));
   const blinded = cheatTooltipHTML(item(section('conditions'), 'blinded'));
   assert.match(blinded, /<strong>Blinded<\/strong>/);
   assert.match(blinded, /automatically fail any ability check that requires sight/);
