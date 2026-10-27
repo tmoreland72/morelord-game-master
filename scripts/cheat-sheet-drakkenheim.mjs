@@ -22,29 +22,20 @@ export const DRAKKENHEIM_CONDITIONS = Object.freeze([
 ]);
 
 export const DRAKKENHEIM_ITEMS = Object.freeze([
-  { id: "dk-level-1", label: "Level 1", origin, lines: [
-    "No mechanical symptom.",
-    "Long rest while contaminated: 1 on 1d20 adds a level."
-  ] },
-  { id: "dk-level-2", label: "Level 2", origin, lines: [
-    "Hit Points from Hit Dice are halved.",
-    "Includes lower levels."
-  ] },
-  { id: "dk-level-3", label: "Level 3", origin, lines: [
-    "A Long Rest restores no Hit Points.",
-    "Includes lower levels."
-  ] },
-  { id: "dk-level-4", label: "Level 4", origin, lines: [
-    "Weapon and spell damage is halved.",
-    "Includes lower levels."
-  ] },
-  { id: "dk-level-5", label: "Level 5", origin, lines: [
-    "You are Incapacitated.",
-    "Includes lower levels."
-  ] },
-  { id: "dk-level-6", label: "Level 6", origin, lines: [
-    "You transform into a monster. The GM controls it.",
-    "Includes lower levels."
+  { id: "dk-contamination", label: "Contamination", origin, parts: [
+    { lines: ["Effects stack. A higher level keeps every lower effect."] },
+    { table: {
+      caption: "Levels",
+      headers: ["Level", "Effect"],
+      rows: [
+        ["1", "No other symptom. Long rest while contaminated: 1 on 1d20 adds a level."],
+        ["2", "Hit Points from Hit Dice are halved."],
+        ["3", "A Long Rest restores no Hit Points."],
+        ["4", "Weapon and spell damage is halved."],
+        ["5", "Incapacitated."],
+        ["6", "You become a monster the GM controls."]
+      ]
+    } }
   ] },
   { id: "dk-search", label: "Delerium Search", origin, parts: [
     { heading: "Outside the wall", lines: [
@@ -55,6 +46,10 @@ export const DRAKKENHEIM_ITEMS = Object.freeze([
       "DC 20. Same skills.",
       "Success finds a deposit. Pieces are usually larger.",
       "The haze is thicker, so exposure is more dangerous."
+    ] },
+    { heading: "Failed checks", lines: [
+      "Two or more failed checks draw a random encounter.",
+      "The party can still find a deposit."
     ] }
   ] },
   { id: "dk-delerium", label: "Delerium", origin, parts: [

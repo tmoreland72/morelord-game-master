@@ -243,12 +243,23 @@ function tokenContent(busy, actorIds) {
 }
 
 function undoContent(snapshot, busy) {
-  const ready = Boolean(snapshot?.kind) && !busy;
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="undo"><strong class="gm-specialty-title">${bulkHTML('undo.title')}</strong><p>${snapshot?.kind ? bulkHTML('undo.last', {label: undoLabel(snapshot)}) : bulkHTML('undo.none')}</p><button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${bulkHTML('undo.button')}</button></section>`;
+  const stored = Boolean(snapshot?.kind);
+  const ready = stored && !busy;
+  const detail = stored ? `<p>${bulkHTML('undo.last', {label: undoLabel(snapshot)})}</p>` : '';
+  const label = stored ? bulkHTML('undo.button') : bulkHTML('undo.none');
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="undo"><strong class="gm-specialty-title">${bulkHTML('undo.title')}</strong>${detail}<button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${label}</button></section>`;
 }
 
-export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', busy = false, undo = null} = {}) {
-  return `<div class="gm-bulk">${bulkCoinsContent(actorIds, coins, busy, coinAction)}${xpContent(xp, xpAction, busy, actorIds)}${inspirationContent(inspiration, busy, actorIds)}${tokenContent(busy, actorIds)}${undoContent(undo, busy)}</div>`;
+export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', busy = false, undo = null, cards} = {}) {
+  const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'undo'];
+  const html = {
+    coins: bulkCoinsContent(actorIds, coins, busy, coinAction),
+    xp: xpContent(xp, xpAction, busy, actorIds),
+    inspiration: inspirationContent(inspiration, busy, actorIds),
+    tokens: tokenContent(busy, actorIds),
+    undo: undoContent(undo, busy)
+  };
+  return `<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
 }
 
 function skipNote(key, count) {

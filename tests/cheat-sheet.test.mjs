@@ -130,7 +130,8 @@ test('misc follows improvising damage, and Drakkenheim follows cover when a cont
     assert.ok(damage < misc && misc < cover && cover < group);
     assert.equal(html.indexOf('class="gm-cheat-note"'), -1);
     assert.match(html, /data-cheat-section="misc" open/);
-    for (const label of ['Typical DC', 'Exhaustion', 'Jumping', 'Travel Pace', 'Mounted', 'Underwater', 'Level 1', 'Delerium Search', 'Delerium']) assert.match(html, new RegExp(`>${label}<`));
+    for (const label of ['Typical DC', 'Exhaustion', 'Jumping', 'Travel Pace', 'Mounted', 'Underwater', 'Contamination', 'Delerium Search', 'Delerium']) assert.match(html, new RegExp(`>${label}<`));
+    assert.doesNotMatch(html, />Level [1-6]</);
     assert.doesNotMatch(html, /data-cheat-section="(?:dcs|exhaustion|jumping|travel|mounted-underwater|drakkenheim-mutations|drakkenheim-madness)"/);
     assert.doesNotMatch(html, /creativecommons|unofficial|Loading…|Drakkenheim Madness|New Conditions/);
   } finally {
@@ -301,7 +302,7 @@ test('static Drakkenheim chips stay hidden until a content module is active', ()
   assert.equal(drakkenheimContentActive(drakkenheimGame()), true);
   assert.equal(drakkenheimStatus(drakkenheimGame()), 'ready');
   assert.deepEqual(drakkenheimItems(drakkenheimGame()).map(entry => entry.label), [
-    'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6', 'Delerium Search', 'Delerium'
+    'Contamination', 'Delerium Search', 'Delerium'
   ]);
   assert.deepEqual(drakkenheimConditions(drakkenheimGame()).map(entry => entry.label), ['Dazed', 'Weakened']);
   assert.deepEqual(DRAKKENHEIM_CONDITIONS.map(entry => entry.label).includes('Drakkenheim Madness'), false);
@@ -309,20 +310,19 @@ test('static Drakkenheim chips stay hidden until a content module is active', ()
 });
 
 test('static Drakkenheim tooltips are short, ordered, and free of pack markup', () => {
-  const levels = DRAKKENHEIM_ITEMS.filter(entry => entry.id.startsWith('dk-level-'));
-  assert.deepEqual(levels.map(entry => entry.lines[0]), [
-    'No mechanical symptom.',
-    'Hit Points from Hit Dice are halved.',
-    'A Long Rest restores no Hit Points.',
-    'Weapon and spell damage is halved.',
-    'You are Incapacitated.',
-    'You transform into a monster. The GM controls it.'
-  ]);
+  const contamination = cheatTooltipHTML(DRAKKENHEIM_ITEMS.find(entry => entry.id === 'dk-contamination'));
+  assert.match(contamination, /mlgm-cheat-tip__title[\s\S]*<strong>Contamination<\/strong>/);
+  assert.match(contamination, /<table>/);
+  assert.match(contamination, /No other symptom/);
+  assert.match(contamination, /You become a monster the GM controls/);
+  assert.equal((contamination.match(/<tr>/g) ?? []).length, 7);
   const search = cheatTooltipHTML(DRAKKENHEIM_ITEMS.find(entry => entry.id === 'dk-search'));
   assert.match(search, /mlgm-cheat-tip__sub">\s*<strong>Outside the wall<\/strong>/);
   assert.match(search, /DC 15 Arcana, Investigation, or Survival/);
   assert.match(search, /mlgm-cheat-tip__sub">\s*<strong>Inside the wall<\/strong>/);
   assert.match(search, /DC 20/);
+  assert.match(search, /mlgm-cheat-tip__sub">\s*<strong>Failed checks<\/strong>/);
+  assert.match(search, /Two or more failed checks draw a random encounter/);
   assert.doesNotMatch(search, /@Embed|&amp;reference|\[\[lookup|Deep Haze/);
   const values = text(DRAKKENHEIM_ITEMS.find(entry => entry.id === 'dk-delerium'));
   assert.match(values, /Chip 10 gp 1\/4 lb Fragment 100 gp 1\/2 lb Shard 500 gp 1 lb Crystal 1,000 gp 2 lb Geode 5,000 gp 20\+ lb/);
@@ -361,11 +361,23 @@ test('an active module shows the static Drakkenheim section and purple condition
 test('the tray adds Cheat Sheet after Triggers and does not register a new setting', () => {
   const main = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
   assert.match(main, /triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings"/);
-  assert.match(main, /return renderCheatSheet\(\)/);
+  assert.match(main, /return renderCheatSheet\(\{order: trayLayout\(\)\.cheatOrder, hidden: trayLayout\(\)\.cheatHidden\}\)/);
   assert.match(main, /focusin/);
   assert.match(main, /activateCheatTooltip/);
   assert.match(main, /debugDrakkenheimCheat/);
   assert.doesNotMatch(main, /scheduleDrakkenheimCheat|cheat-document|stopDrakkenheimCheat/);
   const calls = [...main.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g)].map(match => match[0]);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, 9);
+  assert.match(main, /register\(ID, "trayLayout"/);
+});
+
+test('cheat sections follow the saved order and skip hidden ones', () => {
+  globalThis.game = drakkenheimGame();
+  try {
+    const html = renderCheatSheet({order: ['drakkenheim', 'conditions'], hidden: ['misc', 'cover', 'damage', 'actions']});
+    assert.ok(html.indexOf('data-cheat-section="drakkenheim"') < html.indexOf('data-cheat-section="conditions"'));
+    assert.doesNotMatch(html, /data-cheat-section="(?:misc|cover|damage|actions)"/);
+  } finally {
+    delete globalThis.game;
+  }
 });

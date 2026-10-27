@@ -1,6 +1,7 @@
 import { escapeHTML as e } from "./core.mjs";
 import { drakkenheimConditions, drakkenheimItems } from "./cheat-sheet-drakkenheim.mjs";
 import { CHEAT_SECTIONS, cheatStringEntries } from "./cheat-sheet-data.mjs";
+import { CHEAT_LAYOUT, visibleIds } from "./tray-layout.mjs";
 
 const STRINGS = new Map(cheatStringEntries());
 const closedSections = new Set();
@@ -76,15 +77,18 @@ function renderDrakkenheim(packItems) {
   return `<details class="gm-cheat-section" data-cheat-section="drakkenheim" data-cheat-status="ready"${open}><summary>${e(cheatText("section.drakkenheim"))}</summary>${chips}</details>`;
 }
 
-export function renderCheatSheet() {
+export function renderCheatSheet({order = [], hidden = []} = {}) {
   const packConditions = drakkenheimConditions();
   const packItems = drakkenheimItems();
-  const standard = CHEAT_SECTIONS.map(section => {
-    if (section.id !== "conditions" || !packConditions.length) return renderSection(section);
-    return renderSection({ ...section, items: [...section.items, ...packConditions] });
+  const ids = visibleIds(CHEAT_LAYOUT.map(item => item.id), order, hidden);
+  const html = ids.map(id => {
+    if (id === "drakkenheim") return packItems.length ? renderDrakkenheim(packItems) : "";
+    const section = CHEAT_SECTIONS.find(entry => entry.id === id);
+    if (!section) return "";
+    if (section.id === "conditions" && packConditions.length) return renderSection({ ...section, items: [...section.items, ...packConditions] });
+    return renderSection(section);
   }).join("");
-  const drakkenheim = packItems.length ? renderDrakkenheim(packItems) : "";
-  return `<div class="gm-cheat" id="mlgm-cheat">${standard}${drakkenheim}</div>`;
+  return `<div class="gm-cheat" id="mlgm-cheat">${html}</div>`;
 }
 
 export function activateCheatTooltip(target) {

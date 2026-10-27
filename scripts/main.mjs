@@ -11,7 +11,8 @@ import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList} from './bulk-actions.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
-import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
+import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceNameFromPath, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
+import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds} from './tray-layout.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
@@ -27,10 +28,10 @@ let suppressSpecialtyToggle = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
-const savedButton = (action, name, id, remove) => `<div class="ml-item-row"><div class="ml-stack">${button(action,name,id)}</div>${deleteButton(remove,id,name)}</div>`;
+const savedButton = (action, name, id, remove) => `<div class="ml-item-row"><div class="ml-stack">${button(action,name,id,`title="${e(name)}"`)}</div>${deleteButton(remove,id,name)}</div>`;
 const option = (id, name, selected) => `<option value="${e(id)}" ${id === selected ? "selected" : ""}>${e(name)}</option>`;
-const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}" data-gap="4"><strong>${e(title)}</strong>${body}</div>`;
-const label = (name, content) => `<label><span>${e(name)}</span>${content}</label>`;
+const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}" data-gap="4"><strong class="gm-section-heading">${e(title)}</strong>${body}</div>`;
+const label = (name, content) => `<label class="gm-field"><span>${e(name)}</span>${content}</label>`;
 const inlineField = (name, content) => `<label class="gm-inline"><span>${e(name)}</span>${content}</label>`;
 const requestButton = (action, id, name, extra = "") => `<button type="button" class="ml-icon-button gm-row-action" data-action="${action}" data-id="${e(id)}" title="${e(name)}" aria-label="${e(name)}" ${extra}><i class="fa-solid fa-dice-d20" aria-hidden="true"></i></button>`;
 function requestRow({card, fields = "", blind = null, action, id = "", name, disabled = false}) {
@@ -87,6 +88,7 @@ Hooks.once("init", () => {
   game.settings.register(ID,"macros",{scope:"world",config:false,restricted:true,type:Array,default:[]});
   registerRunOnLoadSettings(game.settings, ID);
   game.settings.register(ID,"specialtyOrder",{scope:"world",config:false,restricted:true,type:Array,default:[]});
+  game.settings.register(ID, "trayLayout", { scope: "world", config: false, restricted: true, type: Object, default: {} });
   game.settings.register(ID, "ambienceFolder", { name: "Ambience folder", hint: "Legacy single ambience folder. Copied once into Ambience folders when it has a path.", scope: "world", config: false, restricted: true, type: String, default: LEGACY_AMBIENCE_DEFAULT });
   game.settings.register(ID, AMBIENCE_FOLDERS, { name: "Ambience folders", hint: "Folders scanned recursively for ambience audio. Starts empty. Each folder keeps its FilePicker source.", scope: "world", config: false, restricted: true, type: Array, default: [] });
   game.settings.register(ID, AMBIENCE_MIGRATED, { scope: "world", config: false, restricted: true, type: Boolean, default: false });
@@ -145,12 +147,13 @@ Hooks.once("ready", async () => {
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
   root.addEventListener("change", event => onChange(event).catch(fail));
   root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
-  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropSpecialty(event).catch(fail);}});
+  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropTrayItem(event).catch(fail);}});
   root.addEventListener("dragstart",event=>{
     const tile=event.target.closest('[data-macro-uuid]');
-    const row=event.target.closest('[data-specialty]');
+    const handle=event.target.closest(".gm-drag-handle");
+    const row=handle?.closest("[data-tray-item]");
     if(tile){suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";return;}
-    if(row && tab === "settings"){suppressSpecialtyToggle=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Specialty',id:row.dataset.specialty}));event.dataTransfer.effectAllowed="move";}
+    if(row && tab === "settings"){suppressSpecialtyToggle=true;event.dataTransfer.setData("text/plain",JSON.stringify({type:"TrayItem",group:row.dataset.trayGroup,id:row.dataset.trayItem}));event.dataTransfer.effectAllowed="move";}
   });
   root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;suppressSpecialtyToggle=false;});});
   root.addEventListener("keydown", event => {
@@ -193,7 +196,7 @@ function saved(type) {
 function savedName(type,config) {
   if (type === "group" || type === "player") return `${game.i18n.localize(CONFIG.DND5E.skills[config.skill]?.label ?? config.skill)} Check${type === "player" ? ` - ${game.actors.get(config.actorIds?.[0])?.name ?? "Missing character"}` : ""}`;
   if (type === "playlist") return game.playlists.get(config.playlist)?.name ?? "Missing playlist";
-  if (type === "ambience") return config.files.map(f=>f.path.split('/').at(-1).replace(/\.[^.]+$/,"")).join(" + ");
+  if (type === "ambience") return (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).join(" + ");
   return "Death Saving Throw";
 }
 function controlKey(el) {
@@ -246,14 +249,14 @@ function render() {
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo()}); }
+  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
-  if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
+  if (tab === "settings") return `<div class="ml-stack gm-settings" data-gap="4">${gmSettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
-  if (tab === "cheat") return renderCheatSheet();
+  if (tab === "cheat") return renderCheatSheet({order: trayLayout().cheatOrder, hidden: trayLayout().cheatHidden});
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
-    const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
+    const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume); const title=p.getFlag?.(ID,"ambience") ? ambienceShownName(s) : (s.name ?? ""); return `<div class="ml-card ml-stack"><strong>${e(title)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(title)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     const stopAll = button("stop-all-sound","Stop All Sound");
     return column("Playlists",`${button("playlist","Add Playlist")}${saved("playlist")}`)
       + column("Ambience",`<div class="gm-ambience-actions">${button("ambience","Add Ambience")}${saved("ambience")}</div>`,"gm-ambience-column")
@@ -466,21 +469,68 @@ async function toggleMacroRunOnLoad(key, uuid) {
   await game.settings.set(ID, key, toggledUuidList(game.settings.get(ID, key), uuid));
   render();
 }
-function specialtySettings() {
-  return specialtyOrder(get("specialtyOrder")).map(id => {
+function trayLayout() {
+  const value = get("trayLayout");
+  return value && typeof value === "object" ? value : {};
+}
+function layoutCatalog(group) {
+  if (group === "bulk") return BULK_CARDS.map(item => item.id);
+  if (group === "cheat") return CHEAT_LAYOUT.map(item => item.id);
+  if (group === "triggers") return (state?.triggers ?? []).map(trigger => trigger.id);
+  return SPECIALTIES.map(item => item.id);
+}
+function readLayout(group) {
+  const layout = trayLayout();
+  const orderKey = {bulk: "bulkOrder", triggers: "triggerOrder", cheat: "cheatOrder"}[group];
+  const hiddenKey = {bulk: "bulkHidden", triggers: "triggerHidden", cheat: "cheatHidden"}[group];
+  return visibleIds(layoutCatalog(group), layout[orderKey], layout[hiddenKey]);
+}
+function settingsRow(group, id, text, checked) {
+  const name = group === "rolls" ? "specialty" : "tray-visible";
+  return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" draggable="true" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
+}
+function settingsSection(title, group, rows) {
+  return `<section class="gm-settings-section" data-tray-section="${e(group)}"><strong class="gm-section-heading">${e(title)}</strong><div class="gm-settings-list">${rows}</div></section>`;
+}
+function gmSettings() {
+  const layout = trayLayout();
+  const rolls = specialtyOrder(get("specialtyOrder")).map(id => {
     const specialty = SPECIALTIES.find(item => item.id === id);
-    return `<label class="ml-check" draggable="true" data-specialty="${e(specialty.id)}"><input type="checkbox" name="specialty" value="${e(specialty.id)}" ${game.settings.get(ID, specialty.setting)!==false?"checked":""}><span>${e(specialty.label)}</span></label>`;
+    return settingsRow("rolls", specialty.id, specialty.label, game.settings.get(ID, specialty.setting) !== false);
+  }).join("");
+  const bulk = layoutRows("bulk", BULK_CARDS, layout.bulkOrder, layout.bulkHidden);
+  const triggers = layoutRows("triggers", (state?.triggers ?? []).map(trigger => ({id: trigger.id, label: trigger.name || "Trigger"})), layout.triggerOrder, layout.triggerHidden);
+  const cheat = layoutRows("cheat", CHEAT_LAYOUT, layout.cheatOrder, layout.cheatHidden);
+  return `${settingsSection("Roll Requests", "rolls", rolls)}${settingsSection("Bulk Actions", "bulk", bulk)}${settingsSection("Triggers", "triggers", triggers)}${settingsSection("Cheat Sheet", "cheat", cheat)}`;
+}
+function layoutRows(group, catalog, order, hidden) {
+  const off = new Set(hidden ?? []);
+  return arrangedIds(catalog.map(item => item.id), order).map(id => {
+    const item = catalog.find(entry => entry.id === id);
+    return settingsRow(group, id, item?.label || id, !off.has(id));
   }).join("");
 }
-async function dropSpecialty(event) {
+async function dropTrayItem(event) {
   gm();
   let data = {};
   try { data = JSON.parse(event.dataTransfer.getData("text/plain") || "{}"); } catch { data = {}; }
-  if (data.type !== "Specialty") return;
-  const before = event.target.closest("[data-specialty]")?.dataset.specialty;
-  const order = moveSpecialty(get("specialtyOrder"), data.id, before);
-  if (JSON.stringify(order) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
-  await game.settings.set(ID, "specialtyOrder", order);
+  if (data.type === "Specialty") data = {type: "TrayItem", group: "rolls", id: data.id};
+  if (data.type !== "TrayItem" || !data.id) return;
+  const target = event.target.closest("[data-tray-item]");
+  const before = target?.dataset.trayGroup === data.group ? target.dataset.trayItem : undefined;
+  if (data.group === "rolls") {
+    const order = moveSpecialty(get("specialtyOrder"), data.id, before);
+    if (JSON.stringify(order) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
+    await game.settings.set(ID, "specialtyOrder", order);
+    render();
+    return;
+  }
+  const key = {bulk: "bulkOrder", triggers: "triggerOrder", cheat: "cheatOrder"}[data.group];
+  if (!key) return;
+  const layout = trayLayout();
+  const order = moveId(layoutCatalog(data.group), layout[key], data.id, before);
+  if (JSON.stringify(order) === JSON.stringify(arrangedIds(layoutCatalog(data.group), layout[key]))) return;
+  await game.settings.set(ID, "trayLayout", {...layout, [key]: order});
   render();
 }
 async function dropMacro(event) {
@@ -581,10 +631,18 @@ async function onChange(event) {
     const ids=[...root.querySelectorAll('[name="actorUuids"]:checked')].map(el=>el.value.split('.').at(-1));
     await persist(n=>{n.partyActorIds=ids;});return;
   }
-  if (tab === "settings" && el.name === "specialty") {
+  if (tab === "settings" && (el.name === "specialty" || el.name === "tray-visible")) {
     if (suppressSpecialtyToggle) { el.checked = !el.checked; return; }
-    const specialty = SPECIALTIES.find(item => item.id === el.value);
-    if (specialty) await game.settings.set(ID, specialty.setting, el.checked);
+    const group = el.dataset.trayGroup || "rolls";
+    if (group === "rolls") {
+      const specialty = SPECIALTIES.find(item => item.id === el.value);
+      if (specialty) await game.settings.set(ID, specialty.setting, el.checked);
+      return;
+    }
+    const key = {bulk: "bulkHidden", triggers: "triggerHidden", cheat: "cheatHidden"}[group];
+    if (!key) return;
+    const layout = trayLayout();
+    await game.settings.set(ID, "trayLayout", {...layout, [key]: toggledHidden(layout[key], el.value, el.checked)});
     return;
   }
   const card=el.closest('[data-roll-card]');
@@ -832,9 +890,10 @@ async function run(type, config) {
     let p = game.playlists.find(p => p.getFlag(ID,"ambience"));
     if (!p) p = await Playlist.create({ name:"Morelord · Ambience", mode:CONST.PLAYLIST_MODES.SIMULTANEOUS, flags:{[ID]:{ambience:true}} });
     for (const file of config.files) {
+      const name = String(file.name || ambienceNameFromPath(file.path)).trim() || ambienceNameFromPath(file.path);
       let sound = p.sounds.find(s => s.path === file.path);
-      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name:file.path.split("/").pop(), path:file.path, repeat:true, volume:file.volume }]);
-      await sound.update({ playing:true, repeat:true, volume:file.volume });
+      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name, path:file.path, repeat:true, volume:file.volume }]);
+      await sound.update({ playing:true, repeat:true, volume:file.volume, name });
     }
     notify("Ambience layers started for the table.");
   }
@@ -863,7 +922,7 @@ function characterChoices(actorIds, single = false) {
   const selectedUuids = actorIds ? actorIds.map(id => game.actors.get(id)?.uuid).filter(Boolean) : null;
   const choices = core().ui.participation.listCharacterChoices({selectedUuids});
   const singleUuid = choices.find(c => c.checked)?.uuid ?? choices[0]?.uuid;
-  return `<section class="ml-surface ml-stack" data-gap="3"><div class="ml-section-heading"><div><h2>Verify characters</h2><p>Participants and roll recipients</p></div></div><div class="ml-actor-choice-grid">${choices.map(c => {
+  return `<section class="ml-stack" data-gap="3"><strong class="gm-section-heading">Verify characters</strong><div class="ml-actor-choice-grid">${choices.map(c => {
     const actor = game.actors.get(c.uuid.split(".").at(-1)), target = recipient(actor);
     return `<label class="ml-actor-choice"><input type="${single ? "radio" : "checkbox"}" name="actorUuids" value="${e(c.uuid)}" ${(single ? c.uuid === singleUuid : c.checked) ? "checked" : ""}><img src="${e(c.img)}" alt=""><span>${e(c.name)}<br><small>${e(target?.isGM ? `GM · ${target.name} (no active player)` : target?.name ?? "No active GM")}</small></span></label>`;
   }).join("")}</div></section>`;
@@ -910,9 +969,20 @@ async function ambienceForm() {
   const playable = presentAmbienceScan({files, errors}, {warn: error => console.warn(`${ID} |`, error), notify});
   if (!playable.length) return;
   const ambiencePercent = Number.isFinite(Number(state.last?.ambienceVolume)) ? Number(state.last.ambienceVolume) : 40;
-  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const fileName = file.path.split("/").pop(); const fieldId = `ml-game-master-ambience-file-${i}`; return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}"><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label></div>`; }).join("")}</fieldset>`, [["add", "Add"]]);
+  const layers = playable.map((file, i) => {
+    const name = ambienceNameFromPath(file.path);
+    const checkId = `ml-game-master-ambience-file-${i}`;
+    const nameId = `ml-game-master-ambience-name-${i}`;
+    return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${checkId}" value="${i}" aria-label="${e(`Include ${name}`)}">${label("Name", `<input id="${nameId}" name="name${i}" value="${e(name)}" required>`)}<label class="gm-field gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></div>`;
+  }).join("");
+  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
+  const selected = result.data.getAll("file").map(i => {
+    const index = Number(i);
+    const path = playable[index].path;
+    const name = String(result.data.get(`name${index}`) ?? "").trim() || ambienceNameFromPath(path);
+    return {path, name, volume: volumeFromPercent(result.data.get(`volume${index}`))};
+  });
   if (!selected.length) throw new Error("Select at least one sound.");
   await saveAndRun("ambience", {files: selected});
 }
@@ -938,7 +1008,7 @@ Hooks.on("updateUser", () => refreshTray(["party", "rolls", "bulk"]));
 Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
   if (setting.key === `${ID}.macros` || setting.key === `${ID}.${RUN_ON_LOAD_FOR_EVERYONE}`) refreshTray(["macros"]);
-  if (setting.key === `${ID}.specialtyOrder`) refreshTray(["settings", "rolls"]);
+  if (setting.key === `${ID}.specialtyOrder` || setting.key === `${ID}.trayLayout`) refreshTray(["settings", "rolls", "bulk", "triggers", "cheat"]);
   if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
@@ -995,7 +1065,9 @@ function triggerThen(trigger) {
   return `Roll ${trigger.tableName}`;
 }
 function triggerCards() {
-  return state.triggers.map(trigger => {
+  const triggers = state?.triggers ?? [];
+  const byId = new Map(triggers.map(trigger => [trigger.id, trigger]));
+  return readLayout("triggers").map(id => byId.get(id)).filter(Boolean).map(trigger => {
     const status = triggerStatus(trigger.id);
     const running = Boolean(trigger.enabled);
     const name = trigger.name ?? "";

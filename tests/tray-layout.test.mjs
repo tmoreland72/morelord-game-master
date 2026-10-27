@@ -1,0 +1,33 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds} from '../scripts/tray-layout.mjs';
+
+const bulk = BULK_CARDS.map(item => item.id);
+
+test('tray order keeps unknown ids out and appends new catalog ids', () => {
+  assert.deepEqual(arrangedIds(bulk, ['undo', 'missing', 'coins', 'coins']), ['undo', 'coins', 'xp', 'inspiration', 'tokens']);
+  assert.deepEqual(visibleIds(bulk, ['tokens', 'xp'], ['xp', 'missing']), ['tokens', 'coins', 'inspiration', 'undo']);
+  assert.deepEqual(moveId(bulk, [], 'undo', 'coins'), ['undo', 'coins', 'xp', 'inspiration', 'tokens']);
+  assert.deepEqual(toggledHidden(['xp'], 'xp', true), []);
+  assert.deepEqual(toggledHidden(['xp'], 'coins', false).sort(), ['coins', 'xp']);
+});
+
+test('GM Settings lists Roll Requests, Bulk Actions, Triggers, and Cheat Sheet with drag handles', () => {
+  const main = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
+  assert.match(main, /data-tray-section="\$\{e\(group\)\}"/);
+  assert.match(main, /settingsSection\("Roll Requests"/);
+  assert.match(main, /settingsSection\("Bulk Actions"/);
+  assert.match(main, /settingsSection\("Triggers"/);
+  assert.match(main, /settingsSection\("Cheat Sheet"/);
+  assert.match(main, /fa-grip-vertical/);
+  assert.match(main, /gm-section-heading">Verify characters/);
+  assert.doesNotMatch(main, /ml-section-heading/);
+  assert.match(css, /#mlgm \.gm-specialty-field, #mlgm \.gm-field[\s\S]*flex-direction:column/);
+  assert.match(css, /#mlgm \.gm-request-row > \.gm-inline \{ display:flex; flex:1 1 auto; flex-direction:column/);
+  assert.equal(CHEAT_LAYOUT.map(item => item.id).join(','), 'conditions,actions,damage,misc,cover,drakkenheim');
+  assert.match(main, /cards: readLayout\("bulk"\)/);
+  assert.match(main, /readLayout\("triggers"\)/);
+  assert.match(main, /renderCheatSheet\(\{order: trayLayout\(\)\.cheatOrder, hidden: trayLayout\(\)\.cheatHidden\}\)/);
+});

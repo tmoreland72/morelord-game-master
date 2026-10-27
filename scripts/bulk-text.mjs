@@ -84,7 +84,7 @@ export const BULK_STRINGS = {
   'tokens.none': 'No prototype tokens needed updating.',
   'undo.title': 'Undo Last Action',
   'undo.button': 'Undo Last Action',
-  'undo.none': 'Nothing to undo.',
+  'undo.none': 'Nothing to undo',
   'undo.last': 'Last action: {label}',
   'undo.card': 'Undid {label}',
   'undo.restored': 'Restored',

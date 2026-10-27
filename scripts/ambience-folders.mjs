@@ -156,6 +156,28 @@ export async function ensureAmbienceFolders(settings, moduleId = ID) {
   return next;
 }
 
+const AMBIENCE_NOISE = /^(loop|loops|oneshot|stereo|mono|ambience|ambient|sfx)$/i;
+const AMBIENCE_DURATION = /^\d+(m|min|mins|s|sec|secs|ms|h|hr|hrs)$/i;
+
+// birds-forest-farmland-spring-loop-10mins-001.ogg → Birds Forest.
+export function ambienceNameFromPath(path) {
+  const file = String(path ?? "").split("/").pop() || "";
+  const stem = file.replace(/\.[^.]+$/, "");
+  const tokens = stem.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  const kept = tokens.filter(token => !AMBIENCE_NOISE.test(token) && !AMBIENCE_DURATION.test(token) && !/^\d+$/.test(token));
+  const words = (kept.length ? kept : tokens.filter(token => !/^\d+$/.test(token))).slice(0, 2);
+  const chosen = words.length ? words : ["Ambience"];
+  return chosen.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
+}
+
+export function ambienceShownName(sound) {
+  const file = String(sound?.path ?? "").split("/").pop();
+  const raw = String(sound?.name ?? "").trim();
+  const stem = file.replace(/\.[^.]+$/, "");
+  if (!raw || raw === file || raw === stem) return ambienceNameFromPath(file || raw);
+  return raw;
+}
+
 export function ambienceRelativeLabel(filePath, folderPath) {
   const file = normalizePath(filePath);
   const folder = normalizePath(folderPath);

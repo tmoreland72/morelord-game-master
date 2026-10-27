@@ -4,7 +4,9 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {escapeHTML} from '../scripts/core.mjs';
 import {
+  ambienceNameFromPath,
   ambiencePickerOptions,
+  ambienceShownName,
   browseLocation,
   collectAmbienceFiles,
   ensureAmbienceFolders,
@@ -192,6 +194,14 @@ test('a deep ambience tree stops instead of following a directory cycle', async 
   assert.ok(files.every(file => file.path.startsWith('Ambience/')));
 });
 
+test('an ambience name defaults to the first two words of the file', () => {
+  assert.equal(ambienceNameFromPath('modules/psfx-ambience/library/ambient/animals/birds/birds-forest-farmland-spring-loop-10mins-001.ogg'), 'Birds Forest');
+  assert.equal(ambienceNameFromPath('Ambience/nested/rain.ogg'), 'Rain');
+  assert.equal(ambienceNameFromPath('tavern_crowd-loop.ogg'), 'Tavern Crowd');
+  assert.equal(ambienceShownName({path: 'animals/birds/rain.ogg', name: 'rain.ogg'}), 'Rain');
+  assert.equal(ambienceShownName({path: 'animals/birds/rain.ogg', name: 'Soft Rain'}), 'Soft Rain');
+});
+
 test('ambience labels keep the path inside the source folder and separate same-named files', () => {
   const nested = labelAmbienceFiles([{source: 'data', path: 'Ambience/folder/sub/file.ogg', folder: 'Ambience'}]);
   assert.equal(nested[0].label, 'folder/sub/file.ogg');
@@ -236,6 +246,7 @@ test('a saved ambience button still plays its full path after migration', async 
     notify() {},
     config: saved[0].config,
     Playlist: {async create() { throw new Error('the existing ambience playlist should be reused'); }},
+    ambienceNameFromPath,
     foundry: {applications: {apps: {FilePicker: {async browse() { browsed = true; return {files: [], dirs: []}; }}}}}
   });
   context.game = {playlists: {find() { return playlist; }}};
@@ -243,20 +254,21 @@ test('a saved ambience button still plays its full path after migration', async 
   await vm.runInContext('run("ambience", config)', context);
   assert.equal(browsed, false);
   assert.deepEqual(created, []);
-  assert.deepEqual(updates, [{playing: true, repeat: true, volume: 0.4}]);
+  assert.deepEqual(updates, [{playing: true, repeat: true, volume: 0.4, name: 'Rain'}]);
   playlist.sounds = [];
   updates.length = 0;
   await vm.runInContext('run("ambience", config)', context);
   assert.equal(created[0].path, 'Ambience/nested/rain.ogg');
-  assert.equal(created[0].name, 'rain.ogg');
-  assert.deepEqual(updates, [{playing: true, repeat: true, volume: 0.4}]);
+  assert.equal(created[0].name, 'Rain');
+  assert.deepEqual(updates, [{playing: true, repeat: true, volume: 0.4, name: 'Rain'}]);
 });
 
 test('the ambience picker and settings dialog use folder paths and relative labels', () => {
   const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
   const form = source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck'));
   const settings = source.slice(source.indexOf('function ambienceFolderRow'), source.length);
-  assert.match(form, /const fileName = file\.path\.split\("\/"\)\.pop\(\)/);
+  assert.match(form, /ambienceNameFromPath\(file\.path\)/);
+  assert.match(form, /name="name\$\{i\}"/);
   assert.match(form, /data-tooltip="\$\{e\(file\.path\)\}"/);
   assert.match(form, /aria-label="\$\{e\(file\.path\)\}"/);
   assert.doesNotMatch(form, /file\.label/);

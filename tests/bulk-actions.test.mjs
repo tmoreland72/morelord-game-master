@@ -149,7 +149,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tray, /bulk-tokens-help"\) return form\(bulkText\('tokens\.help'\), `<p>\$\{bulkHTML\('tokens\.copied', \{fields: tokenFieldList\(\)\}\)\}<\/p>`/);
     const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
     assert.match(undo, /disabled/);
-    assert.match(undo, /Nothing to undo/);
+    assert.match(undo, />Nothing to undo</);
+    assert.doesNotMatch(undo, /<p>/);
     const ready = bulkPanel({actorIds: ['a'], undo: {kind: 'xp', labelKey: 'xp.split'}});
     assert.doesNotMatch(ready.slice(ready.indexOf('data-mlgm-bulk="undo"')), /disabled/);
     assert.match(ready, /Last action: Split amount amongst party members/);
@@ -395,7 +396,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     };
     const assertUndoEmpty = () => {
       const section = undoSection();
-      assert.equal(section.includes('Nothing to undo.'), true);
+      assert.equal(section.includes('>Nothing to undo<'), true);
+      assert.equal(section.includes('<p>'), false);
       assert.equal(section.includes('disabled'), true);
     };
     const savedSnapshot = () => {
