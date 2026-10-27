@@ -25,9 +25,15 @@ const SKILL_NAMES = Object.freeze([
   "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"
 ]);
 
+const DEFAULT_POLL_MS = 1500;
+const MAX_POLLS = 5;
+
 let sections = [];
 let appliedKey = null;
 let pendingKey = null;
+let pollTimer = null;
+let polls = 0;
+let pollDelay = DEFAULT_POLL_MS;
 
 export function drakkenheimSections() {
   return sections;
@@ -37,10 +43,18 @@ export function setDrakkenheimSections(next = []) {
   sections = next ?? [];
 }
 
+export function setDrakkenheimPollDelay(ms = DEFAULT_POLL_MS) {
+  pollDelay = ms;
+}
+
 export function resetDrakkenheimCheat() {
   sections = [];
   appliedKey = null;
   pendingKey = null;
+  polls = 0;
+  pollDelay = DEFAULT_POLL_MS;
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = null;
 }
 
 export function drakkenheimModuleIds(game = globalThis.game) {
@@ -55,6 +69,9 @@ export function scheduleDrakkenheimCheat(rerender, game = globalThis.game) {
   const key = drakkenheimModuleIds(game).slice().sort().join(",");
   if (!key) {
     pendingKey = null;
+    polls = 0;
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
     if (appliedKey || sections.length) {
       appliedKey = null;
       setDrakkenheimSections([]);
@@ -66,14 +83,39 @@ export function scheduleDrakkenheimCheat(rerender, game = globalThis.game) {
   pendingKey = key;
   collectDrakkenheimSections(game).then(found => {
     if (pendingKey !== key) return;
+    pendingKey = null;
+    const ready = found.some(section => section.id === "drakkenheim-contamination") || (found.length && polls >= MAX_POLLS);
+    if (!found.length || !ready) {
+      if (found.length) {
+        setDrakkenheimSections(found);
+        rerender?.();
+      }
+      schedulePoll(rerender, game, key);
+      return;
+    }
+    polls = 0;
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
     setDrakkenheimSections(found);
     appliedKey = key;
-    pendingKey = null;
     rerender?.();
   }).catch(() => {
     if (pendingKey !== key) return;
     pendingKey = null;
+    schedulePoll(rerender, game, key);
   });
+}
+
+function schedulePoll(rerender, game, key) {
+  if (polls >= MAX_POLLS || pollTimer) return;
+  polls += 1;
+  pollTimer = setTimeout(() => {
+    pollTimer = null;
+    if (drakkenheimModuleIds(game).slice().sort().join(",") !== key) return;
+    appliedKey = null;
+    pendingKey = null;
+    scheduleDrakkenheimCheat(rerender, game);
+  }, pollDelay);
 }
 
 export async function collectDrakkenheimSections(game = globalThis.game) {
@@ -100,8 +142,11 @@ export async function collectDrakkenheimSections(game = globalThis.game) {
 export async function collectContaminationSections(game = globalThis.game) {
   if (!drakkenheimContentActive(game)) return [];
   try {
-    const journal = await contaminationFromJournals(game);
-    const chips = journal.length ? journal : await contaminationFromTables(game);
+    const [journal, tables] = await Promise.all([
+      contaminationFromJournals(game),
+      contaminationFromTables(game)
+    ]);
+    const chips = uniqueChips([...journal, ...tables]);
     if (!chips.length) return [];
     return [{
       id: "drakkenheim-contamination",
@@ -138,9 +183,8 @@ async function contaminationFromJournals(game) {
       catch { continue; }
       if (!entry) continue;
       const pages = listOf(entry.pages?.contents ?? entry.pages);
-      const named = contaminationName(entry.name) || contaminationName(row?.name)
-        || pages.some(page => contaminationName(page?.name) || /symptom/.test(normalize(page?.name)));
-      if (!named) continue;
+      const worthReading = pages.some(page => contaminationCandidate(entry.name || row?.name, page?.name, pageHtml(page)));
+      if (!worthReading && !contaminationName(entry.name) && !contaminationName(row?.name)) continue;
       chips.push(...chipsFromEntry(pack, entry));
     }
   }
@@ -154,11 +198,10 @@ async function contaminationFromTables(game) {
     try { index = listOf(await pack.getIndex?.()); }
     catch { continue; }
     for (const row of index) {
-      if (!contaminationName(row?.name)) continue;
       let table;
       try { table = await pack.getDocument?.(row._id ?? row.id); }
       catch { continue; }
-      if (!table) continue;
+      if (!contaminationTable(table, row?.name)) continue;
       const path = documentPath(pack, table.name);
       const uuid = table.uuid || compendiumUuid(pack, "RollTable", table.id ?? row._id);
       const results = listOf(table.results?.contents ?? table.results);
@@ -233,6 +276,8 @@ export function contaminationLevelsFromHTML(html) {
     return [{ level, label, text: strip(match[2]) }];
   });
   if (fromHeadings.length) return fromHeadings;
+  const fromInline = inlineLevels(source);
+  if (fromInline.length) return fromInline;
   const fromTable = [];
   for (const row of source.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const cells = [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => strip(cell[1]));
@@ -467,16 +512,13 @@ function chip({ id, label, text, uuid, pageId = "", path }) {
 }
 
 function uniqueChips(chips) {
-  const seen = new Set();
-  const unique = [];
+  const kept = new Map();
   for (const entry of chips) {
-    const label = normalize(entry.labelText);
-    if (seen.has(entry.id) || (label && seen.has(`label:${label}`))) continue;
-    seen.add(entry.id);
-    if (label) seen.add(`label:${label}`);
-    unique.push(entry);
+    const key = normalize(entry.labelText) || entry.id;
+    const previous = kept.get(key);
+    if (!previous || (entry.tipHTML?.length ?? 0) > (previous.tipHTML?.length ?? 0)) kept.set(key, entry);
   }
-  return unique.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  return [...kept.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
 
 function searchZoneChips(pack, entry, page, html) {
@@ -578,13 +620,39 @@ function contaminationName(name) {
   return /contaminat|appendix c|symptom/.test(normalized);
 }
 
+function pageHtml(page) {
+  return page?.text?.content || page?.text?.markdown || "";
+}
+
+function inlineLevels(source) {
+  const marks = [...source.matchAll(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi)];
+  const found = [];
+  for (const [index, mark] of marks.entries()) {
+    const label = strip(mark[1]);
+    const level = levelNumber(label);
+    if (!level) continue;
+    const start = mark.index + mark[0].length;
+    const end = marks[index + 1]?.index ?? source.length;
+    const text = strip(source.slice(start, end));
+    if (text) found.push({ level, label, text });
+  }
+  return found;
+}
+
+function contaminationTable(table, rowName) {
+  if (contaminationName(table?.name) || contaminationName(rowName)) return true;
+  const results = listOf(table?.results?.contents ?? table?.results);
+  const levels = results.filter(result => levelNumber(strip(result?.name || result?.text || "")) || levelNumber(String(result?.range?.[0] ?? ""))).length;
+  return levels >= 2 && /contaminat/.test(normalize(`${table?.name} ${rowName} ${table?.description}`));
+}
+
 function contaminationCandidate(entryName, pageName, html) {
   const page = normalize(pageName);
   if (/mutation|madness|transformation/.test(page)) return false;
-  const named = contaminationName(entryName) || contaminationName(pageName) || /symptom/.test(page);
-  if (!named) return false;
-  if (contaminationLevelsFromHTML(html).length || levelNumber(pageName)) return true;
-  return /contaminat|symptom/.test(page);
+  const levels = contaminationLevelsFromHTML(html);
+  if (contaminationName(pageName)) return levels.length > 0 || Boolean(strip(html));
+  if (!levels.length) return false;
+  return contaminationName(entryName) || /contaminat/.test(normalize(strip(html).slice(0, 800)));
 }
 
 function modulePacks(game, documentName, owners = SOURCE_MODULES) {
@@ -602,7 +670,7 @@ function normalize(name) {
 
 function levelNumber(label) {
   const source = String(label ?? "").trim();
-  const match = source.match(/^(?:contamination\s+)?(?:level|stage)\s+(\d+)\b/i) || source.match(/^(\d+)$/);
+  const match = source.match(/^(?:contamination\s+)?(?:level|stage)\s+(\d+)\b/i) || source.match(/^(\d+)[.)]?$/);
   const level = Number(match?.[1]);
   return level >= 1 && level <= 12 ? level : 0;
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CHEAT_ATTRIBUTION, CHEAT_CLOSING_SECTIONS, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
 import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
-import {DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, collectContaminationSections, collectDrakkenheimSections, contaminationLevelsFromHTML, drakkenheimContentActive, drakkenheimSections, openDrakkenheimDocument, pageTopic, resetDrakkenheimCheat, scheduleDrakkenheimCheat, searchZonesFromHTML, setDrakkenheimSections} from '../scripts/cheat-sheet-drakkenheim.mjs';
+import {DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, collectContaminationSections, collectDrakkenheimSections, contaminationLevelsFromHTML, drakkenheimContentActive, drakkenheimSections, openDrakkenheimDocument, pageTopic, resetDrakkenheimCheat, scheduleDrakkenheimCheat, searchZonesFromHTML, setDrakkenheimPollDelay, setDrakkenheimSections} from '../scripts/cheat-sheet-drakkenheim.mjs';
 
 const section = id => CHEAT_SECTIONS.find(entry => entry.id === id);
 const item = (group, id) => group.items.find(entry => entry.id === id);
@@ -438,6 +438,8 @@ test('Drakkenheim chips read search zones from pack documents and ignore Craftwo
   const mutationSection = sections.find(section => section.id === 'drakkenheim-mutations');
   assert.deepEqual(mutationSection.items.map(item => item.labelText), ['Amorphous Form', 'Aquatic Adaptation', 'Fixture Mutation']);
   assert.equal(mutationSection.items.filter(item => item.labelText === 'Amorphous Form').length, 1);
+  assert.equal(mutationSection.items.filter(item => item.labelText === 'Aquatic Adaptation').length, 1);
+  assert.match(mutationSection.items.find(item => item.labelText === 'Amorphous Form').tipHTML, /Duplicate/);
   assert.equal(mutationSection.items.find(item => item.labelText === 'Fixture Mutation').documentPath, 'drakkenheim-core.journals:Appendix C: Contamination / Mutations');
   const madness = sections.find(section => section.id === 'drakkenheim-madness');
   assert.match(madness.items[0].tipHTML, /Fixture dread/);
@@ -454,6 +456,25 @@ test('Drakkenheim chips read search zones from pack documents and ignore Craftwo
   } finally {
     resetDrakkenheimCheat();
   }
+});
+
+test('contamination is read from the appendix page titles, including a renamed page whose text has the levels', async () => {
+  const renamed = '<p>This page describes contamination.</p><p><strong>Level 1.</strong> Fixture one.</p><p><strong>Level 2.</strong> Fixture two.</p>';
+  assert.deepEqual(contaminationLevelsFromHTML(renamed).map(level => level.text), ['Fixture one.', 'Fixture two.']);
+  const journal = journalPack([
+    {id: 'book', name: 'Dungeons of Drakkenheim', pages: [
+      {id: 'effects', name: 'Effects', uuid: 'Compendium.journal.effects', text: {content: renamed}},
+      {id: 'sym', name: '01 Contamination Symptoms', text: {content: '<p>Fixture symptoms.</p>'}}
+    ]},
+    {id: 'town', name: 'Emberwood Village', pages: [{id: 'overview', name: 'Overview', text: {content: '<p>A town entry mentions contamination once.</p>'}}]}
+  ]);
+  const sections = await collectContaminationSections(drakkenheimGame({packs: [journal]}));
+  const labels = sections[0].items.map(item => item.labelText);
+  assert.ok(labels.includes('Level 1.'));
+  assert.ok(labels.includes('Level 2.'));
+  assert.ok(labels.includes('01 Contamination Symptoms'));
+  assert.equal(labels.includes('Overview'), false);
+  assert.equal(sections[0].items.find(item => item.labelText === 'Level 1.').documentPath, 'drakkenheim-core.journals:Dungeons of Drakkenheim / Effects');
 });
 
 test('an inactive Drakkenheim module is not remembered as off', async () => {
@@ -475,6 +496,33 @@ test('an inactive Drakkenheim module is not remembered as off', async () => {
   await new Promise(resolve => setTimeout(resolve, 30));
   assert.equal(renders, 1);
   resetDrakkenheimCheat();
+});
+
+test('an empty compendium read is not cached while the Cheat Sheet tab is open', async () => {
+  resetDrakkenheimCheat();
+  setDrakkenheimPollDelay(20);
+  let renders = 0;
+  const packs = [];
+  const game = {
+    modules: {get(id) { return {active: id === 'drakkenheim-core'}; }},
+    packs
+  };
+  try {
+    scheduleDrakkenheimCheat(() => { renders += 1; }, game);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(renders, 0);
+    assert.deepEqual(drakkenheimSections(), []);
+    packs.push(journalPack([{
+      id: 'abc',
+      name: 'Appendix C: Contamination',
+      pages: [{id: 'sym', name: 'Contamination Symptoms', text: {content: '<h3>Level 1</h3><p>Arrived.</p>'}}]
+    }]));
+    await new Promise(resolve => setTimeout(resolve, 80));
+    assert.equal(renders, 1);
+    assert.equal(drakkenheimSections()[0].items[0].labelText, 'Level 1');
+  } finally {
+    resetDrakkenheimCheat();
+  }
 });
 
 test('the tray adds Cheat Sheet after Triggers and does not register a new setting', () => {
