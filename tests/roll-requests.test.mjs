@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
-import {CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties} from "../scripts/roll-requests.mjs";
+import {CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties} from "../scripts/roll-requests.mjs";
 
 const skills = {prc: {label: "Perception"}, ste: {label: "Stealth"}};
 const abilities = {str: {label: "Strength"}, wis: {label: "Wisdom"}};
@@ -68,6 +68,36 @@ test("changing the request type replaces the second dropdown with that type's SR
   assert.equal(skill.select.options.some(item => item.value === "thv"), false);
   assert.equal(skill.select.options.length, 18);
   assert.match(source, /if \(el\.name === "checkType"\) refreshCheckSelect\(card\);/);
+});
+
+test("the character field shows only when who rolls is one character", () => {
+  assert.equal(characterFieldVisible("player"), true);
+  assert.equal(characterFieldVisible("party"), false);
+  assert.equal(characterFieldVisible("tokens"), false);
+  const source = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../styles/game-master.css", import.meta.url), "utf8");
+  assert.match(source, /data-mlgm-character-field\$\{characterFieldVisible\(scope\) \? "" : " hidden"\}/);
+  assert.doesNotMatch(source, /scope === "player" \? inlineField\("Character"/);
+  const sync = source.slice(source.indexOf("function syncCharacterField"), source.indexOf("function specialtyGrid"));
+  const field = {hidden: false, value: "actor-a"};
+  const scope = {value: "party"};
+  const card = {querySelector(selector) {
+    if (selector === "[data-mlgm-character-field]") return field;
+    if (selector.includes("scope")) return scope;
+    return null;
+  }};
+  const context = vm.createContext({characterFieldVisible, card});
+  vm.runInContext(sync, context);
+  vm.runInContext("syncCharacterField(card)", context);
+  assert.equal(field.hidden, true);
+  assert.equal(field.value, "actor-a");
+  scope.value = "player";
+  vm.runInContext("syncCharacterField(card)", context);
+  assert.equal(field.hidden, false);
+  assert.equal(field.value, "actor-a");
+  assert.match(source, /if \(el\.name === "scope"\) syncCharacterField\(card\);/);
+  assert.match(source, /syncCharacterField\(root\.querySelector\('\[data-roll-card="check"\]'\)\)/);
+  assert.match(css, /#mlgm \[hidden\] \{ display:none!important; \}/);
 });
 
 test("who rolls uses the party, selected party tokens, or one player", () => {

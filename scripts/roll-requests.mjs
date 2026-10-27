@@ -49,6 +49,10 @@ export function defaultCheckId(type, choices, current) {
   return choices.find(choice => choice.id === preferred)?.id ?? choices[0]?.id ?? "";
 }
 
+export function characterFieldVisible(scope) {
+  return scope === "player";
+}
+
 export function resolveRollActors({scope, actorId, partyIds = [], selectedActorIds = []} = {}) {
   const party = [...new Set(partyIds)];
   if (scope === "tokens") {

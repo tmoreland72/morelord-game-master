@@ -84,30 +84,32 @@ test('typing in a tray field and clicking once applies the control under the poi
   assert.ok(coins.indexOf('reportValidity') < coins.indexOf('await saving'));
   assert.match(source, /ml-game-master-track-volume[\s\S]*allTrackVolume/);
   assert.match(source, /data-sound/);
-  const closesAfter = snippet => {
+  const staysOpen = snippet => {
     const at = source.indexOf(snippet);
     assert.ok(at >= 0, snippet);
-    assert.match(source.slice(at, at + snippet.length + 30), /closeTray\(\)/);
+    assert.doesNotMatch(source.slice(at, at + snippet.length + 80), /closeTray\(/);
   };
-  closesAfter('buildCheckRequest({...draft, type: draft.checkType, actorIds}));');
-  closesAfter("notify('Party coins updated. See the chat card for changes and deficits.');");
-  closesAfter("notify(bulkText('xp.updated'));");
-  closesAfter("notify(bulkText('inspiration.updated'));");
-  closesAfter("notify(bulkText('tokens.updatedNotice'));");
-  closesAfter("notify(bulkText('undo.done'));");
-  closesAfter('await createRequest(config);');
-  closesAfter('await rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});');
-  closesAfter('await m.execute(); notify(`Launched ${m.name}.`);');
+  staysOpen('buildCheckRequest({...draft, type: draft.checkType, actorIds}));');
+  staysOpen("notify('Party coins updated. See the chat card for changes and deficits.');");
+  staysOpen("notify(bulkText('xp.updated'));");
+  staysOpen("notify(bulkText('inspiration.updated'));");
+  staysOpen("notify(bulkText('tokens.updatedNotice'));");
+  staysOpen("notify(bulkText('undo.done'));");
+  staysOpen('await createRequest(config);');
+  staysOpen('return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});');
+  staysOpen('await m.execute(); notify(`Launched ${m.name}.`);');
   const playlistRun = source.slice(source.indexOf('if (type === "playlist")'), source.indexOf('if (type === "ambience")'));
+  const ambienceRun = source.slice(source.indexOf('if (type === "ambience")'), source.indexOf('async function saveAndRun'));
   assert.doesNotMatch(playlistRun, /closeTray/);
-  assert.ok(coins.indexOf('if (result?.unchanged)') < coins.indexOf('closeTray()'));
+  assert.doesNotMatch(ambienceRun, /closeTray/);
   for (const name of ['sendBulkCoins', 'sendBulkXp', 'sendBulkInspiration', 'sendBulkTokens']) {
     const start = source.indexOf(`async function ${name}`);
     const fn = source.slice(start, source.indexOf('async function', start + 20));
     assert.match(fn, /if \(result\?\.unchanged\)/);
     assert.doesNotMatch(fn, /unchanged[\s\S]{0,220}return;/);
-    assert.match(fn, /closeTray\(\)/);
+    assert.doesNotMatch(fn, /closeTray\(/);
   }
+  assert.doesNotMatch(source, /closeTray\(/);
   assert.match(source, /if \(action === "stop-all-sound"\) return stopEverySound\(\);/);
   const stopAll = source.slice(source.indexOf('async function stopEverySound'), source.indexOf('async function setAmbienceVolumes'));
   assert.doesNotMatch(stopAll, /closeTray/);

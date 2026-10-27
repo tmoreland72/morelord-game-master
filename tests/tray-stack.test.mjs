@@ -36,6 +36,12 @@ test('popups are dialogs, dialog elements, and chat popouts', () => {
   assert.equal(isTrayPopup({options: {tag: 'dialog'}, element: element('SECTION')}, {}), true);
   assert.equal(isTrayPopup({options: {tag: 'section'}, element: element('DIALOG')}, {}), true);
   assert.equal(isTrayPopup({options: {tag: 'section'}, element: element('SECTION')}, {}), false);
+  class Dialog5e {}
+  class RollConfigurationDialog extends Dialog5e {}
+  class RollResolver {}
+  assert.equal(isTrayPopup(new RollConfigurationDialog(), {}), true);
+  assert.equal(isTrayPopup(new RollResolver(), {}), true);
+  assert.equal(isTrayPopup({options: {tag: 'section', classes: ['roll-configuration']}, element: element('SECTION')}, {}), true);
 });
 
 test('dialogs and chat popouts stack above the tray and focused windows stay below it', () => {
@@ -150,4 +156,65 @@ test('dialogs and chat popouts stack above the tray and focused windows stay bel
   sheet.setPosition({zIndex: 5000});
   assert.ok(z(sheet) < 1100, 'a window position above the tray is put back under it');
   assert.ok(z(dialog) > z(sheet));
+});
+
+test('a roll configuration dialog opened inside a sheet is moved above the tray', () => {
+  const vars = {'--z-index-window': '100', '--z-index-tooltip': '9999'};
+  const documentElement = {};
+  const root = element('ASIDE', '1100');
+  const view = {
+    getComputedStyle(node) {
+      if (node === documentElement) return {zIndex: 'auto', position: 'static', getPropertyValue: name => vars[name] ?? ''};
+      return {zIndex: node.style?.zIndex ?? 'auto', position: node.style?.position || 'absolute', getPropertyValue: () => ''};
+    }
+  };
+  const body = {append(node) { node.parentElement = body; }};
+  class ApplicationV2 {
+    static _maxZ = 100;
+    constructor(tag = 'section') {
+      this.element = element(tag);
+      this.position = {zIndex: 100};
+      this.options = {tag};
+    }
+    bringToFront() {}
+    setPosition() {}
+  }
+  class Dialog5e extends ApplicationV2 {}
+  class RollConfigurationDialog extends Dialog5e {
+    constructor() {
+      super('section');
+      this.options = {tag: 'section', classes: ['roll-configuration']};
+      this.element = element('SECTION', '40');
+      this.element.parentElement = element('SECTION', '150');
+      this.element.ownerDocument = {body, defaultView: view};
+      this.element.classList = {contains: name => name === 'roll-configuration'};
+    }
+  }
+  class RollResolver extends ApplicationV2 {
+    constructor() {
+      super('section');
+      this.options = {tag: 'section'};
+      this.element = element('SECTION', '40');
+    }
+  }
+  const env = {
+    _maxZ: 100,
+    document: {documentElement, defaultView: view, body},
+    Hooks: {on() {}},
+    ui: {windows: {}},
+    foundry: {applications: {api: {ApplicationV2}, instances: new Map()}}
+  };
+  const roll = new RollConfigurationDialog();
+  const resolver = new RollResolver();
+  env.foundry.applications.instances.set('roll', roll);
+  env.foundry.applications.instances.set('resolver', resolver);
+  assert.equal(installTrayStack(root, env), true);
+  assert.equal(roll.element.parentElement, body);
+  assert.equal(roll.element.style.position, 'fixed');
+  const z = app => Number(app.element.style.zIndex);
+  assert.ok(z(roll) > 1100 && z(roll) < 9999, 'the nested roll dialog is raised below tooltips');
+  assert.ok(z(resolver) > z(roll) && z(resolver) < 9999, 'the core roll resolver stacks above the tray');
+  roll.element.style.zIndex = '20';
+  roll.bringToFront();
+  assert.ok(z(roll) > 1100, 'focusing the roll dialog keeps it above the tray');
 });

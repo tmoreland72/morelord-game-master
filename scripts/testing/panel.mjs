@@ -4,7 +4,7 @@ export const panelChecks=[{
   id:'morelord-game-master.panel-layout',
   async run() {
     assert(game.world.id === 'dev1', 'Dev1 required.');
-    let dialog, playlistDialog, windowApp;
+    let dialog, playlistDialog, windowApp, rollDialog;
     let previousTab;
     const api=game.modules.get('morelord-game-master').api;
     const wasOpen=document.body.classList.contains('mlgm-open');
@@ -50,6 +50,19 @@ export const panelChecks=[{
       windowApp.bringToFront();
       assert(root.contains(document.elementFromPoint(bounds.left+20,bounds.top+20)), 'Focusing a window after a dialog does not cover the tray.');
       assert(dialog.element.contains(document.elementFromPoint(bounds.left+100,bounds.top+20)), 'The dialog stays above the tray when a window is focused.');
+      class RollConfigurationDialog extends foundry.applications.api.ApplicationV2 {
+        static DEFAULT_OPTIONS = {id:"mlgm-stack-roll", tag:"dialog", classes:["roll-configuration"], window:{title:"Roll Configuration"}, position:{width:280, height:160}};
+        async _renderHTML() { const node = document.createElement("p"); node.textContent = "Roll configuration."; return node; }
+      }
+      rollDialog = new RollConfigurationDialog();
+      if (typeof windowApp.renderChild === "function") await windowApp.renderChild(rollDialog);
+      else await rollDialog.render({force:true});
+      rollDialog.bringToFront();
+      const rollRect = rollDialog.element.getBoundingClientRect();
+      rollDialog.setPosition({left:bounds.left+80, top:bounds.top, width:Math.min(rollRect.width || 280, bounds.width-80), height:Math.min(rollRect.height || 160, bounds.height)});
+      assert(rollDialog.element.parentElement === document.body, 'A roll dialog opened from a window is not trapped in that window.');
+      assert(rollDialog.element.contains(document.elementFromPoint(bounds.left+100, bounds.top+20)), 'The roll configuration dialog opens above the tray.');
+      assert(Number(getComputedStyle(rollDialog.element).zIndex) > Number(getComputedStyle(root).zIndex), 'The roll configuration dialog stacks above the tray.');
       previousTab=root.querySelector('[data-action="tab"][aria-selected="true"]')?.dataset.id;
       root.querySelector('[data-action="tab"][data-id="sound"]').click();
       root.querySelector('[data-action="playlist"]').click();
@@ -73,6 +86,6 @@ export const panelChecks=[{
         else playlistDialog.querySelector('[data-action="close"]')?.click();
       }
       if(previousTab) document.querySelector(`#mlgm [data-action="tab"][data-id="${previousTab}"]`)?.click();
-      await dialog?.close();await windowApp?.close();below.remove();above.remove();api.toggle(wasOpen); }
+      await dialog?.close();await rollDialog?.close();await windowApp?.close();below.remove();above.remove();api.toggle(wasOpen); }
   }
 }];

@@ -2,12 +2,24 @@
 // ApplicationV2.bringToFront (and Application v1 bringToTop) raise a window by
 // incrementing the shared _maxZ counter from that window layer. Dialogs, roll
 // prompts, and chat popouts use the same counter, so a tray at the tooltip
-// layer covers them. Popups are moved above the tray. A normal window whose
-// counter crosses the tray is put back under it, and _maxZ is returned to the
-// window band so the next focused sheet does not follow the popup up.
+// layer covers them. Popups are moved above the tray. A popup rendered inside
+// another window, including a dnd5e roll configuration dialog or Foundry's
+// RollResolver opened from a sheet, is moved to the document body first so
+// that window cannot keep it under the tray. A normal window whose counter
+// crosses the tray is put back under it, and _maxZ is returned to the window
+// band so the next focused sheet does not follow the popup up.
 
 const WRAPPED = Symbol("mlgmTrayStack");
 const hooked = new WeakSet();
+const POPUP_CLASS_NAMES = new Set([
+  "Dialog5e",
+  "RollConfigurationDialog",
+  "D20RollConfigurationDialog",
+  "AttackRollConfigurationDialog",
+  "DamageRollConfigurationDialog",
+  "SkillToolRollConfigurationDialog",
+  "RollResolver"
+]);
 export const TRAY_Z_OFFSET = 1000;
 
 function named(app, name) {
@@ -27,6 +39,10 @@ export function isTrayPopup(app, {DialogV2, Dialog, ChatPopout, FilePicker} = {}
   if (FilePicker && (app instanceof FilePicker || (FilePicker.implementation && app instanceof FilePicker.implementation))) return true;
   // Subclasses keep the base name in the chain when the live class is not the one Foundry exported.
   if (named(app, "ChatPopout") || named(app, "FilePicker")) return true;
+  if ([...POPUP_CLASS_NAMES].some(name => named(app, name))) return true;
+  const classes = app.options?.classes;
+  if (Array.isArray(classes) && classes.includes("roll-configuration")) return true;
+  if (app.element?.classList?.contains?.("roll-configuration") === true) return true;
   if (app.options?.tag === "dialog") return true;
   const element = app.element;
   if (!element) return false;
@@ -122,10 +138,28 @@ export function installTrayStack(root, env = globalThis) {
 
   const readZ = element => numeric(view.getComputedStyle(element).zIndex);
   const writeZ = (app, z) => {
-    app.element.style.zIndex = String(z);
+    const element = app.element;
+    if (typeof element?.style?.setProperty === "function") element.style.setProperty("z-index", String(z), "important");
+    else if (element?.style) element.style.zIndex = String(z);
     if (app.position && typeof app.position === "object") app.position.zIndex = z;
   };
   const holders = [ApplicationV2, env];
+  const kinds = {
+    DialogV2: ApplicationV2 && foundry.applications.api.DialogV2,
+    Dialog: legacyDialog(foundry),
+    ChatPopout: foundry.applications?.sidebar?.apps?.ChatPopout,
+    FilePicker: foundry.applications?.apps?.FilePicker
+  };
+  const liftPopup = app => {
+    if (!isTrayPopup(app, kinds)) return;
+    const element = app.element;
+    const body = element?.ownerDocument?.body;
+    if (!element || !body || element === root || element.matches?.(":modal")) return;
+    if (!element.parentElement || element.parentElement === body) return;
+    body.append(element);
+    const position = element.ownerDocument.defaultView?.getComputedStyle(element)?.position;
+    if (position !== "fixed") element.style.position = "fixed";
+  };
   const controller = createStackController({
     root,
     windowLayer: cssNumber(view, doc.documentElement, "--z-index-window", 100),
@@ -141,18 +175,13 @@ export function installTrayStack(root, env = globalThis) {
         } catch { /* Foundry owns this counter. */ }
       }
     },
-    kinds: {
-      DialogV2: ApplicationV2 && foundry.applications.api.DialogV2,
-      Dialog: legacyDialog(foundry),
-      ChatPopout: foundry.applications?.sidebar?.apps?.ChatPopout,
-      FilePicker: foundry.applications?.apps?.FilePicker
-    }
+    kinds
   });
   let placing = false;
   const place = app => {
     if (placing) return;
     placing = true;
-    try { controller.place(app); }
+    try { liftPopup(app); controller.place(app); }
     finally { placing = false; }
   };
   wrap(ApplicationV2.prototype, "bringToFront", place);

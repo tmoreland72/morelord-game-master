@@ -16,10 +16,13 @@ function field(partial) {
   };
 }
 
-test('opening Game Settings closes the tray and leaves it able to reopen', () => {
+test('using a feature leaves the tray open; Escape and the handle still close it', () => {
+  assert.doesNotMatch(source, /closeTray|renderSettingsConfig/);
+  assert.match(source, /class GameMasterSettings extends foundry\.applications\.api\.ApplicationV2 \{\s*render\(\) \{ settings\(\)\.catch\(fail\); return this; \}/);
+  assert.match(source, /if \(event\.key === "Escape"\) \{ toggle\(false\);/);
+  assert.match(source, /if \(action === "toggle"\) return toggle\(\);/);
   const start = source.indexOf('function toggle(');
   const end = source.indexOf('function saved(');
-  const events = new Map();
   const focused = [];
   const classes = new Set(['mlgm-open']);
   const context = vm.createContext({
@@ -27,29 +30,19 @@ test('opening Game Settings closes the tray and leaves it able to reopen', () =>
     root: {querySelector(selector) { return {focus() { focused.push(selector); }}; }},
     game: {user: {isGM: true}},
     document: {body: {classList: {toggle(name, on) { if (on) classes.add(name); else classes.delete(name); }}}},
-    render() { context.renders = (context.renders ?? 0) + 1; },
-    Hooks: {on(name, fn) { events.set(name, [...(events.get(name) ?? []), fn]); }}
+    render() { context.renders = (context.renders ?? 0) + 1; }
   });
   vm.runInContext(source.slice(start, end), context);
-  const [hook] = events.get('renderSettingsConfig');
-  assert.equal(events.has('renderApplicationV2'), false);
-  hook({}, {}, {}, {isFirstRender: true, force: true});
-  assert.equal(context.open, false);
-  assert.equal(classes.has('mlgm-open'), false);
-  assert.deepEqual(focused, []);
-  vm.runInContext('toggle(true)', context);
   assert.equal(context.open, true);
   assert.equal(classes.has('mlgm-open'), true);
-  assert.deepEqual(focused, ['[role=tab][aria-selected=true]']);
-  const renders = context.renders;
-  hook({}, {}, {}, {isFirstRender: false});
-  assert.equal(context.open, true);
-  assert.equal(context.renders, renders);
-  context.open = true;
-  vm.runInContext('closeTrayForSettings()', context);
+  vm.runInContext('toggle(false)', context);
   assert.equal(context.open, false);
-  assert.deepEqual(focused, ['[role=tab][aria-selected=true]']);
-  assert.match(source, /class GameMasterSettings extends foundry\.applications\.api\.ApplicationV2 \{\s*render\(\) \{ closeTrayForSettings\(\);/);
+  assert.equal(classes.has('mlgm-open'), false);
+  assert.deepEqual(focused, ['.gm-handle']);
+  vm.runInContext('toggle()', context);
+  assert.equal(context.open, true);
+  assert.equal(classes.has('mlgm-open'), true);
+  assert.deepEqual(focused, ['.gm-handle', '[role=tab][aria-selected=true]']);
 });
 
 test('the tray stacks above Foundry windows and below popups', () => {

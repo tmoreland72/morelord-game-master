@@ -6,7 +6,7 @@ import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
-import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList} from './bulk-actions.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
@@ -80,7 +80,7 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true, v
 Hooks.once("init", () => {
   promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
-    render() { closeTrayForSettings(); settings().catch(fail); return this; }
+    render() { settings().catch(fail); return this; }
   }
   game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience folders.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
   game.settings.register(ID, "board", { scope: "world", config: false, restricted: true, type: Object,
@@ -180,17 +180,6 @@ function toggle(value = !open, {focus = true} = {}) {
   open = Boolean(value); document.body.classList.toggle("mlgm-open", open); render();
   if (focus) root.querySelector(open ? "[role=tab][aria-selected=true]" : ".gm-handle")?.focus();
 }
-function closeTray() {
-  if (!open) return;
-  toggle(false, {focus: false});
-}
-function closeTrayForSettings() {
-  closeTray();
-}
-Hooks.on("renderSettingsConfig", (_application, _element, _context, options) => {
-  if (options?.isFirstRender === false) return;
-  closeTrayForSettings();
-});
 function saved(type) {
   return state.saved.filter(s => s.type === type).map(s => savedButton("saved",savedName(s.type,s.config),s.id,"remove-saved")).join("");
 }
@@ -249,6 +238,7 @@ function render() {
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.keys(tabs).map(id => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(tabLabel(id))}</a>`).join("")}</nav>
     <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings","cheat"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
+  syncCharacterField(root.querySelector('[data-roll-card="check"]'));
   core().ui.applyPageLayout({element:root});
 }
 function content() {
@@ -289,7 +279,7 @@ function checkBuilder() {
     inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join(""))),
     inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"')),
     inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join(""))),
-    scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""
+    `<label class="gm-inline" data-mlgm-character-field${characterFieldVisible(scope) ? "" : " hidden"}><span>Character</span>${select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))}</label>`
   ].join("");
   return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)})}</section>`;
 }
@@ -304,6 +294,11 @@ function refreshCheckSelect(card) {
   const checkId = defaultCheckId(checkType, choices, select.value);
   select.innerHTML = choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("");
   select.value = checkId;
+}
+function syncCharacterField(card) {
+  const field = card?.querySelector("[data-mlgm-character-field]");
+  if (!field) return;
+  field.hidden = !characterFieldVisible(card.querySelector('[name="scope"]')?.value);
 }
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
@@ -350,7 +345,6 @@ async function sendCheck() {
   const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds()});
   await persist(n => { n.last.check = draft; });
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
-  closeTray();
 }
 async function sendBulkCoins(operation) {
   if (bulkBusy) return;
@@ -369,7 +363,6 @@ async function sendBulkCoins(operation) {
       await persist(n => { n.last.bulkCoins = readCoins(); });
       notify('Party coins updated. See the chat card for changes and deficits.');
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkXp(operation) {
@@ -390,7 +383,6 @@ async function sendBulkXp(operation) {
       await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
       notify(bulkText('xp.updated'));
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkInspiration(action) {
@@ -406,7 +398,6 @@ async function sendBulkInspiration(action) {
       await persist(n => { n.last.bulkInspiration = action; });
       notify(bulkText('inspiration.updated'));
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkTokens() {
@@ -421,7 +412,6 @@ async function sendBulkTokens() {
       if (!result?.messageId) throw Error(bulkText('error.noGm'));
       notify(bulkText('tokens.updatedNotice'));
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkUndo() {
@@ -433,7 +423,6 @@ async function sendBulkUndo() {
     const result = await applyBulkUndo();
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     notify(bulkText('undo.done'));
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendQuick(id) {
@@ -443,15 +432,12 @@ async function sendQuick(id) {
   if (!config.actorIds.length) throw new Error(id === "death" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
   await persist(n => { n.last[id] = config; if (id === "encounter") n.last.die = config.die; });
   await createRequest(config);
-  closeTray();
 }
 async function sendFate() {
   const card = root.querySelector('[data-roll-card="fate"]');
   const scope = card && new FormData(card).get("scope") === "party" ? "party" : "tokens";
   if (card) await persist(n => { n.last.fate = {scope}; });
-  const result = await rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
-  closeTray();
-  return result;
+  return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
 }
 function macroRunLabel(key) {
   const full = `morelord-game-master.macros.${key}`;
@@ -600,7 +586,7 @@ async function act(action, id, target) {
   if (action === "stop-all-sound") return stopEverySound();
   if (action === "stop-music" || action === "stop-ambience") for (const p of game.playlists) if (Boolean(p.getFlag(ID,"ambience")) === (action === "stop-ambience")) await p.stopAll();
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
-  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); closeTray(); }
+  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
   if (action === "trigger-toggle") await persist(n => { const t = n.triggers.find(x => x.id === id); if (t) t.enabled = !t.enabled; });
   render();
 }
@@ -654,6 +640,7 @@ async function onChange(event) {
     // The tray stays in place so a field save does not swallow the next click.
     // The second dropdown is the exception: its options belong to the new type.
     if (el.name === "checkType") refreshCheckSelect(card);
+    if (el.name === "scope") syncCharacterField(card);
     await persist(n => { n.last.check = readBuilder(); });
     return;
   }
@@ -879,7 +866,6 @@ async function setAmbienceVolumes() {
 async function run(type, config) {
   if (["group", "player", "death"].includes(type)) {
     await createRequest({...config,...(type === "group" ? {actorIds:partyActorIds()} : {}),kind:type === "death" ? "death" : "skill"});
-    closeTray();
   }
   if (type === "playlist") {
     const p = game.playlists.get(config.playlist);
@@ -949,7 +935,6 @@ async function encounter(die,name,selected) {
   await persist(n => {n.last.encounter = {actorIds};});
   await createRequest({kind:"encounter",die,name,actorIds});
   notify(`Requested blind 1d${die} encounter checks.`);
-  closeTray();
 }
 async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
@@ -1003,7 +988,6 @@ export async function requestCheck(config) {
   if (!actorIds) return;
   const message = await createRequest({...config,actorIds});
   notify("Check requested. Core routes online players and offline GM fallbacks.");
-  closeTray();
   render();
   return message;
 }
