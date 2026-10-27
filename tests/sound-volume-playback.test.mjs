@@ -20,9 +20,15 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.match(source, /gm-ambience-layer/);
   assert.match(css, /\.ml-window :is\(\.form-footer/);
   assert.match(css, /flex:0 0 auto !important/);
-  assert.match(css, /grid-template-columns:auto minmax\(0,1fr\) 6\.5rem auto/);
+  assert.match(css, /grid-template-columns:auto minmax\(0,1fr\) auto max-content/);
+  assert.match(source, /label\("Name"/);
+  assert.doesNotMatch(source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck')), /name="name\$\{i\}"/);
   assert.match(css, /--mlgm-button-height:var\(--ml-control-height, 2rem\)/);
-  assert.match(css, /#mlgm button:not\(\.gm-handle\):not\(\.ml-icon-button\):not\(\.gm-cheat-chip\):not\(\.ml-stepper button\)/);
+  assert.match(css, /#mlgm button:not\(\.gm-handle\):not\(\.ml-icon-button\):not\(\.gm-cheat-chip\):not\(\.gm-macro\):not\(\.ml-stepper button\)/);
+  assert.match(css, /--mlgm-macro-button-height:calc\(2rem \+ var\(--ml-space-3, 0\.75rem\)\)/);
+  assert.match(css, /#mlgm \.gm-macro \{[^}]*height:var\(--mlgm-macro-button-height\)/);
+  assert.match(css, /#mlgm \.gm-bulk \{[^}]*align-content:start/);
+  assert.match(css, /#mlgm \.ml-stepper \{[^}]*height:var\(--mlgm-button-height\)/);
   assert.match(css, /#mlgm \.gm-ambience-column button\[data-action="ambience"\][\s\S]*white-space:nowrap/);
   const writes = [];
   const played = [];

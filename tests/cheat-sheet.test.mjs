@@ -304,7 +304,9 @@ test('static Drakkenheim chips stay hidden until a content module is active', ()
   assert.deepEqual(drakkenheimItems(drakkenheimGame()).map(entry => entry.label), [
     'Contamination', 'Delerium Search', 'Delerium'
   ]);
-  assert.deepEqual(drakkenheimConditions(drakkenheimGame()).map(entry => entry.label), ['Dazed', 'Weakened']);
+  assert.deepEqual(drakkenheimConditions(drakkenheimGame()).map(entry => entry.label), [
+    'Addled', 'Bewildered', 'Bleeding', 'Bloodied', 'Burning', 'Clumsy', 'Dazed', 'Defenseless', 'Distracted', 'Enfeebled', 'Entangled', 'Frozen', 'Helpless', 'Immobilized', 'Jinxed', 'Shocked', 'Sickened', 'Slowed', 'Staggered', 'Valor', 'Weakened'
+  ]);
   assert.deepEqual(DRAKKENHEIM_CONDITIONS.map(entry => entry.label).includes('Drakkenheim Madness'), false);
   assert.deepEqual(DRAKKENHEIM_ITEMS.map(entry => entry.label).includes('New Conditions'), false);
 });
@@ -345,8 +347,7 @@ test('an active module shows the static Drakkenheim section and purple condition
     assert.doesNotMatch(html, /data-cheat-loading|Loading…|gm-cheat-note/);
     const conditions = html.slice(html.indexOf('data-cheat-section="conditions"'), html.indexOf('data-cheat-section="actions"'));
     assert.match(conditions, /gm-cheat-chip--drakkenheim/);
-    assert.match(conditions, />Dazed</);
-    assert.match(conditions, />Weakened</);
+    for (const label of ['Addled', 'Bewildered', 'Dazed', 'Weakened', 'Valor']) assert.match(conditions, new RegExp(`>${label}<`));
     assert.doesNotMatch(html, /Drakkenheim Madness|New Conditions|Amorphous/);
     const report = debugDrakkenheimCheat(globalThis.game);
     assert.equal(report.status, 'ready');

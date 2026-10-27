@@ -196,7 +196,11 @@ function saved(type) {
 function savedName(type,config) {
   if (type === "group" || type === "player") return `${game.i18n.localize(CONFIG.DND5E.skills[config.skill]?.label ?? config.skill)} Check${type === "player" ? ` - ${game.actors.get(config.actorIds?.[0])?.name ?? "Missing character"}` : ""}`;
   if (type === "playlist") return game.playlists.get(config.playlist)?.name ?? "Missing playlist";
-  if (type === "ambience") return (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).join(" + ");
+  if (type === "ambience") {
+    const named = String(config.name ?? "").trim();
+    if (named) return named;
+    return (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).join(" + ");
+  }
   return "Death Saving Throw";
 }
 function controlKey(el) {
@@ -889,11 +893,11 @@ async function run(type, config) {
   if (type === "ambience") {
     let p = game.playlists.find(p => p.getFlag(ID,"ambience"));
     if (!p) p = await Playlist.create({ name:"Morelord · Ambience", mode:CONST.PLAYLIST_MODES.SIMULTANEOUS, flags:{[ID]:{ambience:true}} });
+    const mix = String(config.name ?? "").trim() || (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).filter(Boolean).join(" + ") || "Ambience";
     for (const file of config.files) {
-      const name = String(file.name || ambienceNameFromPath(file.path)).trim() || ambienceNameFromPath(file.path);
       let sound = p.sounds.find(s => s.path === file.path);
-      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name, path:file.path, repeat:true, volume:file.volume }]);
-      await sound.update({ playing:true, repeat:true, volume:file.volume, name });
+      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name:mix, path:file.path, repeat:true, volume:file.volume }]);
+      await sound.update({ playing:true, repeat:true, volume:file.volume, name:mix });
     }
     notify("Ambience layers started for the table.");
   }
@@ -970,21 +974,18 @@ async function ambienceForm() {
   if (!playable.length) return;
   const ambiencePercent = Number.isFinite(Number(state.last?.ambienceVolume)) ? Number(state.last.ambienceVolume) : 40;
   const layers = playable.map((file, i) => {
-    const name = ambienceNameFromPath(file.path);
-    const checkId = `ml-game-master-ambience-file-${i}`;
-    const nameId = `ml-game-master-ambience-name-${i}`;
-    return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${checkId}" value="${i}" aria-label="${e(`Include ${name}`)}">${label("Name", `<input id="${nameId}" name="name${i}" value="${e(name)}" required>`)}<label class="gm-field gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></div>`;
+    const fileName = file.path.split("/").pop();
+    const fieldId = `ml-game-master-ambience-file-${i}`;
+    return `<div class="gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}"><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label></div>`;
   }).join("");
-  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
+  const defaultName = playable.length === 1 ? ambienceNameFromPath(playable[0].path) : "";
+  const result = await form("Add Ambience", `${label("Name", input("name", defaultName, 'id="ml-game-master-ambience-name" required'))}<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
   if (!result) return;
-  const selected = result.data.getAll("file").map(i => {
-    const index = Number(i);
-    const path = playable[index].path;
-    const name = String(result.data.get(`name${index}`) ?? "").trim() || ambienceNameFromPath(path);
-    return {path, name, volume: volumeFromPercent(result.data.get(`volume${index}`))};
-  });
+  const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
-  await saveAndRun("ambience", {files: selected});
+  const name = String(result.data.get("name") ?? "").trim() || selected.map(file => ambienceNameFromPath(file.path)).join(" + ");
+  if (!name) throw new Error("Name this ambience.");
+  await saveAndRun("ambience", {name, files: selected});
 }
 
 export async function requestCheck(config) {

@@ -1,20 +1,22 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
 /* Above Foundry windows and dialogs; tooltips and notifications retain their native layers. */
-.ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); }
+.ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); }
 #mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-tooltip) - 1); pointer-events:auto; }
-#mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.ml-stepper button),
+#mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.gm-macro):not(.ml-stepper button),
 .ml-window .ml-dialog-shell button:not(.ml-icon-button),
-.ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); }
-#mlgm .ml-icon-button:not(.ml-help-button), .ml-window .ml-icon-button:not(.ml-help-button) { box-sizing:border-box; width:var(--mlgm-button-height); height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); }
-#mlgm .ml-stepper button { height:auto; min-height:0; max-height:none; width:auto; }
+.ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }
+#mlgm .ml-icon-button:not(.ml-help-button), .ml-window .ml-icon-button:not(.ml-help-button) { box-sizing:border-box; width:var(--mlgm-button-height); height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }
+#mlgm .ml-stepper { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; align-self:flex-end; }
+#mlgm .ml-stepper > input { height:100%; min-height:0; max-height:100%; flex:1 1 auto; align-self:stretch; }
+#mlgm .ml-stepper button { height:auto; min-height:0; max-height:none; width:auto; flex:1 1 0; align-self:stretch; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) { justify-content:flex-start; align-items:center; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { flex:0 0 auto !important; width:auto !important; max-width:max-content; align-self:center; padding-inline:0.85rem; }
 #mlgm [hidden] { display:none!important; }
 #mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:75vh; }
 #mlgm .gm-column { min-width:0; }
-#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,minmax(14rem,1fr)); gap:var(--ml-space-2); min-width:0; }
-#mlgm .gm-macro { display:flex; align-items:center; justify-content:flex-start; gap:var(--ml-space-2); width:100%; min-width:0; height:var(--mlgm-button-height); padding:0 var(--ml-space-2); text-align:left; }
+#mlgm .gm-macros { display:grid; grid-template-columns:repeat(auto-fill,minmax(14rem,1fr)); gap:var(--ml-space-2); min-width:0; align-content:start; align-items:start; }
+#mlgm .gm-macro { box-sizing:border-box; display:flex; align-items:center; justify-content:flex-start; gap:var(--ml-space-2); width:100%; min-width:0; height:var(--mlgm-macro-button-height); min-height:var(--mlgm-macro-button-height); max-height:var(--mlgm-macro-button-height); padding:var(--ml-space-1) var(--ml-space-2); overflow:hidden; text-align:left; }
 #mlgm .gm-macro img { flex:0 0 2rem; width:2rem; height:2rem; object-fit:cover; border-radius:var(--ml-radius-sm); }
 #mlgm .gm-macro > span:not(.gm-macro-runs) { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #mlgm .gm-macro-runs {
@@ -30,16 +32,23 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-roll-actions { margin-top:auto; justify-content:flex-end; }
 #mlgm .gm-roll-card { min-width:0; }
 #mlgm .gm-request-rows { container: gm-rolls / inline-size; min-width:0; }
-#mlgm .gm-specialty-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; }
+#mlgm .gm-columns, #mlgm .gm-specialty-grid, #mlgm .gm-triggers, #mlgm .gm-cheat, #mlgm .gm-cheat-grid, #mlgm .gm-settings { align-content:start; }
+#mlgm .gm-columns { align-items:start; }
+#mlgm .gm-specialty-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; align-items:stretch; }
 #mlgm .gm-builder-card { min-width:0; }
 #mlgm .gm-section-heading, .ml-window .gm-section-heading { margin:0; color:inherit; font:inherit; font-weight:var(--ml-font-weight-bold, 700); }
-#mlgm .gm-specialty-card { display:flex; flex-direction:column; gap:var(--ml-space-3); height:100%; min-width:0; }
+#mlgm .gm-specialty-card { display:flex; flex-direction:column; justify-content:flex-start; gap:var(--ml-space-3); height:auto; min-width:0; align-self:stretch; }
 #mlgm .gm-specialty-title { margin:0; }
 #mlgm .gm-specialty-row { display:flex; flex-flow:row nowrap; align-items:flex-end; gap:var(--ml-space-2); min-width:0; }
 #mlgm .gm-specialty-field, #mlgm .gm-field, #mlgm .gm-bulk-coin-action, #mlgm .gm-bulk-coin-fields > label, .ml-window .ml-dialog-shell label.gm-field { display:flex; flex-direction:column; align-items:stretch; gap:var(--ml-space-1); min-width:0; margin:0; }
 #mlgm .gm-specialty-field { flex:1 1 auto; width:auto; }
 #mlgm .gm-specialty-field > span, #mlgm .gm-field > span, #mlgm .gm-bulk-coin-action > span, #mlgm .gm-bulk-coin-fields > label > span, .ml-window .ml-dialog-shell label.gm-field > span { flex:0 0 auto; white-space:nowrap; }
-#mlgm .gm-specialty-field > select, #mlgm .gm-specialty-field > .ml-stepper, #mlgm .gm-specialty-field > input, #mlgm .gm-field > select, #mlgm .gm-field > input, .ml-window .ml-dialog-shell label.gm-field > select, .ml-window .ml-dialog-shell label.gm-field > input { flex:1 1 auto; width:100%; min-width:0; }
+#mlgm .gm-specialty-field > :is(select, input, .ml-stepper),
+#mlgm .gm-field > :is(select, input),
+#mlgm .gm-bulk-coin-action > select,
+#mlgm .gm-bulk-coin-fields :is(select, input, .ml-stepper),
+.ml-window .ml-dialog-shell label.gm-field > :is(select, input) { flex:0 0 auto; align-self:flex-end; box-sizing:border-box; width:100%; min-width:0; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); }
+#mlgm input[type="range"], .ml-window .ml-dialog-shell input[type="range"] { height:auto; min-height:0; max-height:none; }
 #mlgm .gm-specialty-row > .ml-check, #mlgm .gm-specialty-row > .gm-row-action { flex:0 0 auto; }
 #mlgm .gm-settings { min-width:0; }
 #mlgm .gm-settings-section { display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
@@ -53,7 +62,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-request-row { display:flex; flex-flow:row nowrap; align-items:flex-end; gap:var(--ml-space-2); width:100%; min-width:0; margin:0; padding:0; border:0; overflow-x:auto; }
 #mlgm .gm-request-row > .gm-inline { display:flex; flex:1 1 auto; flex-direction:column; align-items:stretch; gap:var(--ml-space-1); min-width:0; margin:0; }
 #mlgm .gm-request-row > .gm-inline > span { flex:0 0 auto; white-space:nowrap; }
-#mlgm .gm-request-row > .gm-inline > select, #mlgm .gm-request-row > .gm-inline > input { flex:1 1 auto; width:100%; min-width:4.5rem; }
+#mlgm .gm-request-row > .gm-inline > :is(select, input) { flex:0 0 auto; align-self:flex-end; box-sizing:border-box; width:100%; min-width:4.5rem; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); }
 #mlgm .gm-request-row > .ml-check { display:flex; flex:0 0 auto; align-items:center; width:auto; min-width:max-content; margin:0; }
 #mlgm .gm-request-row > .gm-row-action { flex:0 0 auto; }
 
@@ -71,27 +80,31 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-trigger-rule dd { margin:0; }
 
-/* Coins and XP share row 1. Inspiration, token sync, and undo share row 2 at one height. */
-#mlgm .gm-bulk { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:var(--ml-space-2); min-width:0; align-items:stretch; }
-#mlgm .gm-bulk > .ml-card { grid-column:span 2; width:auto; max-width:none; min-width:0; align-self:stretch; }
+/* Coins and XP share row 1. Inspiration, token sync, and undo share row 2. Rows stay as tall as their content. */
+#mlgm .gm-bulk { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:var(--ml-space-2); min-width:0; height:auto; align-content:start; align-items:stretch; }
+#mlgm .gm-bulk > .ml-card { grid-column:span 2; width:auto; max-width:none; min-width:0; height:auto; align-self:stretch; justify-content:flex-start; }
+#mlgm .gm-bulk > .ml-card > * { flex:0 0 auto; }
 #mlgm .gm-bulk > [data-mlgm-bulk="coins"],
 #mlgm .gm-bulk > [data-mlgm-bulk="xp"] { grid-column:span 3; }
-#mlgm .gm-bulk .gm-specialty-row { justify-content:flex-start; width:auto; max-width:100%; }
-#mlgm .gm-bulk .gm-specialty-field { flex:0 1 auto; width:auto; max-width:100%; }
-#mlgm .gm-bulk .gm-specialty-field > select,
-#mlgm .gm-bulk .gm-specialty-field > .ml-stepper { flex:0 1 14rem; width:auto; min-width:8rem; max-width:100%; }
-#mlgm .gm-bulk .gm-specialty-row > button { flex:0 0 auto; width:auto; margin-inline-start:0; }
-#mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,minmax(4.5rem,6.5rem)) repeat(2,max-content); gap:var(--ml-space-2); justify-content:start; }
+#mlgm .gm-bulk .gm-specialty-row { justify-content:flex-start; align-items:flex-end; width:auto; max-width:100%; flex:0 0 auto; }
+#mlgm .gm-bulk .gm-specialty-field, #mlgm .gm-bulk .gm-bulk-coin-action { flex:0 0 auto; align-items:flex-start; width:auto; max-width:100%; }
+#mlgm .gm-bulk .gm-specialty-field > :is(select, .ml-stepper),
+#mlgm .gm-bulk .gm-bulk-coin-action > select { flex:0 0 auto; align-self:flex-end; width:min(100%,14rem); min-width:8rem; max-width:100%; }
+#mlgm .gm-bulk .gm-specialty-row > button { flex:0 0 auto; align-self:flex-end; width:auto; margin-inline-start:0; }
+#mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,minmax(4.5rem,6.5rem)) repeat(2,max-content); gap:var(--ml-space-2); justify-content:start; align-items:end; }
+#mlgm .gm-bulk-coin-fields > label { align-items:flex-start; flex:0 0 auto; }
 #mlgm .gm-bulk-coin-action { width:min(100%,26rem); }
 #mlgm .gm-label-help { display:inline-flex; align-items:center; gap:var(--ml-space-1); }
 #mlgm .gm-ambience-column .gm-ambience-actions { display:flex; flex-direction:column; align-items:stretch; gap:var(--ml-space-2); min-width:0; }
 #mlgm .gm-ambience-column .gm-ambience-actions .ml-item-row { align-items:center; }
 #mlgm .gm-ambience-column button[data-action="ambience"],
 #mlgm .gm-ambience-column button[data-action="saved"] { width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#morelord-game-master-add-ambience .gm-ambience-layer { display:grid !important; grid-template-columns:auto minmax(0,1fr) 6.5rem auto; align-items:end; gap:var(--ml-space-2); }
+#morelord-game-master-add-ambience .gm-ambience-layer { display:grid !important; grid-template-columns:auto minmax(0,1fr) auto max-content; align-items:center; gap:var(--ml-space-2); }
 #morelord-game-master-add-ambience .gm-ambience-check { margin:0; justify-self:start; }
+#morelord-game-master-add-ambience .gm-ambience-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #morelord-game-master-add-ambience .gm-ambience-layer > .ml-help-button { width:auto; flex:none; justify-self:center; padding:0.2rem; }
-#morelord-game-master-add-ambience .gm-ambience-volume input { width:100%; }
+#morelord-game-master-add-ambience .gm-ambience-volume { display:flex; flex-direction:row; align-items:center; gap:var(--ml-space-2); margin:0; white-space:nowrap; }
+#morelord-game-master-add-ambience .gm-ambience-volume input { width:4.5rem; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }
 
 #mlgm .gm-bulk-coin-fields > button { align-self:end; }
 
