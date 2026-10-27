@@ -36,12 +36,20 @@ export function cheatTooltipHTML(item) {
   return `<div class="mlgm-cheat-tip__body"><p><strong>${e(cheatText(`item.${item.id}.label`))}</strong></p>${linesHTML(item.id, item.lines)}${tableHTML(item.id, item.table)}</div>`;
 }
 
+export function cheatChipClass(section, item) {
+  const origin = item?.origin || section?.origin || "";
+  const drakkenheim = origin === "drakkenheim" || section?.id === "drakkenheim" || String(section?.id || "").startsWith("drakkenheim-");
+  return drakkenheim ? "gm-cheat-chip gm-cheat-chip--drakkenheim" : "gm-cheat-chip";
+}
+
 export function renderCheatSheet() {
   const sections = CHEAT_SECTIONS.map(section => {
     const chips = section.items.map(item => {
       const label = cheatText(`item.${item.id}.label`);
       const tip = cheatTooltipHTML(item);
-      return `<button type="button" class="gm-cheat-chip" data-mlgm-cheat="${e(item.id)}" data-tooltip="${e(label)}" data-tooltip-html="${e(tip)}" data-tooltip-class="mlgm-cheat-tip">${e(label)}</button>`;
+      const origin = item.origin || section.origin || "";
+      const originAttr = origin === "drakkenheim" ? ' data-cheat-origin="drakkenheim"' : "";
+      return `<button type="button" class="${cheatChipClass(section, item)}" data-mlgm-cheat="${e(item.id)}"${originAttr} data-tooltip="${e(label)}" data-tooltip-html="${e(tip)}" data-tooltip-class="mlgm-cheat-tip">${e(label)}</button>`;
     }).join("");
     const open = closedSections.has(section.id) ? "" : " open";
     return `<details class="gm-cheat-section" data-cheat-section="${e(section.id)}"${open}><summary>${e(cheatText(`section.${section.id}`))}</summary><div class="gm-cheat-grid">${chips}</div></details>`;
