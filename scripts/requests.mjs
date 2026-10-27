@@ -95,8 +95,13 @@ export async function createRequest(config) {
   if (!game.user.isGM) throw new Error("Only the GM can request checks.");
   if (!core().socket.ready) throw new Error("Morelord Core's socket connection is not ready.");
   const actorIds = [...new Set(config.actorIds ?? [])];
-  // Automatic spell triggers include GM-run characters outside the configured party.
-  const eligible = config.kind === "surge" ? [...game.actors.values()].filter(actor => actor.type === "character") : core().ui.participation.listCharacterActors();
+  const kind = config.kind ?? "skill";
+  // Wild Magic and a single skill, ability, or save may name any player character in the world.
+  // Party, token, death, and other requests stay on the Player Settings list.
+  const singleCharacter = actorIds.length === 1 && ["skill", "ability", "save"].includes(kind);
+  const directory = typeof game.actors?.values === "function" ? [...game.actors.values()] : [];
+  const worldCharacters = directory.filter(actor => actor?.type === "character");
+  const eligible = config.kind === "surge" || singleCharacter ? worldCharacters : core().ui.participation.listCharacterActors();
   if (!actorIds.length || actorIds.some(id => !eligible.some(a => a.id === id))) throw new Error("Verify the participating characters before requesting rolls.");
   if (config.dc != null && (!Number.isInteger(config.dc) || config.dc < 0)) throw new Error("DC must be a non-negative whole number or blank.");
   if (config.kind === "encounter" && (!Number.isInteger(config.die) || config.die < 2 || config.die > 1000)) throw new Error("Choose a die from 2 to 1000 sides.");

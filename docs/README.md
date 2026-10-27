@@ -24,7 +24,7 @@ Choose the characters in scope once. Party requests, selected-token requests, an
 
 ## Roll Requests
 
-Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
+Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. One character lists every player character in the world. The label sits above that select. Sending with none chosen warns and leaves the form as it is. The request names only the chosen character, so only that character's owner can roll. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
 
 Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. GM Settings can hide any of them or change their order.
 

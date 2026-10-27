@@ -6,7 +6,7 @@ import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
-import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
@@ -271,23 +271,29 @@ function partyActorIds() {
   return selected.filter(id=>eligible.some(a=>a.id===id));
 }
 function catalogs() { return {skills: CONFIG.DND5E?.skills ?? {}, abilities: CONFIG.DND5E?.abilities ?? {}}; }
+function worldActors() {
+  if (Array.isArray(game.actors?.contents)) return game.actors.contents;
+  return typeof game.actors?.values === "function" ? [...game.actors.values()] : [];
+}
+function playerCharacters() { return playerCharacterChoices(worldActors()); }
 function checkBuilder() {
   const c = state.last.check ?? {};
   const checkType = CHECK_TYPES.some(type => type.id === c.checkType) ? c.checkType : "skill";
   const choices = checkChoices(checkType, catalogs());
   const checkId = defaultCheckId(checkType, choices, c.checkId);
   const scope = ["party","tokens","player"].includes(c.scope) ? c.scope : "party";
-  const actors = partyActorIds().map(id => game.actors.get(id)).filter(Boolean);
-  const actorId = actors.some(actor => actor.id === c.actorId) ? c.actorId : actors[0]?.id ?? "";
+  const partyIds = partyActorIds().filter(id => game.actors.get(id));
+  const characters = playerCharacters();
+  const actorId = characters.some(actor => actor.id === c.actorId) ? c.actorId : "";
   const checkLabel = checkType === "skill" ? "Skill" : "Ability";
   const fields = [
     inlineField("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join(""))),
     inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join(""))),
     inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"')),
     inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join(""))),
-    `<label class="gm-inline" data-mlgm-character-field${characterFieldVisible(scope) ? "" : " hidden"}><span>Character</span>${select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))}</label>`
+    `<label class="gm-inline" data-mlgm-character-field${characterFieldVisible(scope) ? "" : " hidden"}><span>Character</span>${select("actorId", [option("", "Choose a character", actorId), ...characters.map(actor => option(actor.id, actor.name, actorId))].join(""))}</label>`
   ].join("");
-  return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)})}</section>`;
+  return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: scope === "party" && !partyIds.length})}</section>`;
 }
 function refreshCheckSelect(card) {
   const typeSelect = card.querySelector('[name="checkType"]');
@@ -351,7 +357,11 @@ function readQuick(id) {
 async function sendCheck() {
   await saving;
   const draft = readBuilder();
-  const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds()});
+  const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds(), characterIds: playerCharacters().map(actor => actor.id)});
+  if (!actorIds) {
+    ui.notifications.warn("Choose a character.");
+    return;
+  }
   await persist(n => { n.last.check = draft; });
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
 }

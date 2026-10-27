@@ -53,17 +53,21 @@ export function characterFieldVisible(scope) {
   return scope === "player";
 }
 
-export function resolveRollActors({scope, actorId, partyIds = [], selectedActorIds = []} = {}) {
+export function playerCharacterChoices(actors = []) {
+  return actors
+    .filter(actor => actor?.type === "character" && actor.id)
+    .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")))
+    .map(actor => ({id: actor.id, name: actor.name ?? ""}));
+}
+
+export function resolveRollActors({scope, actorId, partyIds = [], selectedActorIds = [], characterIds = []} = {}) {
   const party = [...new Set(partyIds)];
   if (scope === "tokens") {
     const selected = [...new Set(selectedActorIds)].filter(id => party.includes(id));
     if (!selected.length) throw new Error("Select at least one party character token.");
     return selected;
   }
-  if (scope === "player") {
-    if (!party.includes(actorId)) throw new Error("Choose a character from Player Settings.");
-    return [actorId];
-  }
+  if (scope === "player") return characterIds.includes(actorId) ? [actorId] : null;
   if (!party.length) throw new Error("Select participating characters on the Player Settings tab first.");
   return party;
 }
