@@ -30,7 +30,7 @@ Turn on **Blind roll** to keep results and summaries visible only to GMs and Ass
 
 ## Bulk Actions
 
-Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action, Amount, and Apply on one line. Inspiration puts Action and Apply on one line. Prototype Token Sync and Undo use a normal-width button on the left.
+Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action, Amount, and Apply together, and that row wraps inside the card when the card is narrow. Inspiration puts Action and Apply together the same way. Card titles stay on one line. Prototype Token Sync and Undo use a normal-width button on the left.
 
 Enter coins once, then split them amongst the party, give the amount to each member, or take coins back. Removal uses personal coins first, then the shared party purse, and reports any shortfall in chat. You can also grant or set XP, grant or clear Heroic Inspiration, and copy each character's token on the current scene onto that character's prototype token.
 
