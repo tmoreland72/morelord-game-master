@@ -14,7 +14,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
-import {debugDrakkenheimCheat, openDrakkenheimDocument, scheduleDrakkenheimCheat, stopDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
@@ -233,7 +233,6 @@ function restoreControls(container, drafts) {
 }
 function render() {
   if (!root) return;
-  if (tab !== "cheat") stopDrakkenheimCheat();
   const controls = snapshotControls(root);
   rememberCheatSheet(root);
   const tabLabel = id => id === "cheat" ? cheatText("tab") : tabs[id];
@@ -251,7 +250,7 @@ function content() {
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack"><p>Specialty requests shown on Roll Requests. Drag one to reorder the cards. Hidden requests keep their place, and this world remembers each choice.</p>${specialtySettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
-  if (tab === "cheat") { scheduleDrakkenheimCheat(() => { if (tab === "cheat") render(); }); return renderCheatSheet(); }
+  if (tab === "cheat") return renderCheatSheet();
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume);return `<div class="ml-card ml-stack"><strong>${e(s.name)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(s.name)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
@@ -501,7 +500,6 @@ async function dropMacro(event) {
 
 async function act(action, id, target) {
   gm();
-  if (action === "cheat-document") return openDrakkenheimDocument(id, target?.dataset?.page);
   if (action === "toggle") return toggle();
   if (action === "tab") { tab = id; render(); return; }
   if (action === "send-check") return sendCheck();
@@ -723,13 +721,39 @@ function soundDocumentId(sound) {
 }
 function stopAudioHandle(sound) {
   const audio = sound?.sound;
-  try { if (typeof audio?.stop === "function") audio.stop(); }
+  try { if (typeof audio?.stop === "function") audio.stop({fade: 0}); }
   catch { /* The document update already ended playback. */ }
   try { if (typeof audio?.howl?.stop === "function") audio.howl.stop(); }
   catch { /* Howler already released this layer. */ }
 }
+function unwrapPlayingSound(entry) {
+  if (!entry) return null;
+  if (typeof entry.deref === "function") {
+    try { return entry.deref() || null; }
+    catch { return null; }
+  }
+  return entry;
+}
+function stopSoundObject(sound) {
+  if (!sound || typeof sound.stop !== "function") return;
+  try { sound.stop({fade: 0}); }
+  catch {
+    try { sound.stop(); }
+    catch { /* This layer was already stopped. */ }
+  }
+}
+function stopManagedSounds() {
+  const audio = game?.audio;
+  if (!audio) return;
+  for (const bucket of [audio.playing, audio.pending, audio.sounds]) {
+    if (!bucket) continue;
+    const values = typeof bucket.values === "function" ? bucket.values() : Object.values(bucket);
+    for (const entry of values) stopSoundObject(unwrapPlayingSound(entry));
+  }
+}
 async function stopEverySound() {
   gm();
+  stopManagedSounds();
   const playlists = [...(game.playlists?.contents ?? game.playlists ?? [])];
   const paths = new Set();
   for (const playlist of playlists) {
@@ -769,6 +793,7 @@ async function stopEverySound() {
       }
     }
   }
+  stopManagedSounds();
   render();
 }
 async function setAmbienceVolumes() {
@@ -865,10 +890,16 @@ async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
   const last = state.last.playlist ?? { volume:volumeFromPercent(65) };
-  const result = await form("Add Playlist",label("Playlist",select("playlist",playlists.map(p => option(p.id,p.name,last.playlist)).join(""))) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["add","Add"]]);
+  const choices = option("", "Choose a playlist", "") + playlists.map(p => option(p.id, p.name, "")).join("");
+  const result = await form("Add Playlist",label("Playlist",select("playlist",choices)) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["add","Add"]]);
   if (!result) return;
-  const config = {playlist:result.data.get("playlist"), volume:volumeFromPercent(result.data.get("volume"))};
+  const playlist = result.data.get("playlist");
+  if (!playlist) throw new Error("Choose a playlist.");
+  const config = {playlist, volume:volumeFromPercent(result.data.get("volume"))};
   await saveAndRun("playlist", config);
+  await persist(n => {
+    if (n.last.playlist) n.last.playlist = {volume: n.last.playlist.volume, playlist: ""};
+  });
   await run("playlist", config);
 }
 async function ambienceForm() {
@@ -878,8 +909,8 @@ async function ambienceForm() {
   const {files, errors} = await collectAmbienceFiles(folders, (source, target, options) => browse.call(Picker, source, target, options));
   const playable = presentAmbienceScan({files, errors}, {warn: error => console.warn(`${ID} |`, error), notify});
   if (!playable.length) return;
-  const last = state.last.ambience?.files ?? [];
-  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); const fileName = file.path.split("/").pop(); const fieldId = `ml-game-master-ambience-file-${i}`; return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}" ${prev ? "checked" : ""}><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required')}</label></div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
+  const ambiencePercent = Number.isFinite(Number(state.last?.ambienceVolume)) ? Number(state.last.ambienceVolume) : 40;
+  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const fileName = file.path.split("/").pop(); const fieldId = `ml-game-master-ambience-file-${i}`; return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}"><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label></div>`; }).join("")}</fieldset>`, [["add", "Add"]]);
   if (!result) return;
   const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");

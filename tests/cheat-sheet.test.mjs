@@ -1,13 +1,23 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {CHEAT_ATTRIBUTION, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
+import {CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
 import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
-import {DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, collectDrakkenheimContent, contaminationLevelsFromHTML, debugDrakkenheimCheat, drakkenheimConditions, drakkenheimContentActive, drakkenheimItems, openDrakkenheimDocument, resetDrakkenheimCheat, scheduleDrakkenheimCheat, searchZonesFromHTML, setDrakkenheimContent, setDrakkenheimPollDelay, stopDrakkenheimCheat} from '../scripts/cheat-sheet-drakkenheim.mjs';
+import {DRAKKENHEIM_CONDITIONS, DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_ITEMS, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, debugDrakkenheimCheat, drakkenheimConditions, drakkenheimContentActive, drakkenheimItems, drakkenheimStatus} from '../scripts/cheat-sheet-drakkenheim.mjs';
 
 const section = id => CHEAT_SECTIONS.find(entry => entry.id === id);
 const item = (group, id) => group.items.find(entry => entry.id === id);
-const text = entry => [...(entry.lines ?? []), ...(entry.table?.rows ?? []).flat()].join(' ');
+function text(entry) {
+  const chunks = [];
+  const take = block => {
+    if (block.heading) chunks.push(block.heading);
+    chunks.push(...(block.lines ?? []));
+    chunks.push(...(block.table?.rows ?? []).flat());
+  };
+  if (entry.parts?.length) for (const part of entry.parts) take(part);
+  else take(entry);
+  return chunks.join(' ');
+}
 
 test('the cheat sheet has every SRD 5.2 section and the required items', () => {
   assert.deepEqual(CHEAT_SECTIONS.map(entry => entry.id), ['conditions', 'actions', 'damage', 'misc', 'cover']);
@@ -17,7 +27,7 @@ test('the cheat sheet has every SRD 5.2 section and the required items', () => {
     assert.ok(entry.title.trim());
     for (const entryItem of entry.items) {
       assert.ok(entryItem.label.trim());
-      assert.ok((entryItem.lines?.length ?? 0) > 0 || entryItem.table?.rows?.length);
+      assert.ok((entryItem.lines?.length ?? 0) > 0 || entryItem.table?.rows?.length || entryItem.parts?.length);
     }
   }
 
@@ -83,10 +93,10 @@ test('travel, grapple, shove, hazards, and mounted combat stay paraphrased SRD 5
   const suffocating = text(item(section('damage'), 'suffocating'));
   assert.match(suffocating, /1 plus your Constitution modifier \(minimum 30 seconds\)/);
   assert.match(suffocating, /1 Exhaustion level at the end of each of your turns/);
-  assert.match(suffocating, /remove all the Exhaustion levels you gained from suffocating/);
+  assert.match(suffocating, /Exhaustion levels you gained from suffocating/);
   const drowning = text(item(section('damage'), 'drowning'));
   assert.match(drowning, /cannot breathe while underwater/);
-  assert.match(drowning, /Suffocation/);
+  assert.match(drowning, /Suffocating/);
   assert.doesNotMatch(drowning, /\dd\d+/);
 
   assert.equal(section('misc').title, 'Misc');
@@ -109,43 +119,43 @@ test('travel, grapple, shove, hazards, and mounted combat stay paraphrased SRD 5
   assert.equal(keys.some(key => key.startsWith('item.grapple.') && key.includes('grappled')), false);
 });
 
-test('misc follows improvising damage, and Drakkenheim is one section before the attribution', () => {
-  setDrakkenheimContent({items: [{id: 'contamination', labelText: 'Contamination', tipHTML: '<p>Fixture</p>', origin: 'drakkenheim'}]});
+test('misc follows improvising damage, and Drakkenheim follows cover when a content module is active', () => {
+  globalThis.game = {modules: {get: id => ({active: id === 'drakkenheim-core'})}};
   try {
     const html = renderCheatSheet();
     const damage = html.indexOf('data-cheat-section="damage"');
     const misc = html.indexOf('data-cheat-section="misc"');
     const cover = html.indexOf('data-cheat-section="cover"');
     const group = html.indexOf('data-cheat-section="drakkenheim"');
-    const note = html.indexOf('class="gm-cheat-note"');
-    assert.ok(damage < misc && misc < cover && cover < group && group < note);
+    assert.ok(damage < misc && misc < cover && cover < group);
+    assert.equal(html.indexOf('class="gm-cheat-note"'), -1);
     assert.match(html, /data-cheat-section="misc" open/);
-    for (const label of ['Typical DC', 'Exhaustion', 'Jumping', 'Travel Pace', 'Mounted', 'Underwater', 'Contamination']) assert.match(html, new RegExp(`>${label}<`));
+    for (const label of ['Typical DC', 'Exhaustion', 'Jumping', 'Travel Pace', 'Mounted', 'Underwater', 'Level 1', 'Delerium Search', 'Delerium']) assert.match(html, new RegExp(`>${label}<`));
     assert.doesNotMatch(html, /data-cheat-section="(?:dcs|exhaustion|jumping|travel|mounted-underwater|drakkenheim-mutations|drakkenheim-madness)"/);
+    assert.doesNotMatch(html, /creativecommons|unofficial|Loading…|Drakkenheim Madness|New Conditions/);
   } finally {
-    resetDrakkenheimCheat();
+    delete globalThis.game;
   }
 });
 
 test('exhaustion uses the SRD 5.2 cumulative penalties', () => {
   const rule = text(item(section('misc'), 'exhaustion'));
-  assert.match(rule, /reduced by 2 times your Exhaustion level/);
-  assert.match(rule, /5 feet times your Exhaustion level/);
-  assert.match(rule, /die if your Exhaustion level is 6/);
-  assert.match(rule, /Finishing a Long Rest removes 1 Exhaustion level/);
-  assert.match(rule, /Level 1\. D20 Tests are reduced by 2\. Speed is reduced by 5 feet\./);
-  assert.match(rule, /Level 6\. You die\./);
+  assert.match(rule, /-2/);
+  assert.match(rule, /-5 ft/);
+  assert.match(rule, /You die/);
+  assert.match(rule, /A Long Rest removes 1 level/);
   assert.doesNotMatch(rule, /Hit point maximum halved|Speed halved|Disadvantage on ability checks/);
+  const html = cheatTooltipHTML(item(section('misc'), 'exhaustion'));
+  assert.match(html, /mlgm-cheat-tip__title/);
+  assert.match(html, /<table>/);
+  assert.match(html, /mlgm-cheat-tip__sub">\s*<strong>Recovery<\/strong>/);
 });
 
-test('attribution names SRD 5.2.1 and CC-BY-4.0, and the sheet has no rules-version switch', () => {
-  assert.match(CHEAT_ATTRIBUTION, /System Reference Document 5\.2\.1/);
-  assert.match(CHEAT_ATTRIBUTION, /Wizards of the Coast LLC/);
-  assert.match(CHEAT_ATTRIBUTION, /https:\/\/www\.dndbeyond\.com\/srd/);
-  assert.match(CHEAT_ATTRIBUTION, /https:\/\/creativecommons\.org\/licenses\/by\/4\.0\/legalcode/);
-  assert.match(CHEAT_ATTRIBUTION, /paraphrased/);
-  const source = ['cheat-sheet-data.mjs', 'cheat-sheet.mjs'].map(name => readFileSync(new URL(`../scripts/${name}`, import.meta.url), 'utf8')).join('\n');
+test('the cheat sheet tab has no license line and no rules-version switch', () => {
+  const source = ['cheat-sheet-data.mjs', 'cheat-sheet.mjs', 'cheat-sheet-drakkenheim.mjs'].map(name => readFileSync(new URL(`../scripts/${name}`, import.meta.url), 'utf8')).join('\n');
   assert.doesNotMatch(source, /rulesVersion|\b2014\b|\blegacy\b|SRD 5\.1/);
+  assert.doesNotMatch(renderCheatSheet(), /gm-cheat-note|creativecommons|unofficial|Wizards of the Coast/);
+  assert.doesNotMatch(source, /CHEAT_ATTRIBUTION|gm-cheat-note/);
 });
 
 function setProperty(object, key, value) {
@@ -231,7 +241,7 @@ test('chips expose Foundry HTML tooltips and keyboard focus activates them', () 
   assert.match(html, /data-tooltip=/);
   assert.match(html, /data-tooltip-html=/);
   assert.match(html, /data-tooltip-class="mlgm-cheat-tip"/);
-  assert.match(html, /creativecommons\.org\/licenses\/by\/4\.0\/legalcode/);
+  assert.doesNotMatch(html, /creativecommons|gm-cheat-note|unofficial/);
   for (const entry of CHEAT_SECTIONS) assert.match(html, new RegExp(`data-cheat-section="${entry.id}" open`));
   const blinded = cheatTooltipHTML(item(section('conditions'), 'blinded'));
   assert.match(blinded, /<strong>Blinded<\/strong>/);
@@ -255,275 +265,107 @@ test('chips expose Foundry HTML tooltips and keyboard focus activates them', () 
   }
 });
 
-function drakkenheimGame({active = true, packs = []} = {}) {
+test('misc tooltips use a title, subheadings, and terse lines', () => {
+  for (const entry of section('misc').items) {
+    const html = cheatTooltipHTML(entry);
+    assert.match(html, new RegExp(`mlgm-cheat-tip__title[\\s\\S]*<strong>${entry.label}</strong>`), entry.id);
+    assert.doesNotMatch(html, /<li>[^<]*(?:Long jump|High jump|Very easy|Fast|Controlled|Melee)\./, entry.id);
+    const plain = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    assert.ok(plain.length < 1100, `${entry.id} tooltip is ${plain.length} characters`);
+  }
+  const jumping = cheatTooltipHTML(item(section('misc'), 'jumping'));
+  assert.match(jumping, /mlgm-cheat-tip__sub">\s*<strong>Long jump<\/strong>/);
+  assert.match(jumping, /mlgm-cheat-tip__sub">\s*<strong>High jump<\/strong>/);
+  assert.equal((jumping.match(/Costs movement/g) ?? []).length, 1);
+  assert.doesNotMatch(jumping, /<li>[^<]*Long jump/);
+  const travel = cheatTooltipHTML(item(section('misc'), 'travel'));
+  assert.match(travel, /mlgm-cheat-tip__sub">\s*<strong>Fast<\/strong>/);
+  assert.match(travel, /mlgm-cheat-tip__sub">\s*<strong>Normal<\/strong>/);
+  assert.match(travel, /mlgm-cheat-tip__sub">\s*<strong>Slow<\/strong>/);
+});
+
+function drakkenheimGame({active = true} = {}) {
   const ids = active ? [...DRAKKENHEIM_MODULE_IDS] : [];
-  return {
-    modules: {get(id) { return {active: ids.includes(id)}; }},
-    packs
-  };
+  return {modules: {get(id) { return {active: ids.includes(id)}; }}};
 }
 
-function packDocuments(documentName, collection, entries) {
-  return {
-    documentName,
-    collection,
-    metadata: {packageName: collection.split('.')[0], name: collection.split('.')[1]},
-    async getIndex() { return entries.map(entry => ({_id: entry.id, name: entry.name, type: entry.type})); },
-    async getDocuments(query) {
-      const ids = query?._id__in ?? [];
-      return ids.flatMap(id => {
-        const entry = entries.find(item => item.id === id);
-        return entry && !entry.fail ? [entry] : [];
-      });
-    },
-    async getDocument(id) {
-      const entry = entries.find(item => item.id === id);
-      if (!entry || entry.fail) throw new Error('missing');
-      return entry;
-    }
-  };
-}
-
-function journalPack(entries) {
-  return packDocuments('JournalEntry', 'drakkenheim-core.journals', entries);
-}
-
-function symptomTable(effects) {
-  const rows = effects.map((effect, index) => `<tr><td><p>${index + 1}</p></td><td><p>${effect}</p></td></tr>`).join('');
-  return `<table><thead><tr><th>Level</th><th>Effect</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-test('contamination levels stay hidden until the Drakkenheim content pack is active', async () => {
+test('static Drakkenheim chips stay hidden until a content module is active', () => {
   assert.equal(DRAKKENHEIM_CORE_MODULE_ID, 'drakkenheim-core');
-  assert.deepEqual(DRAKKENHEIM_MODULE_IDS, ['drakkenheim-core', 'drakkenheim-monsters', 'drakkenheim-scgd']);
+  assert.equal(DRAKKENHEIM_MONSTERS_MODULE_ID, 'drakkenheim-monsters');
   assert.equal(DRAKKENHEIM_SCGD_MODULE_ID, 'drakkenheim-scgd');
-  const packs = [journalPack([{id: 'abc', name: 'Appendix C: Contamination', pages: []}])];
+  assert.deepEqual(DRAKKENHEIM_MODULE_IDS, ['drakkenheim-core', 'drakkenheim-monsters', 'drakkenheim-scgd']);
   assert.equal(drakkenheimContentActive(drakkenheimGame({active: false})), false);
+  assert.equal(drakkenheimStatus(drakkenheimGame({active: false})), 'off');
+  assert.deepEqual(drakkenheimConditions(drakkenheimGame({active: false})), []);
+  assert.deepEqual(drakkenheimItems(drakkenheimGame({active: false})), []);
   assert.equal(drakkenheimContentActive(drakkenheimGame()), true);
-  assert.deepEqual(await collectDrakkenheimContent(drakkenheimGame({active: false, packs})), {conditions: [], items: []});
-  assert.deepEqual(await collectDrakkenheimContent(drakkenheimGame({packs: [journalPack([{id: 'town', name: 'Emberwood Village', pages: [{name: 'Overview', text: {content: '<p>Unrelated.</p>'}}]}]) ]})), {conditions: [], items: []});
-  const broken = journalPack([{id: 'bad', name: 'Contamination', fail: true}]);
-  assert.deepEqual(await collectDrakkenheimContent(drakkenheimGame({packs: [broken]})), {conditions: [], items: []});
+  assert.equal(drakkenheimStatus(drakkenheimGame()), 'ready');
+  assert.deepEqual(drakkenheimItems(drakkenheimGame()).map(entry => entry.label), [
+    'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6', 'Delerium Search', 'Delerium'
+  ]);
+  assert.deepEqual(drakkenheimConditions(drakkenheimGame()).map(entry => entry.label), ['Dazed', 'Weakened']);
+  assert.deepEqual(DRAKKENHEIM_CONDITIONS.map(entry => entry.label).includes('Drakkenheim Madness'), false);
+  assert.deepEqual(DRAKKENHEIM_ITEMS.map(entry => entry.label).includes('New Conditions'), false);
 });
 
-test('the Drakkenheim section is three pack chips, and conditions join the main section', async () => {
-  const junk = Array.from({length: 9}, (_, index) => `<tr><td><p>${index + 1}</p></td><td><p>Your lips, nose, and ears</p></td></tr>`).join('');
-  const symptoms = `<h2>Level 1</h2><blockquote><p>Flavor quote.</p></blockquote><h3>Long Rest Contamination</h3><p>Not a level.</p>${symptomTable(['Fixture effect one.', 'Fixture effect two.'])}<table><tbody>${junk}</tbody></table>`;
-  const searchHtml = '<p>Use Arcana, Investigation, or Survival.</p><h2>Deep Haze</h2><p>Unrelated haze.</p><h2>Sludge</h2><p>Unrelated sludge.</p><h2>Effects on Characters</h2><p>Unrelated effects.</p><table><thead><tr><th><p>Area</p></th><th><p>Check DC</p></th></tr></thead><tbody><tr><td><p>Outside the Wall</p></td><td><p>15</p></td></tr><tr><td><p>Inside the Wall</p></td><td><p>20</p></td></tr></tbody></table>';
-  assert.deepEqual(contaminationLevelsFromHTML(symptoms).map(level => level.text), ['Fixture effect one.', 'Fixture effect two.']);
-  assert.deepEqual(searchZonesFromHTML(searchHtml).map(zone => [zone.label, zone.dc]), [['Outside the Wall', 15], ['Inside the Wall', 20]]);
-  const requested = [];
-  const journal = journalPack([
-    {id: 'book', name: 'Dungeons of Drakkenheim', pages: [{id: 'effects', name: 'Effects', text: {content: '<p><strong>Level 1.</strong> Fixture one.</p>'}}]},
-    {id: 'rest', name: 'Long Rest Contamination', pages: [{id: 'rest', name: 'Long Rest Contamination', text: {content: '<p>Rest.</p>'}}]},
-    {id: 'spells', name: 'Contaminated Spells', pages: [{id: 'spells', name: 'Contaminated Spells', text: {content: '<p>Spells.</p>'}}]},
-    {id: 'town', name: 'Emberwood Village', pages: [{id: 'overview', name: 'Overview', text: {content: '<p>A town mentions contamination.</p>'}}]},
-    {id: 'appendix-d', name: 'Appendix D: Delerium', pages: [{id: 'd', name: 'Delerium', text: {content: '<p>Journal topic.</p>'}}]},
-    {id: 'mut', name: 'Mutations', pages: [{id: 'mut', name: 'Mutations', text: {content: '<p>Amorphous Form</p>'}}]},
-    {id: 'abc', name: 'Appendix C: Contamination', pages: [
-      {id: 'sym', name: 'Contamination Symptoms', uuid: 'Compendium.journal.sym', text: {content: symptoms}},
-      {id: 'search', name: 'Searching for Delerium', uuid: 'Compendium.journal.search', text: {content: searchHtml}},
-      {id: 'mad', name: 'Madness', text: {content: '<p><strong>Whispers</strong> Fixture dread.</p>'}},
-      {id: 'numbered', name: '01 Contamination Symptoms', text: {content: '<p>Fixture symptoms.</p>'}}
-    ]},
-    {id: 'conds', name: 'Conditions', pages: [{id: 'haze', name: 'Haze Bound', uuid: 'Compendium.journal.haze', text: {content: '<p>Fixture condition.</p>'}}]},
-    {id: 'explore', name: 'Exploring Drakkenheim', pages: [{id: 'find', name: 'Finding Delerium Deposits', uuid: 'Compendium.journal.find', text: {content: '<h2>Outer City Delerium Deposits (DC 15)</h2><p>Fixture outer result. Arcana or Survival.</p><h2>Inner City Delerium Deposits (DC 20)</h2><p>Fixture inner result.</p><h2>Deep Haze</h2><p>DC 15 Constitution.</p>'}}]},
-    {id: 'dconds', name: 'Drakkenheim Conditions', pages: [
-      {id: 'blight', name: 'Arcane Blight', uuid: 'Compendium.journal.blight', text: {content: '<p>Fixture blight.</p>'}},
-      {id: 'list', name: 'Conditions', text: {content: '<h2>Haze Mark</h2><p>Fixture mark.</p><h2>Crystal Rot</h2><p>Fixture rot.</p>'}}
-    ]}
+test('static Drakkenheim tooltips are short, ordered, and free of pack markup', () => {
+  const levels = DRAKKENHEIM_ITEMS.filter(entry => entry.id.startsWith('dk-level-'));
+  assert.deepEqual(levels.map(entry => entry.lines[0]), [
+    'No mechanical symptom.',
+    'Hit Points from Hit Dice are halved.',
+    'A Long Rest restores no Hit Points.',
+    'Weapon and spell damage is halved.',
+    'You are Incapacitated.',
+    'You transform into a monster. The GM controls it.'
   ]);
-  const original = journal.getDocuments.bind(journal);
-  journal.getDocuments = async query => {
-    requested.push(...(query?._id__in ?? []));
-    return original(query);
-  };
-  const items = packDocuments('Item', 'drakkenheim-monsters.items', [
-    {id: 'chip', name: 'Delerium Chip', uuid: 'Compendium.item.chip', system: {price: {value: 50, denomination: 'gp'}, weight: 0.1, description: {value: '<p>Fixture crystal.</p>'}}},
-    {id: 'fragment', name: 'Delerium Fragment', uuid: 'Compendium.item.fragment', system: {price: {value: 100, denomination: 'gp'}, weight: {value: 0.5}, description: {value: '<p>Fixture fragment.</p>'}}},
-    {id: 'shard', name: 'Delerium Shard', system: {price: {value: 500, denomination: 'gp'}, weight: {value: 1}}},
-    {id: 'crystal', name: 'Delerium Crystal', system: {price: {value: 1000, denomination: 'gp'}, weight: {value: 2}}},
-    {id: 'dust', name: 'Delerium Dust', system: {}},
-    {id: 'blade', name: 'Delerium-Forged Blade', uuid: 'Compendium.item.blade', system: {price: {value: 4000, denomination: 'gp'}, weight: 2, description: {value: '<p>Fixture weapon.</p>'}}},
-    {id: 'rope', name: 'Rope', system: {price: {value: 1, denomination: 'gp'}}},
-    {id: 'bare', name: 'Chip', system: {price: {value: 10, denomination: 'gp'}, weight: 0.25, description: {value: '<p>Fixture delerium sample.</p>'}}},
-    {id: 'sick', name: 'Haze Sick', type: 'condition', uuid: 'Compendium.item.sick', system: {description: {value: '<p>Fixture sickness.</p>'}}}
-  ]);
-  const itemIds = [];
-  const readItems = items.getDocuments.bind(items);
-  items.getDocuments = async query => {
-    itemIds.push(...(query?._id__in ?? []));
-    return readItems(query);
-  };
-  items.getDocument = async () => { throw new Error('scan'); };
-  const found = await collectDrakkenheimContent(drakkenheimGame({packs: [journal, items]}));
-  assert.deepEqual(requested, ['abc', 'conds', 'explore', 'dconds']);
-  assert.deepEqual(itemIds, ['chip', 'fragment', 'shard', 'crystal', 'dust', 'bare', 'sick']);
-  const report = debugDrakkenheimCheat(drakkenheimGame({packs: [journal, items]}));
-  assert.equal(report.indexed.find(row => row.name === 'Delerium-Forged Blade')?.opened, false);
-  assert.equal(report.indexed.find(row => row.name === 'Delerium Chip')?.opened, true);
-  assert.equal(report.indexed.find(row => row.name === 'Drakkenheim Conditions')?.opened, true);
-  assert.equal(report.indexed.find(row => row.name === 'Appendix D: Delerium')?.opened, false);
-  assert.ok(report.used.some(row => row.path.includes('Delerium Chip')));
-  assert.ok(report.used.some(row => row.path.includes('Delerium Fragment')));
-  assert.ok(report.used.some(row => row.path.includes('Finding Delerium Deposits')));
-  assert.ok(report.chips.some(row => row.label === 'Delerium'));
-  assert.deepEqual(found.items.map(item => item.labelText), ['Contamination', 'Delerium Search', 'Delerium']);
-  assert.match(found.items[0].tipHTML, /Level 1: Fixture effect one/);
-  assert.match(found.items[0].tipHTML, /Level 2: Fixture effect two/);
-  assert.doesNotMatch(found.items[0].tipHTML, /Flavor quote|Your lips|Long Rest|Contaminated Spells/);
-  assert.equal(found.items[0].documentPath, 'drakkenheim-core.journals:Appendix C: Contamination / Contamination Symptoms');
-  const search = found.items[1];
-  assert.match(search.tipHTML, /Outside the Wall: DC 15/);
-  assert.match(search.tipHTML, /Inside the Wall: DC 20/);
-  assert.match(search.tipHTML, /Outer City Delerium Deposits: DC 15/);
-  assert.match(search.tipHTML, /Inner City Delerium Deposits: DC 20/);
-  assert.match(search.tipHTML, /Fixture outer result/);
-  assert.match(search.tipHTML, /Arcana, Investigation, or Survival/);
-  assert.doesNotMatch(search.tipHTML, /Deep Haze|Sludge|Effects on Characters|Constitution/);
-  const values = found.items[2];
-  assert.match(values.tipHTML, /Delerium Chip/);
-  assert.match(values.tipHTML, /Delerium Fragment/);
-  assert.match(values.tipHTML, /Delerium Shard/);
-  assert.match(values.tipHTML, /Delerium Crystal/);
-  assert.match(values.tipHTML, /Price: 50 GP/);
-  assert.match(values.tipHTML, /Weight: 0\.1 lb/);
-  assert.match(values.tipHTML, /Price: 100 GP/);
-  assert.match(values.tipHTML, /Weight: 0\.5 lb/);
-  assert.match(values.tipHTML, /Fixture crystal/);
-  assert.match(values.tipHTML, /Fixture delerium sample/);
-  assert.doesNotMatch(values.tipHTML, /Appendix D|Rope|Delerium Dust|Delerium-Forged Blade|4000/);
-  assert.deepEqual(found.conditions.map(item => item.labelText), ['Arcane Blight', 'Crystal Rot', 'Haze Bound', 'Haze Mark', 'Haze Sick']);
-  assert.match(found.conditions.map(item => item.tipHTML).join(' '), /Fixture condition/);
-  assert.match(found.conditions.map(item => item.tipHTML).join(' '), /Fixture sickness/);
-  setDrakkenheimContent(found);
-  try {
-    const html = renderCheatSheet();
-    const conditions = html.slice(html.indexOf('data-cheat-section="conditions"'), html.indexOf('data-cheat-section="actions"'));
-    assert.match(conditions, /gm-cheat-chip--drakkenheim/);
-    assert.match(conditions, />Haze Bound</);
-    assert.match(conditions, />Haze Sick</);
-    assert.match(conditions, />Arcane Blight</);
-    assert.match(conditions, />Crystal Rot</);
-    assert.doesNotMatch(html, /data-cheat-section="drakkenheim-mutations"|Madness|Amorphous/);
-    const group = html.indexOf('data-cheat-section="drakkenheim"');
-    const note = html.indexOf('class="gm-cheat-note"');
-    assert.ok(group < note);
-  } finally {
-    resetDrakkenheimCheat();
+  const search = cheatTooltipHTML(DRAKKENHEIM_ITEMS.find(entry => entry.id === 'dk-search'));
+  assert.match(search, /mlgm-cheat-tip__sub">\s*<strong>Outside the wall<\/strong>/);
+  assert.match(search, /DC 15 Arcana, Investigation, or Survival/);
+  assert.match(search, /mlgm-cheat-tip__sub">\s*<strong>Inside the wall<\/strong>/);
+  assert.match(search, /DC 20/);
+  assert.doesNotMatch(search, /@Embed|&amp;reference|\[\[lookup|Deep Haze/);
+  const values = text(DRAKKENHEIM_ITEMS.find(entry => entry.id === 'dk-delerium'));
+  assert.match(values, /Chip 10 gp 1\/4 lb Fragment 100 gp 1\/2 lb Shard 500 gp 1 lb Crystal 1,000 gp 2 lb Geode 5,000 gp 20\+ lb/);
+  for (const entry of [...DRAKKENHEIM_CONDITIONS, ...DRAKKENHEIM_ITEMS]) {
+    const html = cheatTooltipHTML(entry);
+    assert.match(html, /mlgm-cheat-tip__title/);
+    assert.doesNotMatch(html, /@Embed|&amp;reference|\[\[lookup/);
+    assert.ok(html.replace(/<[^>]+>/g, '').length < 700, entry.id);
   }
-  const calls = [];
-  const opened = await openDrakkenheimDocument('Compendium.journal.sym', 'sym', {fromUuid: async () => ({pages: {get: id => id === 'sym' ? {sheet: {render: async (...args) => calls.push(args)}} : null}})});
-  assert.equal(opened, true);
-  assert.equal(calls[0][1].pageId, 'sym');
-});
-
-test('a contamination roll table can supply the single Contamination chip', async () => {
-  const table = packDocuments('RollTable', 'drakkenheim-core.tables', []);
-  table.getIndex = async () => [{_id: 't1', name: 'Contamination Symptoms'}];
-  table.getDocuments = async () => [{id: 't1', name: 'Contamination Symptoms', uuid: 'Compendium.drakkenheim-core.tables.RollTable.t1', results: [{text: 'Level 1', description: 'Table fixture'}]}];
-  const found = await collectDrakkenheimContent(drakkenheimGame({packs: [table]}));
-  assert.equal(found.items[0].labelText, 'Contamination');
-  assert.equal(found.items[0].documentPath, 'drakkenheim-core.tables:Contamination Symptoms');
-  assert.match(found.items[0].tipHTML, /Table fixture/);
   const source = readFileSync(new URL('../scripts/cheat-sheet-drakkenheim.mjs', import.meta.url), 'utf8');
-  const literals = source.match(/(['"`])(?:\\.|(?!\1)[\s\S])*?\1/g) ?? [];
-  for (const literal of literals) assert.ok(literal.length < 200, literal.slice(0, 80));
-  assert.doesNotMatch(source, /Rampant Mutation|Purge Contamination|Gibbering Mouther/);
-  assert.doesNotMatch(source, /morelord-craftworks|hasAccess|getZones|getSkillOptions|contentPacks|monsters-of-drakkenheim/);
+  assert.doesNotMatch(source, /fromUuid|@Embed|morelord-craftworks|collectDrakkenheim|Rampant Mutation|Gibbering Mouther/);
 });
 
-test('an inactive Drakkenheim module is not remembered as off', async () => {
-  resetDrakkenheimCheat();
-  let renders = 0;
-  const pack = journalPack([{
-    id: 'abc',
-    name: 'Contamination',
-    pages: [{id: 'sym', name: 'Contamination Symptoms', text: {content: symptomTable(['Later.', 'Next.'])}}]
-  }]);
-  scheduleDrakkenheimCheat(() => { renders += 1; }, drakkenheimGame({active: false, packs: [pack]}));
-  assert.equal(renders, 0);
-  assert.deepEqual(drakkenheimItems(), []);
-  scheduleDrakkenheimCheat(() => { renders += 1; }, drakkenheimGame({packs: [pack]}));
-  await new Promise(resolve => setTimeout(resolve, 30));
-  assert.equal(renders, 1);
-  assert.equal(drakkenheimItems()[0].labelText, 'Contamination');
-  assert.match(drakkenheimItems()[0].tipHTML, /Later/);
-  scheduleDrakkenheimCheat(() => { renders += 1; }, drakkenheimGame({packs: [pack]}));
-  await new Promise(resolve => setTimeout(resolve, 30));
-  assert.equal(renders, 1);
-  resetDrakkenheimCheat();
-});
-
-test('an empty compendium read keeps loading while the Cheat Sheet tab is open', async () => {
-  resetDrakkenheimCheat();
-  setDrakkenheimPollDelay(20);
-  let renders = 0;
-  const packs = [];
-  const game = {
-    modules: {get(id) { return {active: id === 'drakkenheim-core'}; }},
-    packs
-  };
-  try {
-    scheduleDrakkenheimCheat(() => { renders += 1; }, game);
-    await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(renders, 0);
-    assert.deepEqual(drakkenheimItems(), []);
-    packs.push(journalPack([{
-      id: 'abc',
-      name: 'Appendix C: Contamination',
-      pages: [{id: 'sym', name: 'Contamination Symptoms', text: {content: symptomTable(['Arrived.', 'Next.'])}}]
-    }]));
-    await new Promise(resolve => setTimeout(resolve, 80));
-    assert.equal(renders, 1);
-    assert.equal(drakkenheimItems()[0].labelText, 'Contamination');
-    assert.match(drakkenheimItems()[0].tipHTML, /Arrived/);
-  } finally {
-    resetDrakkenheimCheat();
-  }
-});
-
-test('an active module shows the Drakkenheim section immediately, and leaving the tab stops the retry', async () => {
-  resetDrakkenheimCheat();
+test('an active module shows the static Drakkenheim section and purple conditions', () => {
   globalThis.game = drakkenheimGame();
   try {
     const html = renderCheatSheet();
     assert.match(html, /data-cheat-section="drakkenheim"/);
-    assert.match(html, /data-cheat-status="loading"/);
-    assert.match(html, /data-cheat-loading/);
-    assert.match(html, /Loading…/);
-    const damage = html.indexOf('data-cheat-section="damage"');
-    const misc = html.indexOf('data-cheat-section="misc"');
-    const group = html.indexOf('data-cheat-section="drakkenheim"');
-    const note = html.indexOf('class="gm-cheat-note"');
-    assert.ok(damage < misc && misc < group && group < note);
+    assert.match(html, /data-cheat-status="ready"/);
+    assert.doesNotMatch(html, /data-cheat-loading|Loading…|gm-cheat-note/);
+    const conditions = html.slice(html.indexOf('data-cheat-section="conditions"'), html.indexOf('data-cheat-section="actions"'));
+    assert.match(conditions, /gm-cheat-chip--drakkenheim/);
+    assert.match(conditions, />Dazed</);
+    assert.match(conditions, />Weakened</);
+    assert.doesNotMatch(html, /Drakkenheim Madness|New Conditions|Amorphous/);
+    const report = debugDrakkenheimCheat(globalThis.game);
+    assert.equal(report.status, 'ready');
+    assert.ok(report.chips.some(chip => chip.label === 'Delerium'));
+    assert.equal(html.indexOf('data-cheat-section="drakkenheim"') < html.length, true);
   } finally {
     delete globalThis.game;
-    resetDrakkenheimCheat();
   }
-  setDrakkenheimPollDelay(20);
-  let renders = 0;
-  const packs = [];
-  const game = {modules: {get(id) { return {active: id === 'drakkenheim-core'}; }}, packs};
-  scheduleDrakkenheimCheat(() => { renders += 1; }, game);
-  await new Promise(resolve => setTimeout(resolve, 10));
-  stopDrakkenheimCheat();
-  packs.push(journalPack([{id: 'abc', name: 'Appendix C: Contamination', pages: [{id: 'sym', name: 'Contamination Symptoms', text: {content: symptomTable(['Late.', 'Next.'])}}]}]));
-  await new Promise(resolve => setTimeout(resolve, 80));
-  assert.equal(renders, 0);
-  assert.deepEqual(drakkenheimItems(), []);
-  resetDrakkenheimCheat();
+  assert.equal(debugDrakkenheimCheat(drakkenheimGame({active: false})).status, 'off');
 });
 
 test('the tray adds Cheat Sheet after Triggers and does not register a new setting', () => {
   const main = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
   assert.match(main, /triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings"/);
-  assert.match(main, /scheduleDrakkenheimCheat/);
   assert.match(main, /return renderCheatSheet\(\)/);
-  assert.match(main, /cheat-document/);
   assert.match(main, /focusin/);
   assert.match(main, /activateCheatTooltip/);
   assert.match(main, /debugDrakkenheimCheat/);
+  assert.doesNotMatch(main, /scheduleDrakkenheimCheat|cheat-document|stopDrakkenheimCheat/);
   const calls = [...main.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g)].map(match => match[0]);
   assert.equal(calls.length, 8);
 });

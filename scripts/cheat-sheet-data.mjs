@@ -1,9 +1,7 @@
 // Paraphrased D&D quick reference from the System Reference Document 5.2.1.
 // The English strings are the fallback when Foundry's language file has not loaded.
 // Keep lang/en.json aligned with cheatStringEntries().
-import { DRAKKENHEIM_STRINGS } from "./cheat-sheet-drakkenheim.mjs";
-
-export const CHEAT_ATTRIBUTION = "This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode. Rules text is paraphrased.";
+import { DRAKKENHEIM_CONDITIONS, DRAKKENHEIM_ITEMS } from "./cheat-sheet-drakkenheim.mjs";
 
 export const CHEAT_SECTIONS = [
   {
@@ -88,16 +86,27 @@ export const CHEAT_SECTIONS = [
         "You can equip or unequip one weapon before or after that attack. Equipping includes drawing or picking it up. Unequipping includes sheathing, stowing, or dropping it.",
         "If this action gives you more than one attack, you can move between those attacks."
       ] },
-      { id: "grapple", label: "Grapple", lines: [
-        "An Unarmed Strike against a creature within 5 feet. It works only if the target is no more than one size larger than you and you have a hand free. One hand or body part can grapple only one creature.",
-        "The target chooses a Strength or Dexterity saving throw. On a failure it has the Grappled condition. The save DC and the escape DC are 8 plus your Strength modifier and Proficiency Bonus.",
-        "While Grappled, its Speed is 0 and can't increase, and it has Disadvantage on attack rolls against any target other than you. You can drag or carry it, but each foot of that movement costs 1 extra foot unless it is Tiny or two or more sizes smaller.",
-        "It can use its action for a Strength (Athletics) or Dexterity (Acrobatics) check against the escape DC. The grapple also ends if you are Incapacitated, the distance exceeds the grapple's range, or you let go (no action required)."
+      { id: "grapple", label: "Grapple", parts: [
+        { heading: "Check", lines: [
+          "Unarmed Strike within 5 feet. Target at most one size larger. One free hand.",
+          "Target picks a Strength or Dexterity saving throw.",
+          "DC and escape DC: 8 plus your Strength modifier and Proficiency Bonus.",
+          "Fail: Grappled."
+        ] },
+        { heading: "While grappled", lines: [
+          "Speed is 0 and can't increase.",
+          "Disadvantage on attack rolls against any target other than you.",
+          "Drag: each foot costs 1 extra foot, unless Tiny or two or more sizes smaller."
+        ] },
+        { heading: "End", lines: [
+          "Action: Strength (Athletics) or Dexterity (Acrobatics) vs the escape DC.",
+          "Also ends if you are Incapacitated, the range is exceeded, or you let go."
+        ] }
       ] },
       { id: "shove", label: "Shove", lines: [
-        "An Unarmed Strike against a creature within 5 feet. It works only if the target is no more than one size larger than you.",
-        "The target chooses a Strength or Dexterity saving throw. The DC is 8 plus your Strength modifier and Proficiency Bonus.",
-        "On a failure, you either push it 5 feet away or give it the Prone condition."
+        "Unarmed Strike within 5 feet. Target at most one size larger.",
+        "Target picks a Strength or Dexterity saving throw. DC: 8 plus your Strength modifier and Proficiency Bonus.",
+        "Fail: push it 5 feet away or give it the Prone condition."
       ] },
       { id: "dash", label: "Dash", lines: [
         "You gain extra movement equal to your Speed after modifiers. A Speed of 30 feet lets you move up to 60 feet. If that Speed is 15 feet, you can move up to 30 feet.",
@@ -110,29 +119,58 @@ export const CHEAT_SECTIONS = [
         "Until the start of your next turn, attack rolls against you have Disadvantage if you can see the attacker, and you make Dexterity saving throws with Advantage.",
         "You lose these benefits if you have the Incapacitated condition or if your Speed is 0."
       ] },
-      { id: "help", label: "Help", lines: [
-        "Ability check: choose one of your skill or tool proficiencies and a nearby ally. That ally has Advantage on the next check it makes with that skill or tool before your next turn. The GM decides whether your help is possible.",
-        "Attack: distract an enemy within 5 feet. The next attack roll by one ally against that enemy has Advantage. The benefit ends at the start of your next turn.",
-        "You can also administer first aid."
+      { id: "help", label: "Help", parts: [
+        { heading: "Ability check", lines: [
+          "Name one skill or tool you know, and a nearby ally.",
+          "Advantage on that ally's next check with it before your next turn."
+        ] },
+        { heading: "Attack", lines: [
+          "Distract an enemy within 5 feet.",
+          "The next ally attack against it has Advantage. Ends at your next turn."
+        ] },
+        { heading: "First aid", lines: ["You can also give first aid."] }
       ] },
-      { id: "hide", label: "Hide", lines: [
-        "Make a DC 15 Dexterity (Stealth) check while you are Heavily Obscured or behind Three-Quarters Cover or Total Cover, and while you are out of any enemy's line of sight. If you can see a creature, you can tell whether it can see you.",
-        "On a success you have the Invisible condition while hidden. Your check total is the Wisdom (Perception) DC for a creature to find you.",
-        "You stop being hidden if you make a sound louder than a whisper, an enemy finds you, you make an attack roll, or you cast a spell with a Verbal component."
+      { id: "hide", label: "Hide", parts: [
+        { heading: "Check", lines: [
+          "DC 15 Dexterity (Stealth).",
+          "You are Heavily Obscured, or behind Three-Quarters or Total Cover, and out of sight."
+        ] },
+        { heading: "Hidden", lines: [
+          "Success: Invisible while hidden.",
+          "Your total is the Wisdom (Perception) DC to find you."
+        ] },
+        { heading: "End", lines: [
+          "A sound louder than a whisper, being found, an attack roll, or a spell with a Verbal component."
+        ] }
       ] },
-      { id: "influence", label: "Influence", lines: [
-        "Urge a monster to do something. The GM decides if it is willing, unwilling, or hesitant.",
-        "Willing: it complies in a way it prefers. Unwilling: it does not comply. Neither case needs a check.",
-        "Hesitant: make an ability check. The DC is 15 or the monster's Intelligence, whichever is higher. A failure means you wait 24 hours, or a time the GM sets, before urging it the same way again.",
-        "Deception, Intimidation, Performance, and Persuasion cover talking. Animal Handling covers gently coaxing a Beast or Monstrosity. Friendly gives Advantage. Hostile gives Disadvantage."
+      { id: "influence", label: "Influence", parts: [
+        { heading: "Attitude", lines: [
+          "Willing: it complies. Unwilling: it doesn't. No check.",
+          "Hesitant: ability check. The DC is 15 or the monster's Intelligence, whichever is higher."
+        ] },
+        { heading: "Skills", lines: [
+          "Deception, Intimidation, Performance, or Persuasion to talk.",
+          "Animal Handling to coax a Beast or Monstrosity.",
+          "Friendly: Advantage. Hostile: Disadvantage."
+        ] },
+        { heading: "Failure", lines: ["Wait 24 hours, or a time the GM sets, before the same request."] }
       ] },
-      { id: "magic", label: "Magic", lines: [
-        "Cast a spell with a casting time of an action, or use a feature or magic item that requires a Magic action.",
-        "A casting time of 1 minute or longer takes the Magic action on each turn of the casting, and you must concentrate. If Concentration breaks, the spell fails and you don't spend a spell slot."
+      { id: "magic", label: "Magic", parts: [
+        { lines: ["Cast a spell that takes an action, or use a feature or item that needs a Magic action."] },
+        { heading: "Longer casting", lines: [
+          "1 minute or more: Magic action each turn, and you concentrate.",
+          "If Concentration breaks, the spell fails and you don't spend a slot."
+        ] }
       ] },
-      { id: "ready", label: "Ready", lines: [
-        "Choose a perceivable trigger and the action you will take, or a move of up to your Speed. Before your next turn you can use your Reaction after the trigger, or ignore it.",
-        "A readied spell must have a casting time of an action. You cast it and spend its resources, then hold it with Concentration until the start of your next turn. If Concentration breaks, the spell dissipates with no effect."
+      { id: "ready", label: "Ready", parts: [
+        { heading: "Trigger", lines: [
+          "Choose a trigger you can perceive, and an action or a move up to your Speed.",
+          "Reaction before your next turn, or ignore it."
+        ] },
+        { heading: "Spell", lines: [
+          "Casting time must be an action. Spend the resources now.",
+          "Hold with Concentration until your next turn. If it breaks, the spell is lost."
+        ] }
       ] },
       { id: "search", label: "Search", lines: [
         "Make a Wisdom check to notice something that isn't obvious."
@@ -160,12 +198,12 @@ export const CHEAT_SECTIONS = [
         ]
       } },
       { id: "utilize", label: "Utilize", lines: [
-        "Use a nonmagical object that requires your action.",
-        "During your move or action you can also interact with one object for free, such as drawing a weapon as part of an attack. A second interaction takes the Utilize action."
+        "Use a nonmagical object that needs your action.",
+        "One free object interaction during your move or action. A second one takes Utilize."
       ] },
       { id: "opportunity", label: "Opportunity", lines: [
-        "When a creature you can see leaves your reach, you can use your Reaction to make one melee attack with a weapon or an Unarmed Strike. The attack happens just before it leaves.",
-        "Disengage, teleporting, or being moved without spending your movement, action, Bonus Action, or Reaction does not provoke."
+        "A creature you can see leaves your reach: Reaction, one melee attack, just before it leaves.",
+        "Disengage, teleport, or forced movement that spends no movement, action, Bonus Action, or Reaction does not provoke."
       ] },
       { id: "bonus", label: "Bonus Action", lines: [
         "You have a Bonus Action only when a rule says you do, and you can take only one on your turn.",
@@ -206,17 +244,17 @@ export const CHEAT_SECTIONS = [
         ]
       } },
       { id: "fall", label: "Falling", lines: [
-        "At the end of a fall, take 1d6 Bludgeoning for every 10 feet fallen, to a maximum of 20d6. You then have the Prone condition unless the fall dealt no damage.",
-        "Falling into a liquid lets you use a Reaction for a DC 15 Strength (Athletics) or Dexterity (Acrobatics) check. Success halves the damage."
+        "1d6 Bludgeoning per 10 feet, maximum 20d6.",
+        "Then Prone, unless the fall dealt no damage.",
+        "Into a liquid: Reaction, DC 15 Strength (Athletics) or Dexterity (Acrobatics). Success halves the damage."
       ] },
       { id: "suffocating", label: "Suffocating", lines: [
-        "You can hold your breath for a number of minutes equal to 1 plus your Constitution modifier (minimum 30 seconds).",
-        "When you run out of breath or are choking, you gain 1 Exhaustion level at the end of each of your turns.",
-        "When you can breathe again, remove all the Exhaustion levels you gained from suffocating."
+        "Hold your breath for minutes equal to 1 plus your Constitution modifier (minimum 30 seconds).",
+        "Then 1 Exhaustion level at the end of each of your turns.",
+        "Breathing again removes the Exhaustion levels you gained from suffocating."
       ] },
       { id: "drowning", label: "Drowning", lines: [
-        "A creature that cannot breathe while underwater uses the Suffocation hazard.",
-        "Hold your breath for minutes equal to 1 plus your Constitution modifier (minimum 30 seconds). After that, gain 1 Exhaustion level at the end of each of your turns until you can breathe again."
+        "A creature that cannot breathe while underwater uses Suffocating."
       ] },
       { id: "burning", label: "Burning", lines: [
         "A burning creature or object takes 1d4 Fire damage at the start of each of its turns.",
@@ -256,78 +294,121 @@ export const CHEAT_SECTIONS = [
     id: "misc",
     title: "Misc",
     items: [
-      { id: "typical-dc", label: "Typical DC", lines: [
-        "Very easy 5.",
-        "Climb a knotted rope. Strength (Athletics).",
-        "Notice a campfire across an open field. Wisdom (Perception).",
-        "Recall which nation a famous king ruled. Intelligence (History).",
-        "Easy 10.",
-        "Tie a knot with rope. Dexterity (Sleight of Hand).",
-        "Calm a tame horse. Wisdom (Animal Handling).",
-        "Follow fresh tracks through mud. Wisdom (Survival).",
-        "Medium 15.",
-        "Climb a slippery surface with few handholds. Strength (Athletics).",
-        "Pick an ordinary lock with Thieves' Tools. Dexterity (Sleight of Hand).",
-        "Find obscure information in a book. Intelligence (Investigation).",
-        "Hard 20.",
-        "Burst a rope. Strength (Athletics).",
-        "Slip free of manacles. Dexterity (Sleight of Hand).",
-        "Read a practiced liar's intentions. Wisdom (Insight).",
-        "Very hard 25.",
-        "Burst a set of manacles. Strength (Athletics).",
-        "Recall lore about a rare magic item. Intelligence (Arcana).",
-        "Follow faint tracks across hard stone. Wisdom (Survival).",
-        "Nearly impossible 30.",
-        "Stay afloat in a storm-driven sea. Strength (Athletics).",
-        "Convince a hostile foe to stand down. Charisma (Persuasion).",
-        "Recall lore that almost no one still knows. Intelligence (History)."
+      { id: "typical-dc", label: "Typical DC", parts: [
+        { heading: "Very easy 5", lines: [
+          "Climb a knotted rope. STR (Athletics).",
+          "Notice a campfire in an open field. WIS (Perception).",
+          "Recall which nation a famous king ruled. INT (History)."
+        ] },
+        { heading: "Easy 10", lines: [
+          "Tie a knot. DEX (Sleight of Hand).",
+          "Calm a tame horse. WIS (Animal Handling).",
+          "Follow fresh tracks in mud. WIS (Survival)."
+        ] },
+        { heading: "Medium 15", lines: [
+          "Climb a slippery surface with few holds. STR (Athletics).",
+          "Pick an ordinary lock with Thieves' Tools. DEX (Sleight of Hand).",
+          "Find obscure information in a book. INT (Investigation)."
+        ] },
+        { heading: "Hard 20", lines: [
+          "Burst a rope. STR (Athletics).",
+          "Slip free of manacles. DEX (Sleight of Hand).",
+          "Read a practiced liar. WIS (Insight)."
+        ] },
+        { heading: "Very hard 25", lines: [
+          "Burst manacles. STR (Athletics).",
+          "Recall lore of a rare magic item. INT (Arcana).",
+          "Follow faint tracks on hard stone. WIS (Survival)."
+        ] },
+        { heading: "Nearly impossible 30", lines: [
+          "Stay afloat in a storm-driven sea. STR (Athletics).",
+          "Talk a hostile foe into standing down. CHA (Persuasion).",
+          "Recall lore almost no one still knows. INT (History)."
+        ] }
       ] },
-      { id: "exhaustion", label: "Exhaustion", lines: [
-        "The condition is cumulative. Each time you receive it, you gain 1 Exhaustion level.",
-        "On a D20 Test, the roll is reduced by 2 times your Exhaustion level.",
-        "Your Speed is reduced by 5 feet times your Exhaustion level.",
-        "You die if your Exhaustion level is 6.",
-        "Finishing a Long Rest removes 1 Exhaustion level. At 0, the condition ends.",
-        "Level 1. D20 Tests are reduced by 2. Speed is reduced by 5 feet.",
-        "Level 2. D20 Tests are reduced by 4. Speed is reduced by 10 feet.",
-        "Level 3. D20 Tests are reduced by 6. Speed is reduced by 15 feet.",
-        "Level 4. D20 Tests are reduced by 8. Speed is reduced by 20 feet.",
-        "Level 5. D20 Tests are reduced by 10. Speed is reduced by 25 feet.",
-        "Level 6. You die."
+      { id: "exhaustion", label: "Exhaustion", parts: [
+        { lines: ["Each gain adds 1 level."] },
+        { table: {
+          caption: "Cumulative",
+          headers: ["Level", "D20 Tests", "Speed"],
+          rows: [
+            ["1", "-2", "-5 ft"],
+            ["2", "-4", "-10 ft"],
+            ["3", "-6", "-15 ft"],
+            ["4", "-8", "-20 ft"],
+            ["5", "-10", "-25 ft"],
+            ["6", "You die", "—"]
+          ]
+        } },
+        { heading: "Recovery", lines: [
+          "A Long Rest removes 1 level.",
+          "At 0, the condition ends."
+        ] }
       ] },
-      { id: "jumping", label: "Jumping", lines: [
-        "Long jump.",
-        "With at least 10 feet of movement first, you leap up to a number of feet equal to your Strength score. A standing jump covers half that distance.",
-        "Each foot you jump costs a foot of movement.",
-        "Landing in Difficult Terrain requires a DC 10 Dexterity (Acrobatics) check or you have the Prone condition.",
-        "The distance assumes the height does not matter, such as a stream or chasm. To clear a low obstacle no taller than a quarter of the jump, the GM can require a DC 10 Strength (Athletics) check. Otherwise you hit it.",
-        "High jump.",
-        "With at least 10 feet of movement first, you leap a number of feet equal to 3 plus your Strength modifier, minimum 0. A standing jump covers half that distance.",
-        "Each foot you jump costs a foot of movement.",
-        "You can reach above you by the height of the jump plus 1½ times your height."
+      { id: "jumping", label: "Jumping", parts: [
+        { heading: "Long jump", lines: [
+          "Running: STR score ft.",
+          "Standing: half."
+        ] },
+        { heading: "High jump", lines: [
+          "Running: 3 + STR mod ft (min 0).",
+          "Standing: half.",
+          "Reach: jump + 1.5 × your height."
+        ] },
+        { heading: "Both", lines: [
+          "Running start: 10 ft.",
+          "Costs movement.",
+          "Difficult terrain landing: DC 10 DEX (Acrobatics) or Prone.",
+          "Low obstacle (up to 1/4 of the jump): DC 10 STR (Athletics)."
+        ] }
       ] },
-      { id: "travel", label: "Travel Pace", lines: [
-        "Fast.",
-        "Outside combat, the group travels 400 feet per minute, 4 miles per hour, or 30 miles per day.",
-        "Disadvantage on Wisdom (Perception or Survival) checks and on Dexterity (Stealth) checks.",
-        "Normal.",
-        "Outside combat, the group travels 300 feet per minute, 3 miles per hour, or 24 miles per day.",
-        "Disadvantage on Dexterity (Stealth) checks.",
-        "Slow.",
-        "Outside combat, the group travels 200 feet per minute, 2 miles per hour, or 18 miles per day.",
-        "Advantage on Wisdom (Perception or Survival) checks."
+      { id: "travel", label: "Travel Pace", parts: [
+        { heading: "Fast", lines: [
+          "400 feet per minute, 4 miles per hour, or 30 miles per day.",
+          "Disadvantage on Wisdom (Perception or Survival) and Dexterity (Stealth)."
+        ] },
+        { heading: "Normal", lines: [
+          "300 feet per minute, 3 miles per hour, or 24 miles per day.",
+          "Disadvantage on Dexterity (Stealth) checks."
+        ] },
+        { heading: "Slow", lines: [
+          "200 feet per minute, 2 miles per hour, or 18 miles per day.",
+          "Advantage on Wisdom (Perception or Survival) checks."
+        ] }
       ] },
-      { id: "mounted", label: "Mounted", lines: [
-        "A willing creature at least one size larger than you, with a suitable anatomy, can serve as a mount.",
-        "During your move you can mount or dismount a creature within 5 feet. That costs movement equal to half your Speed (round down).",
-        "A controlled mount must be trained to accept a rider. Its Initiative matches yours, it moves on your turn as you direct, and it can only Dash, Disengage, or Dodge. It can move and act on the turn you mount it.",
-        "An independent mount keeps its own place in Initiative and moves and acts as it likes.",
-        "If an effect is about to move your mount against its will, or you or the mount are knocked Prone, succeed on a DC 10 Dexterity saving throw or fall off. You land Prone in an unoccupied space within 5 feet of the mount."
+      { id: "mounted", label: "Mounted", parts: [
+        { heading: "Mount", lines: [
+          "Willing, at least one size larger, suitable anatomy."
+        ] },
+        { heading: "Mount or dismount", lines: [
+          "During your move, within 5 feet.",
+          "Costs half your Speed (round down)."
+        ] },
+        { heading: "Controlled", lines: [
+          "Must be trained.",
+          "Your Initiative. Moves as you direct.",
+          "Only Dash, Disengage, or Dodge.",
+          "Can move and act the turn you mount it."
+        ] },
+        { heading: "Independent", lines: [
+          "Keeps its own Initiative and acts as it likes."
+        ] },
+        { heading: "Falling off", lines: [
+          "DC 10 Dexterity saving throw if the mount is moved against its will, or either of you is knocked Prone.",
+          "Fail: you land Prone within 5 feet."
+        ] }
       ] },
-      { id: "underwater", label: "Underwater", lines: [
-        "A melee attack roll with a weapon has Disadvantage if you lack a Swim Speed, unless the weapon deals Piercing damage.",
-        "A ranged attack roll with a weapon automatically misses a target beyond the weapon's normal range, and the roll has Disadvantage against a target within normal range.",
-        "Anything underwater has Resistance to Fire damage."
+      { id: "underwater", label: "Underwater", parts: [
+        { heading: "Melee", lines: [
+          "Disadvantage without a Swim Speed, unless the weapon deals Piercing."
+        ] },
+        { heading: "Ranged", lines: [
+          "An attack beyond the weapon's normal range misses.",
+          "Within normal range: Disadvantage."
+        ] },
+        { heading: "Fire", lines: [
+          "Resistance to Fire damage."
+        ] }
       ] }
     ]
   },
@@ -377,25 +458,32 @@ export const CHEAT_SECTIONS = [
   }
 ];
 
+function pushTable(entries, prefix, table) {
+  entries.push([`${prefix}.caption`, table.caption]);
+  for (const [index, header] of table.headers.entries()) entries.push([`${prefix}.headers.${index}`, header]);
+  for (const [rowIndex, row] of table.rows.entries()) {
+    for (const [column, cell] of row.entries()) entries.push([`${prefix}.rows.${rowIndex}.${column}`, cell]);
+  }
+}
+
+function pushItem(entries, item) {
+  entries.push([`item.${item.id}.label`, item.label]);
+  for (const [index, line] of (item.lines ?? []).entries()) entries.push([`item.${item.id}.lines.${index}`, line]);
+  if (item.table) pushTable(entries, `item.${item.id}.table`, item.table);
+  for (const [index, part] of (item.parts ?? []).entries()) {
+    if (part.heading) entries.push([`item.${item.id}.parts.${index}.heading`, part.heading]);
+    for (const [line, text] of (part.lines ?? []).entries()) entries.push([`item.${item.id}.parts.${index}.lines.${line}`, text]);
+    if (part.table) pushTable(entries, `item.${item.id}.parts.${index}.table`, part.table);
+  }
+}
+
 export function cheatStringEntries(sections = CHEAT_SECTIONS) {
-  const entries = [
-    ["tab", "Cheat Sheet"],
-    ["attribution", CHEAT_ATTRIBUTION]
-  ];
+  const entries = [["tab", "Cheat Sheet"]];
   for (const section of sections) {
     entries.push([`section.${section.id}`, section.title]);
-    for (const item of section.items) {
-      entries.push([`item.${item.id}.label`, item.label]);
-      for (const [index, line] of (item.lines ?? []).entries()) entries.push([`item.${item.id}.lines.${index}`, line]);
-      if (item.table) {
-        entries.push([`item.${item.id}.table.caption`, item.table.caption]);
-        for (const [index, header] of item.table.headers.entries()) entries.push([`item.${item.id}.table.headers.${index}`, header]);
-        for (const [rowIndex, row] of item.table.rows.entries()) {
-          for (const [column, cell] of row.entries()) entries.push([`item.${item.id}.table.rows.${rowIndex}.${column}`, cell]);
-        }
-      }
-    }
+    for (const item of section.items) pushItem(entries, item);
   }
-  entries.push(...DRAKKENHEIM_STRINGS);
+  entries.push(["section.drakkenheim", "Drakkenheim"]);
+  for (const item of [...DRAKKENHEIM_CONDITIONS, ...DRAKKENHEIM_ITEMS]) pushItem(entries, item);
   return entries;
 }

@@ -81,8 +81,15 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
     }},
     persist: async change => change(state),
     ui: {notifications: {info(message) { notices.push(message); }}},
-    Howler: { _howls: [{ _src: rain.path, stop() { this.audioStopped = true; } }] }
+    Howler: { _howls: [{ _src: rain.path, stop() { this.audioStopped = true; } }] },
+    game: {playlists, audio: {
+      playing: {values() { return [birds]; }},
+      pending: {values() { return []; }},
+      sounds: {values() { return [{deref() { return quiet; }}]; }}
+    }}
   });
+  const birds = {stopped: false, fade: undefined, stop(options) { this.stopped = true; this.fade = options?.fade; }};
+  const quiet = {stopped: false, stop(options) { this.stopped = true; this.fade = options?.fade; }};
   vm.runInContext(`let settingTrackVolumes=false; ${fn}`, context);
   await vm.runInContext('setTrackVolumes()', context);
   assert.deepEqual(writes.map(write => write.playlist), ['now', 'later']);
@@ -128,4 +135,16 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.ok(stoppedWrites.flatMap(write => write.updates).every(update => update.playing === false && update.pausedTime === null));
   assert.equal(ghost.audioStopped, true);
   assert.equal(context.Howler._howls[0].audioStopped, true);
+  assert.equal(birds.stopped, true);
+  assert.equal(birds.fade, 0);
+  assert.equal(quiet.stopped, true);
+  assert.equal(quiet.fade, 0);
+  assert.match(source, /form\("Add Ambience"[\s\S]*\["add", "Add"\]/);
+  assert.doesNotMatch(source, /Save button/);
+  const ambienceForm = source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck'));
+  assert.match(ambienceForm, /ambienceVolume/);
+  assert.doesNotMatch(ambienceForm, /\bchecked\b/);
+  const playlistForm = source.slice(source.indexOf('async function playlistForm'), source.indexOf('async function ambienceForm'));
+  assert.match(playlistForm, /Choose a playlist/);
+  assert.doesNotMatch(playlistForm, /option\(p\.id, p\.name, last\.playlist\)/);
 });

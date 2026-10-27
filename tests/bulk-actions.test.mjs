@@ -106,9 +106,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
     assert.match(css, /#mlgm \.gm-bulk \{[^}]*display:grid !important/);
-    assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,17rem\),1fr\)\) !important/);
-    assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*grid-column:auto !important/);
-    assert.match(css, /#mlgm \.gm-bulk > \[data-mlgm-bulk="coins"\] \{ grid-column:1 \/ -1 !important; \}/);
+    assert.match(css, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\) !important/);
+    assert.match(css, /align-items:stretch/);
+    assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*grid-column:span 2/);
+    assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*align-self:stretch/);
+    assert.match(css, /#mlgm \.gm-bulk > \[data-mlgm-bulk="coins"\],\s*#mlgm \.gm-bulk > \[data-mlgm-bulk="xp"\] \{ grid-column:span 3; \}/);
+    assert.doesNotMatch(css, /\[data-mlgm-bulk="coins"\] \{ grid-column:1 \/ -1/);
     assert.doesNotMatch(css, /@container gm-bulk/);
     assert.match(html, /Give amount to each party member/);
     assert.match(html, /Set all party XP to this amount/);

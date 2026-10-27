@@ -88,6 +88,9 @@ test('Add Playlist starts the chosen playlist at the dialog volume', async () =>
   await vm.runInContext('playlistForm()', context);
   assert.equal(dialog.title, 'Add Playlist');
   assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['add', 'Add']]);
+  assert.equal(state.saved[0].config.playlist, 'later');
+  assert.equal(state.last.playlist.playlist, '');
+  assert.equal(state.last.playlist.volume, state.saved[0].config.volume);
   assert.deepEqual(stopped, ['now']);
   assert.deepEqual(played, ['later']);
   const curved = 0.4 ** 1.5;
