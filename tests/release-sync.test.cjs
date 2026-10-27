@@ -28,20 +28,31 @@ function fixture({ tagVersion = null, latestVersion = '1.0.6', exists = false, d
     getContent: async ({ ref }) => response({ content: Buffer.from(JSON.stringify({ version: ref.startsWith('refs/tags/') ? tag : '1.0.8' })).toString('base64') }),
     getReleaseByTag: async () => { if (failure) throw Object.assign(new Error('API failure'), { status: failure }); return exists ? response({ id: 8, draft }) : missing(); },
     getLatestRelease: async () => latest ? response({ tag_name: latest }) : missing(),
-    createRelease: async args => { calls.push(args); tag ??= args.tag_name; latest = args.tag_name; return response({ id: 8 }); },
+    createRelease: async args => {
+      calls.push(args);
+      tag ??= args.tag_name;
+      latest = args.tag_name;
+      return response({ id: 8, html_url: `https://github.com/test/test/releases/tag/${args.tag_name}`, tag_name: args.tag_name });
+    },
     updateRelease: async args => { calls.push(args); latest = '1.0.8'; return response({ id: 8 }); }
   };
   return { calls, args: { github: { rest: { repos, git: { getRef: async () => tag ? response({}) : missing() } } }, context: { repo: { owner: 'test', repo: 'test' } }, core: { info() {} } } };
 }
 
 test('repairs the original missing tag/release and targets the published commit', async () => {
-  const f = fixture(); await sync(f.args);
+  const f = fixture();
+  const result = await sync(f.args);
   assert.equal(f.calls[0].tag_name, '1.0.8');
   assert.equal(f.calls[0].target_commitish, 'published-commit');
+  assert.equal(result.publishWebsite, true);
+  assert.equal(result.version, '1.0.8');
+  assert.equal(result.githubReleaseUrl, 'https://github.com/test/test/releases/tag/1.0.8');
 });
 test('aligned releases are a no-op', async () => {
   const f = fixture({ tagVersion: '1.0.8', latestVersion: '1.0.8', exists: true });
-  await sync(f.args); assert.equal(f.calls.length, 0);
+  const result = await sync(f.args);
+  assert.equal(f.calls.length, 0);
+  assert.equal(result.publishWebsite, false);
 });
 test('repairs latest without replacing an existing release', async () => {
   const f = fixture({ tagVersion: '1.0.8', exists: true });
@@ -53,7 +64,10 @@ test('refuses conflicting tags, drafts, downgrades and API failures', async () =
   }
 });
 test('an existing valid tag can acquire its missing release', async () => {
-  const f = fixture({ tagVersion: '1.0.8', latestVersion: null }); await sync(f.args); assert.equal(f.calls.length, 1);
+  const f = fixture({ tagVersion: '1.0.8', latestVersion: null });
+  const result = await sync(f.args);
+  assert.equal(f.calls.length, 1);
+  assert.equal(result.publishWebsite, false);
 });
 test('a current changelog still publishes the manifest release', async () => {
   const root = tempModule({ 'release-notes/RELEASE-NOTES-1.0.0.md': '# Morelord Game Master 1.0.0\n\n- Added a tray.\n' });
