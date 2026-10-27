@@ -108,7 +108,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('gm-bulk-pair'));
     assert.match(xpCard, /class="gm-label-help"/);
-    assert.match(xpCard, /class="ml-icon-button ml-help-button" title="[^"]*Any remainder goes to one random party member[^"]*"/);
+    assert.match(xpCard, /class="ml-icon-button ml-help-button" data-tooltip="[^"]*Any remainder goes to one random party member[^"]*"/);
+    assert.doesNotMatch(xpCard, /ml-help-button"[^>]*\stitle=/);
     assert.doesNotMatch(xpCard, /<p>/);
     assert.match(css, /#mlgm \.gm-label-help \{ display:inline-flex; align-items:center; gap:var\(--ml-space-1\); \}/);
     const xpStart = html.indexOf('name="bulkXpAction"');
@@ -120,7 +121,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tokensCard, /data-action="bulk-tokens-help"/);
     assert.match(tokensCard, /fa-circle-question/);
     assert.match(tokensCard, /aria-label="Copied token settings"/);
-    assert.match(tokensCard, /title="Copies each party character&#39;s token on the active GM&#39;s current scene onto that character&#39;s prototype token\. A selected token is used when several are placed\."/);
+    assert.match(tokensCard, /data-tooltip="Copies each party character&#39;s token on the active GM&#39;s current scene onto that character&#39;s prototype token\. A selected token is used when several are placed\."/);
+    assert.doesNotMatch(tokensCard, /ml-help-button[^>]*\stitle=/);
     assert.doesNotMatch(tokensCard, /<p>/);
     assert.doesNotMatch(tokensCard, /image and scale/);
     assert.doesNotMatch(html, /not copied|left off|omits/i);

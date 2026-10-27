@@ -211,7 +211,7 @@ In Bulk Actions, Clear resets all five coin fields to zero and saves them withou
 
 ### XP
 
-XP sits under Coins. The Action label has a help icon; hovering it shows how the three actions differ. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. **Set all party XP to this amount** replaces each member's experience with that non-negative whole number. The action updates `system.details.xp.value`. Undo restores the previous values. A successful Apply clears the amount.
+XP sits under Coins. The Action label has a help icon; Foundry's tooltip shows how the three actions differ. **Split amount amongst party members** divides a positive whole number equally. The entire remainder goes to one random party member, the same way leftover copper is assigned for coins. Splitting 10 XP among three characters gives 3, 3, and 4. **Give amount to each party member** adds the full amount to everyone. **Set all party XP to this amount** replaces each member's experience with that non-negative whole number. The action updates `system.details.xp.value`. Undo restores the previous values. A successful Apply clears the amount.
 
 ### Inspiration
 
@@ -219,7 +219,7 @@ Inspiration and Prototype Token Sync share one row of compact cards, in that ord
 
 ### Prototype Token Sync
 
-**Apply** copies each party character's placed token on the active GM's current scene onto that character's prototype token, whether that token is linked or unlinked. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. The copied settings are name, name display, actor link, image and scale, width, height, depth, disposition, resource bar display, primary resource bar, secondary resource bar, vision, detection modes, light, lock rotation, rotation, opacity, dynamic ring, and occlusion. The tray card stays short. Its help icon shows that description on hover and opens that list. Only settings that differ are written. A prototype that already matches is skipped, including when Foundry would treat the copy as unchanged.
+**Apply** copies each party character's placed token on the active GM's current scene onto that character's prototype token, whether that token is linked or unlinked. Foundry persists the copy through `Actor.updateDocuments` with a `prototypeToken` change. When several tokens for one character are on that scene, a selected token is used; otherwise the lowest token id is used. A character with no token on the scene is skipped and named in the chat card. The copied settings are name, name display, actor link, image and scale, width, height, depth, disposition, resource bar display, primary resource bar, secondary resource bar, vision, detection modes, light, lock rotation, rotation, opacity, dynamic ring, and occlusion. The tray card stays short. Its help icon shows that description in Foundry's tooltip and opens that list. Only settings that differ are written. A prototype that already matches is skipped, including when Foundry would treat the copy as unchanged.
 
 ### Undo Last Action
 
