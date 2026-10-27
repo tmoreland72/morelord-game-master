@@ -232,6 +232,7 @@ test('a saved ambience button still plays its full path after migration', async 
   const fn = source.slice(source.indexOf('async function run(type, config)'), source.indexOf('async function ambienceForm'));
   const updates = [];
   const created = [];
+  const warnings = [];
   let browsed = false;
   const sound = {path: 'Ambience/nested/rain.ogg', async update(data) { updates.push(structuredClone(data)); }};
   const playlist = {
@@ -247,6 +248,7 @@ test('a saved ambience button still plays its full path after migration', async 
     ID: MODULE,
     CONST: {PLAYLIST_MODES: {SIMULTANEOUS: 2, SHUFFLE: 1}},
     notify() {},
+    ui: {notifications: {warn(message) { warnings.push(message); }}},
     config: saved[0].config,
     Playlist: {async create() { throw new Error('the existing ambience playlist should be reused'); }},
     ambienceGroupName,
@@ -265,7 +267,10 @@ test('a saved ambience button still plays its full path after migration', async 
   assert.equal(created[0].name, 'rain.ogg');
   assert.equal(created[0].flags[MODULE].group, 'Village near church');
   assert.deepEqual(updates, [{playing: true, repeat: true, volume: 0.4, name: 'rain.ogg', 'flags.morelord-game-master.group': 'Village near church'}]);
-  await assert.rejects(() => vm.runInContext('run("ambience", {files: [{path: "Ambience/nested/rain.ogg", volume: 0.4}]})', context), /Name this ambience/);
+  const createdBeforeBlank = created.length;
+  await vm.runInContext('run("ambience", {files: [{path: "Ambience/nested/rain.ogg", volume: 0.4}]})', context);
+  assert.deepEqual(warnings, ['Name your ambience before adding it.']);
+  assert.equal(created.length, createdBeforeBlank);
 });
 
 test('the ambience picker and settings dialog use folder paths and relative labels', () => {
@@ -274,8 +279,12 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   const settings = source.slice(source.indexOf('function ambienceFolderRow'), source.length);
   assert.match(form, /label\("Name"/);
   assert.match(form, /input\("name", ""/);
-  assert.match(form, /id="ml-game-master-ambience-name" required/);
-  assert.match(form, /Name this ambience/);
+  assert.match(form, /id="ml-game-master-ambience-name"/);
+  assert.doesNotMatch(form, /ml-game-master-ambience-name" required/);
+  assert.match(form, /Name your ambience before adding it/);
+  assert.match(form, /Select at least one sound/);
+  assert.doesNotMatch(form, /throw new Error\("Name/);
+  assert.doesNotMatch(form, /throw new Error\("Select at least one sound/);
   assert.doesNotMatch(form, /ambienceNameFromPath/);
   assert.doesNotMatch(form, /join\(" \+ "\)/);
   assert.match(form, /const fileName = file\.path\.split\("\/"\)\.pop\(\)/);

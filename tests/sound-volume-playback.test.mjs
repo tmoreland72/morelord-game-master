@@ -7,8 +7,6 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
   const fn = source.slice(source.indexOf('async function setTrackVolumes()'), source.indexOf('async function saveAndRun'));
-  assert.match(source, /button\("playlist","Add Playlist"\)/);
-  assert.match(source, /button\("ambience","Add Ambience"\)/);
   assert.match(source, /button\("set-ambience-volumes","Set Ambience Volumes"\)/);
   assert.match(source, /button\("stop-all-sound","Stop All Sound"\)/);
   assert.match(source, /form\("Add Playlist"/);
@@ -31,7 +29,18 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.match(css, /#mlgm \.gm-macro \{[^}]*height:var\(--mlgm-macro-button-height\)/);
   assert.match(css, /#mlgm \.gm-bulk \{[^}]*align-content:start/);
   assert.match(css, /#mlgm \.ml-stepper \{[^}]*height:var\(--mlgm-button-height\)/);
-  assert.match(css, /#mlgm \.gm-ambience-column button\[data-action="ambience"\][\s\S]*white-space:nowrap/);
+  assert.match(source, /soundColumn\("Playlists", "playlist", "Add Playlist", "playlist"\)/);
+  assert.match(source, /soundColumn\("Ambience", "ambience", "Add Ambience", "ambience"\)/);
+  assert.match(source, /const soundRow = inner => `<div class="gm-sound-row">/);
+  assert.match(source, /soundRow\(`\$\{button\(action,name,id,`title="\$\{e\(name\)\}"`\)\}\$\{deleteButton\(remove,id,name\)\}`\)/);
+  assert.doesNotMatch(source, /gm-ambience-actions/);
+  assert.match(css, /#mlgm \.gm-sound-row \{[^}]*flex-flow:row nowrap/);
+  assert.match(css, /#mlgm \.gm-sound-row \{[^}]*width:100%/);
+  assert.match(css, /#mlgm \.gm-sound-row > button:not\(\.ml-icon-button\) \{[^}]*flex:1 1 auto !important/);
+  assert.match(css, /#mlgm \.gm-sound-row > \.ml-icon-button \{[^}]*flex:0 0 var\(--mlgm-button-height\)/);
+  assert.match(css, /button\.gm-sound-add \{[^}]*--ml-color-accent/);
+  assert.match(source, /class="gm-sound-add"/);
+  assert.doesNotMatch(css, /gm-ambience-column button\[data-action="ambience"\]/);
   const writes = [];
   const played = [];
   const stopped = [];

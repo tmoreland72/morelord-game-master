@@ -44,7 +44,7 @@ Right-click a pin to run it on load for you, or, as a GM, for everyone in the wo
 
 ## Sound
 
-Start a playlist or a saved ambience, set every track's volume at once, and stop what is playing from **Now Playing**. When you add ambience, type a name for the whole mix. The Name field starts empty, and Add will not continue without it. The saved button shows that name. Now Playing lists each layer by its file name, with the mix name underneath. **Stop All Sound** stops music, ambience, and anything else Foundry still has playing.
+Start a playlist or a saved ambience, set every track's volume at once, and stop what is playing from **Now Playing**. When you add ambience, type a name for the whole mix. The Name field starts empty. Add with an empty name warns and leaves the dialog open, with your layers and volumes still selected, and puts the cursor in Name. Saved playlist and ambience buttons fill the column, with delete at the right end of the same row. Add Playlist and Add Ambience are accent buttons of that same width. Now Playing lists each layer by its file name, with the mix name underneath. **Stop All Sound** stops music, ambience, and anything else Foundry still has playing.
 
 ## Triggers
 

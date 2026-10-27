@@ -1,7 +1,7 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
 /* Above Foundry windows and dialogs; tooltips and notifications retain their native layers. */
 .ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); }
-#mlgm { --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-tooltip) - 1); pointer-events:auto; }
+#mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-tooltip) - 1); pointer-events:auto; }
 #mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.gm-macro):not(.ml-stepper button),
 .ml-window .ml-dialog-shell button:not(.ml-icon-button),
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }
@@ -105,10 +105,10 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk-coin-fields > label { align-items:flex-start; justify-content:flex-start; flex:0 0 auto; width:max-content; max-width:100%; margin-left:0; }
 #mlgm .gm-bulk-coin-action { width:max-content; max-width:100%; }
 #mlgm .gm-label-help { display:inline-flex; align-items:center; gap:var(--ml-space-1); }
-#mlgm .gm-ambience-column .gm-ambience-actions { display:flex; flex-direction:column; align-items:stretch; gap:var(--ml-space-2); min-width:0; }
-#mlgm .gm-ambience-column .gm-ambience-actions .ml-item-row { align-items:center; }
-#mlgm .gm-ambience-column button[data-action="ambience"],
-#mlgm .gm-ambience-column button[data-action="saved"] { width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#mlgm .gm-sound-row { display:flex; flex-flow:row nowrap; align-items:center; justify-content:flex-start; gap:var(--ml-space-2); width:100%; max-width:100%; margin:0; }
+#mlgm .gm-sound-row > button:not(.ml-icon-button) { flex:1 1 auto !important; width:auto !important; min-width:0; max-width:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-inline-start:0; }
+#mlgm .gm-sound-row > .ml-icon-button { flex:0 0 var(--mlgm-button-height); width:var(--mlgm-button-height); }
+#mlgm .gm-sound-row > button.gm-sound-add { background:var(--ml-color-accent, var(--color-warm-1, #d6a34a)); border-color:var(--color-warm-2, #b8862f); color:var(--ml-color-on-accent, #1c1408); }
 #morelord-game-master-add-ambience .gm-ambience-layer { display:grid !important; grid-template-columns:auto minmax(0,1fr) auto max-content; align-items:center; gap:var(--ml-space-2); }
 #morelord-game-master-add-ambience .gm-ambience-check { margin:0; justify-self:start; }
 #morelord-game-master-add-ambience .gm-ambience-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

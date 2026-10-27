@@ -17,6 +17,7 @@ import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './tok
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
+import {openDialog, percentIssue} from './dialog.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -28,7 +29,8 @@ let suppressSpecialtyToggle = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
-const savedButton = (action, name, id, remove) => `<div class="ml-item-row"><div class="ml-stack">${button(action,name,id,`title="${e(name)}"`)}</div>${deleteButton(remove,id,name)}</div>`;
+const soundRow = inner => `<div class="gm-sound-row">${inner}</div>`;
+const savedButton = (action, name, id, remove) => soundRow(`${button(action,name,id,`title="${e(name)}"`)}${deleteButton(remove,id,name)}`);
 const option = (id, name, selected) => `<option value="${e(id)}" ${id === selected ? "selected" : ""}>${e(name)}</option>`;
 const column = (title, body, cls = "") => `<div class="ml-stack gm-column ${cls}" data-gap="4"><strong class="gm-section-heading">${e(title)}</strong>${body}</div>`;
 const label = (name, content) => `<label class="gm-field"><span>${e(name)}</span>${content}</label>`;
@@ -70,11 +72,8 @@ function persist(change) {
   });
   return saving;
 }
-async function form(title, content, actions = [["ok", "Save"]], {modal = true} = {}) {
-  return foundry.applications.api.DialogV2.wait({ modal, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, classes:["ml-window"], window: { title, resizable: true }, position: { width: /Ambience|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400 },
-    content: `<div><div class="ml-app ml-app-shell ml-dialog-shell">${content}</div></div>`, rejectClose: false,
-    buttons: actions.map(([action, text], i) => ({ action, label: text, default: i === 0,
-      callback: (_event, btn) => ({ action, data: new FormData(btn.form) }) })) });
+async function form(title, content, actions = [["ok", "Save"]], {modal = true, validate} = {}) {
+  return openDialog({modal, title, content, actions, validate, id:`${ID}-${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/-$/,"")}`, width: /Ambience|Verify/i.test(title) ? 560 : /Trigger Character|Trigger Action|settings/i.test(title) ? 480 : 400});
 }
 
 Hooks.once("init", () => {
@@ -193,6 +192,9 @@ Hooks.on("renderSettingsConfig", (_application, _element, _context, options) => 
 function saved(type) {
   return state.saved.filter(s => s.type === type).map(s => savedButton("saved",savedName(s.type,s.config),s.id,"remove-saved")).join("");
 }
+function soundColumn(title, action, label, type) {
+  return column(title, `${soundRow(button(action, label, "", 'class="gm-sound-add"'))}${saved(type)}`);
+}
 function savedName(type,config) {
   if (type === "group" || type === "player") return `${game.i18n.localize(CONFIG.DND5E.skills[config.skill]?.label ?? config.skill)} Check${type === "player" ? ` - ${game.actors.get(config.actorIds?.[0])?.name ?? "Missing character"}` : ""}`;
   if (type === "playlist") return game.playlists.get(config.playlist)?.name ?? "Missing playlist";
@@ -258,8 +260,8 @@ function content() {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
     const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume); const ambience=p.getFlag?.(ID,"ambience"); const title=ambience ? ambienceShownName(s) : (s.name ?? ""); const subtitle=ambience ? ambienceGroupName(s) : (p.name ?? ""); return `<div class="ml-card ml-stack"><strong>${e(title)}</strong>${subtitle ? `<small>${e(subtitle)}</small>` : ""}<div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(title)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     const stopAll = button("stop-all-sound","Stop All Sound");
-    return column("Playlists",`${button("playlist","Add Playlist")}${saved("playlist")}`)
-      + column("Ambience",`<div class="gm-ambience-actions">${button("ambience","Add Ambience")}${saved("ambience")}</div>`,"gm-ambience-column")
+    return soundColumn("Playlists", "playlist", "Add Playlist", "playlist")
+      + soundColumn("Ambience", "ambience", "Add Ambience", "ambience")
       + `<div class="ml-stack gm-column" data-gap="4"><div class="ml-stack">${label("All track volumes (%)",input("allTrackVolume",state.last.allTrackVolume ?? 25,'id="ml-game-master-track-volume" type="number" min="0" max="100" step="1" required'))}${button("set-track-volumes",settingTrackVolumes ? "Setting volumes…" : "Set All Track Volumes","",settingTrackVolumes ? "disabled" : "")}<small>Applies to every song in every playlist, including stopped tracks.</small>${label("Ambience volume (%)",input("ambienceVolume",state.last.ambienceVolume ?? 40,'id="ml-game-master-ambience-volume" type="number" min="0" max="100" step="1" required'))}${button("set-ambience-volumes","Set Ambience Volumes")}<small>Sets every ambience layer that is playing now.</small></div>${column("Now Playing",cards + stopAll + (playing.some(({p})=>!p.getFlag(ID,"ambience")) ? button("stop-music","Stop Music") : "") + (playing.some(({p})=>p.getFlag(ID,"ambience")) ? button("stop-ambience","Stop Ambience") : ""))}</div>`;
   }
   if (tab === "macros") return `<div class="gm-macros">${macroButtons()}</div>`;
@@ -888,7 +890,7 @@ async function run(type, config) {
   }
   if (type === "ambience") {
     const mix = String(config.name ?? "").trim();
-    if (!mix) throw new Error("Name this ambience.");
+    if (!mix) { ui.notifications.warn("Name your ambience before adding it."); return; }
     let p = game.playlists.find(p => p.getFlag(ID,"ambience"));
     if (!p) p = await Playlist.create({ name:"Morelord · Ambience", mode:CONST.PLAYLIST_MODES.SIMULTANEOUS, flags:{[ID]:{ambience:true}} });
     for (const file of config.files ?? []) {
@@ -931,11 +933,11 @@ function characterChoices(actorIds, single = false) {
 }
 function selectedActors(data) { return core().ui.participation.selectedCharacterUuids(data).map(uuid => uuid.split(".").at(-1)); }
 async function verifyCharacters(actorIds,{single=false,title="Verify characters"}={}) {
-  const result = await form(title,characterChoices(actorIds,single),[["run","Confirm & request"]]);
+  const result = await form(title,characterChoices(actorIds,single),[["run","Confirm & request"]], {validate(data) {
+    if (!selectedActors(data).length) return {field: "actorUuids", message: "Select at least one character."};
+  }});
   if (!result) return null;
-  const ids = selectedActors(result.data);
-  if (!ids.length) throw new Error("Select at least one character.");
-  return ids;
+  return selectedActors(result.data);
 }
 async function encounter(die,name,selected) {
   gm();
@@ -952,10 +954,12 @@ async function playlistForm() {
   if (!playlists.length) throw new Error("Create a playlist in Foundry first.");
   const last = state.last.playlist ?? { volume:volumeFromPercent(65) };
   const choices = option("", "Choose a playlist", "") + playlists.map(p => option(p.id, p.name, "")).join("");
-  const result = await form("Add Playlist",label("Playlist",select("playlist",choices)) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["add","Add"]]);
+  const result = await form("Add Playlist",label("Playlist",select("playlist",choices)) + label("Volume (%)",input("volume",percentFromVolume(last.volume),'type="number" min="0" max="100" required')) , [["add","Add"]], {validate(data) {
+    if (!data.get("playlist")) return {field: "playlist", message: "Choose a playlist."};
+    return percentIssue(data.get("volume"));
+  }});
   if (!result) return;
   const playlist = result.data.get("playlist");
-  if (!playlist) throw new Error("Choose a playlist.");
   const config = {playlist, volume:volumeFromPercent(result.data.get("volume"))};
   await saveAndRun("playlist", config);
   await persist(n => {
@@ -976,12 +980,18 @@ async function ambienceForm() {
     const fieldId = `ml-game-master-ambience-file-${i}`;
     return `<div class="gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}"><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label></div>`;
   }).join("");
-  const result = await form("Add Ambience", `${label("Name", input("name", "", 'id="ml-game-master-ambience-name" required'))}<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
+  const result = await form("Add Ambience", `${label("Name", input("name", "", 'id="ml-game-master-ambience-name"'))}<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]], {validate(data) {
+    if (!String(data.get("name") ?? "").trim()) return {field: "name", message: "Name your ambience before adding it."};
+    const chosen = data.getAll("file");
+    if (!chosen.length) return {field: "file", message: "Select at least one sound."};
+    for (const index of chosen) {
+      const issue = percentIssue(data.get(`volume${index}`), `volume${index}`);
+      if (issue) return issue;
+    }
+  }});
   if (!result) return;
   const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
-  if (!selected.length) throw new Error("Select at least one sound.");
   const name = String(result.data.get("name") ?? "").trim();
-  if (!name) throw new Error("Name this ambience.");
   await saveAndRun("ambience", {name, files: selected});
 }
 

@@ -13,8 +13,14 @@ test('the tray stays above Foundry dialogs and below notifications', () => {
 
 test('Game Master forms use the native modal layer above the tray', () => {
   const form = source.slice(source.indexOf('async function form('), source.indexOf('Hooks.once("init"'));
-  assert.match(form, /\{modal = true\} = \{\}/);
-  assert.match(form, /DialogV2\.wait\(\{ modal,/);
+  const dialog = readFileSync(new URL('../scripts/dialog.mjs', import.meta.url), 'utf8');
+  assert.match(form, /\{modal = true, validate\} = \{\}/);
+  assert.match(form, /openDialog\(/);
+  assert.match(dialog, /DialogV2/);
+  assert.match(dialog, /rejectClose: false/);
+  assert.match(dialog, /result === false/);
+  assert.match(dialog, /form\.noValidate = true/);
+  assert.match(dialog, /notifications\?\.warn/);
 });
 
 test('a tray action re-enables its button and shows a notification when it fails', async () => {

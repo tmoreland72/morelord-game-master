@@ -1,4 +1,5 @@
 import {ID, escapeHTML as e} from './core.mjs';
+import {openDialog} from './dialog.mjs';
 
 const KEY = 'smithyAtTheScar';
 const NAMES = {husk:'Haze Husk', ratling:'Ratling', chimera:'Chimera', hulk:'Haze Hulk', gutbuster:'Haze Hulk (Gutbuster)', hunter:'Haze Hulk (Hunter)', juggernaut:'Haze Hulk (Juggernaut)'};
@@ -31,12 +32,10 @@ export function nextRoster(state, action, round) {
   return {wave, roster:WAVES[wave]};
 }
 
-async function dialog(suffix, title, content, buttons) {
-  return foundry.applications.api.DialogV2.wait({
-    id:`${ID}-smithy-${suffix}`, classes:['ml-window'], window:{title,resizable:true}, position:{width:480},
-    content:`<div><div class="ml-app ml-app-shell ml-dialog-shell ml-stack">${content}</div></div>`, rejectClose:false,
-    render:(_event, app) => app.element.querySelectorAll('select[data-actor]').forEach(select => api().ui.decorateActorSelect(select)),
-    buttons:buttons.map(([action,label]) => ({action,label,callback:(_event,button) => ({action,data:new FormData(button.form)})}))
+async function dialog(suffix, title, content, buttons, validate) {
+  return openDialog({
+    id:`${ID}-smithy-${suffix}`, title, content, actions:buttons, width:480, validate, shellClass:'ml-dialog-shell ml-stack',
+    render:(_event, app) => app.element.querySelectorAll('select[data-actor]').forEach(select => api().ui.decorateActorSelect(select))
   });
 }
 
@@ -50,12 +49,17 @@ async function setup(scene) {
   const answer=await dialog('setup','Smithy at the Scar — Setup',
     `<p>Scene: ${e(scene.name)}. Choose the enemy actors, including all four Haze Hulk types. Each spawned token gets independent HP.</p>${fields}
     <label><span>Inset from map edges (grid squares)</span><input name="inset" type="number" min="0" max="10" step="1" value="${state.inset ?? 1}" required></label>
-    <p>Spawns use a three-square band around all four edges. Check terrain and walls after placement. Allies stay under your normal combat controls.</p>`, [['save','Save setup']]);
+    <p>Spawns use a three-square band around all four edges. Check terrain and walls after placement. Allies stay under your normal combat controls.</p>`, [['save','Save setup']], async data => {
+    for (const key of Object.keys(NAMES)) {
+      const uuid=data.get(key);
+      if ((uuid ? await fromUuid(uuid) : null)?.type !== 'npc') return {field:key, message:'Choose an NPC actor for each enemy.'};
+    }
+    const inset=Number(data.get('inset'));
+    if (!Number.isInteger(inset) || inset<0 || inset>10) return {field:'inset', message:'Choose an inset from 0 to 10 squares.'};
+  });
   if (!answer) return;
   const inset=Number(answer.data.get('inset'));
-  if (!Number.isInteger(inset) || inset<0 || inset>10) throw Error('Choose an inset from 0 to 10 squares.');
   const selected=Object.fromEntries(Object.keys(NAMES).map(key=>[key,answer.data.get(key)]));
-  for (const uuid of Object.values(selected)) if ((await fromUuid(uuid))?.type !== 'npc') throw Error('Choose an NPC actor for each enemy.');
   await save(scene,{...state,actors:selected,inset});
   ui.notifications.info('Smithy setup saved for this scene.');
 }
@@ -180,6 +184,7 @@ export function smithyMacroCommand(source, action) {
   if (!['setup','next','reinforce','safe','status'].includes(action)) throw Error('Unknown macro action.');
   const body=source.slice(0,source.indexOf('export function smithyMacroCommand'))
     .replace("import {ID, escapeHTML as e} from './core.mjs';",`const {ID,escapeHTML:e}=await import('/modules/${ID}/scripts/core.mjs');`)
+    .replace("import {openDialog} from './dialog.mjs';", `const {openDialog}=await import('/modules/${ID}/scripts/dialog.mjs');`)
     .replace("export {overlaps,edgePositions} from '../../morelord-core/scripts/services/combat-placement.mjs';", '')
     .replace("import {edgePositions} from '../../morelord-core/scripts/services/combat-placement.mjs';", "const {edgePositions}=await import('/modules/morelord-core/scripts/services/combat-placement.mjs');")
     .replace(/^export /gm,'');
