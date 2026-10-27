@@ -11,7 +11,7 @@ import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList} from './bulk-actions.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
-import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceNameFromPath, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
+import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds} from './tray-layout.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
@@ -196,11 +196,7 @@ function saved(type) {
 function savedName(type,config) {
   if (type === "group" || type === "player") return `${game.i18n.localize(CONFIG.DND5E.skills[config.skill]?.label ?? config.skill)} Check${type === "player" ? ` - ${game.actors.get(config.actorIds?.[0])?.name ?? "Missing character"}` : ""}`;
   if (type === "playlist") return game.playlists.get(config.playlist)?.name ?? "Missing playlist";
-  if (type === "ambience") {
-    const named = String(config.name ?? "").trim();
-    if (named) return named;
-    return (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).join(" + ");
-  }
+  if (type === "ambience") return String(config.name ?? "").trim();
   return "Death Saving Throw";
 }
 function controlKey(el) {
@@ -260,7 +256,7 @@ function content() {
   if (tab === "cheat") return renderCheatSheet({order: trayLayout().cheatOrder, hidden: trayLayout().cheatHidden});
   if (tab === "sound") {
     const playing = game.playlists.contents.flatMap(p => p.sounds.filter(s=>s.playing).map(s=>({p,s})));
-    const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume); const title=p.getFlag?.(ID,"ambience") ? ambienceShownName(s) : (s.name ?? ""); return `<div class="ml-card ml-stack"><strong>${e(title)}</strong><small>${e(p.name)}</small><div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(title)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
+    const cards = playing.map(({p,s})=>{const percent=percentFromVolume(s.volume); const ambience=p.getFlag?.(ID,"ambience"); const title=ambience ? ambienceShownName(s) : (s.name ?? ""); const subtitle=ambience ? ambienceGroupName(s) : (p.name ?? ""); return `<div class="ml-card ml-stack"><strong>${e(title)}</strong>${subtitle ? `<small>${e(subtitle)}</small>` : ""}<div class="ml-item-row"><input type="range" min="0" max="1" step="0.01" value="${(percent / 100).toFixed(2)}" data-playlist="${p.id}" data-sound="${s.id}" aria-label="${e(title)} volume" aria-valuetext="${percent}%"><span data-volume-readout>${percent}%</span>${button("stop-sound","Stop",`${p.id}:${s.id}`)}</div></div>`;}).join("");
     const stopAll = button("stop-all-sound","Stop All Sound");
     return column("Playlists",`${button("playlist","Add Playlist")}${saved("playlist")}`)
       + column("Ambience",`<div class="gm-ambience-actions">${button("ambience","Add Ambience")}${saved("ambience")}</div>`,"gm-ambience-column")
@@ -891,13 +887,15 @@ async function run(type, config) {
     await p.playAll(); notify(`Playing ${p.name}.`);
   }
   if (type === "ambience") {
+    const mix = String(config.name ?? "").trim();
+    if (!mix) throw new Error("Name this ambience.");
     let p = game.playlists.find(p => p.getFlag(ID,"ambience"));
     if (!p) p = await Playlist.create({ name:"Morelord · Ambience", mode:CONST.PLAYLIST_MODES.SIMULTANEOUS, flags:{[ID]:{ambience:true}} });
-    const mix = String(config.name ?? "").trim() || (config.files ?? []).map(file => file.name || ambienceNameFromPath(file.path)).filter(Boolean).join(" + ") || "Ambience";
-    for (const file of config.files) {
+    for (const file of config.files ?? []) {
+      const fileName = String(file.path ?? "").split("/").pop();
       let sound = p.sounds.find(s => s.path === file.path);
-      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name:mix, path:file.path, repeat:true, volume:file.volume }]);
-      await sound.update({ playing:true, repeat:true, volume:file.volume, name:mix });
+      if (!sound) [sound] = await p.createEmbeddedDocuments("PlaylistSound", [{ name:fileName, path:file.path, repeat:true, volume:file.volume, flags:{[ID]:{group:mix}} }]);
+      await sound.update({ playing:true, repeat:true, volume:file.volume, name:fileName, [`flags.${ID}.group`]:mix });
     }
     notify("Ambience layers started for the table.");
   }
@@ -978,12 +976,11 @@ async function ambienceForm() {
     const fieldId = `ml-game-master-ambience-file-${i}`;
     return `<div class="gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}"><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, ambiencePercent, 'type="number" min="0" max="100" required')}</label></div>`;
   }).join("");
-  const defaultName = playable.length === 1 ? ambienceNameFromPath(playable[0].path) : "";
-  const result = await form("Add Ambience", `${label("Name", input("name", defaultName, 'id="ml-game-master-ambience-name" required'))}<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
+  const result = await form("Add Ambience", `${label("Name", input("name", "", 'id="ml-game-master-ambience-name" required'))}<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${layers}</fieldset>`, [["add", "Add"]]);
   if (!result) return;
   const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");
-  const name = String(result.data.get("name") ?? "").trim() || selected.map(file => ambienceNameFromPath(file.path)).join(" + ");
+  const name = String(result.data.get("name") ?? "").trim();
   if (!name) throw new Error("Name this ambience.");
   await saveAndRun("ambience", {name, files: selected});
 }

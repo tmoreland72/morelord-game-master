@@ -25,7 +25,7 @@ test('GM Settings lists Roll Requests, Bulk Actions, Triggers, and Cheat Sheet w
   assert.match(main, /gm-section-heading">Verify characters/);
   assert.doesNotMatch(main, /ml-section-heading/);
   assert.match(css, /#mlgm \.gm-specialty-field, #mlgm \.gm-field[\s\S]*flex-direction:column/);
-  assert.match(css, /#mlgm \.gm-request-row > \.gm-inline \{ display:flex; flex:1 1 auto; flex-direction:column/);
+  assert.match(css, /#mlgm \.gm-request-row > \.gm-inline \{ display:flex; flex:0 0 auto; flex-direction:column; align-items:flex-start/);
   assert.equal(CHEAT_LAYOUT.map(item => item.id).join(','), 'conditions,actions,damage,misc,cover,drakkenheim');
   assert.match(main, /cards: readLayout\("bulk"\)/);
   assert.match(main, /readLayout\("triggers"\)/);

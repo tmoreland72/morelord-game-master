@@ -30,7 +30,7 @@ Turn on **Blind roll** to keep results and summaries visible only to GMs and Ass
 
 ## Bulk Actions
 
-Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Apply lines up with the control beside it.
+Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action, Amount, and Apply on one line. Inspiration puts Action and Apply on one line. Prototype Token Sync and Undo use a normal-width button on the left.
 
 Enter coins once, then split them amongst the party, give the amount to each member, or take coins back. Removal uses personal coins first, then the shared party purse, and reports any shortfall in chat. You can also grant or set XP, grant or clear Heroic Inspiration, and copy each character's token on the current scene onto that character's prototype token.
 
@@ -44,7 +44,7 @@ Right-click a pin to run it on load for you, or, as a GM, for everyone in the wo
 
 ## Sound
 
-Start a playlist or a saved ambience, set every track's volume at once, and stop what is playing from **Now Playing**. When you add ambience, name the whole mix once. That name is the saved button and what Now Playing shows. **Stop All Sound** stops music, ambience, and anything else Foundry still has playing.
+Start a playlist or a saved ambience, set every track's volume at once, and stop what is playing from **Now Playing**. When you add ambience, type a name for the whole mix. The Name field starts empty, and Add will not continue without it. The saved button shows that name. Now Playing lists each layer by its file name, with the mix name underneath. **Stop All Sound** stops music, ambience, and anything else Foundry still has playing.
 
 ## Triggers
 

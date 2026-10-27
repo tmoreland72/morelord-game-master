@@ -156,25 +156,24 @@ export async function ensureAmbienceFolders(settings, moduleId = ID) {
   return next;
 }
 
-const AMBIENCE_NOISE = /^(loop|loops|oneshot|stereo|mono|ambience|ambient|sfx)$/i;
-const AMBIENCE_DURATION = /^\d+(m|min|mins|s|sec|secs|ms|h|hr|hrs)$/i;
-
-// birds-forest-farmland-spring-loop-10mins-001.ogg → Birds Forest.
-export function ambienceNameFromPath(path) {
-  const file = String(path ?? "").split("/").pop() || "";
-  const stem = file.replace(/\.[^.]+$/, "");
-  const tokens = stem.split(/[^A-Za-z0-9]+/).filter(Boolean);
-  const kept = tokens.filter(token => !AMBIENCE_NOISE.test(token) && !AMBIENCE_DURATION.test(token) && !/^\d+$/.test(token));
-  const words = (kept.length ? kept : tokens.filter(token => !/^\d+$/.test(token))).slice(0, 2);
-  const chosen = words.length ? words : ["Ambience"];
-  return chosen.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
+export function ambienceFileName(path) {
+  return String(path ?? "").split(/[/\\]/).pop() || "";
 }
 
+// Now Playing titles a layer with its original file name, never a generated title.
 export function ambienceShownName(sound) {
-  const file = String(sound?.path ?? "").split("/").pop();
+  return ambienceFileName(sound?.path) || String(sound?.name ?? "").trim();
+}
+
+// The typed mix name is the subtitle. A layer started before that flag existed
+// still has the mix stored as its PlaylistSound name.
+export function ambienceGroupName(sound) {
+  const flagged = typeof sound?.getFlag === "function" ? sound.getFlag(ID, "group") : sound?.flags?.[ID]?.group;
+  const named = String(flagged ?? "").trim();
+  if (named) return named;
+  const file = ambienceFileName(sound?.path);
   const raw = String(sound?.name ?? "").trim();
-  const stem = file.replace(/\.[^.]+$/, "");
-  if (!raw || raw === file || raw === stem) return ambienceNameFromPath(file || raw);
+  if (!raw || raw === file || raw === file.replace(/\.[^.]+$/, "")) return "";
   return raw;
 }
 

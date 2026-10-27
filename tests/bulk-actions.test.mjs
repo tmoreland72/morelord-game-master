@@ -106,7 +106,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
     assert.match(css, /#mlgm \.gm-bulk \{[^}]*display:grid !important/);
-    assert.match(css, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\) !important/);
+    assert.match(css, /grid-template-columns:repeat\(6,minmax\(min-content,1fr\)\) !important/);
     assert.match(css, /align-items:stretch/);
     assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*grid-column:span 2/);
     assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*align-self:stretch/);
@@ -116,7 +116,16 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /Give amount to each party member/);
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('data-mlgm-bulk="inspiration"'));
+    const xpRow = xpCard.slice(xpCard.indexOf('class="gm-specialty-row"'));
+    assert.match(xpRow, /name="bulkXpAction"/);
+    assert.match(xpRow, /name="xp"/);
+    assert.match(xpRow, /data-action="bulk-xp"/);
     assert.match(xpCard, /class="gm-label-help"/);
+    assert.match(css, /align-items:flex-start/);
+    assert.match(css, /#mlgm select, \.ml-window \.ml-dialog-shell select \{ width:auto; min-width:fit-content/);
+    assert.match(css, /#mlgm \.gm-bulk button:not\(\.ml-icon-button\):not\(\.ml-stepper button\) \{ width:max-content !important/);
+    assert.doesNotMatch(css, /width:min\(100%,14rem\)/);
+    assert.doesNotMatch(css, /justify-content:space-between/);
     assert.match(xpCard, /class="ml-icon-button ml-help-button" data-tooltip="[^"]*Any remainder goes to one random party member[^"]*"/);
     assert.doesNotMatch(xpCard, /ml-help-button"[^>]*\stitle=/);
     assert.doesNotMatch(xpCard, /<p>/);

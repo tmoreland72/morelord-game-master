@@ -13,7 +13,9 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.match(source, /button\("stop-all-sound","Stop All Sound"\)/);
   assert.match(source, /form\("Add Playlist"/);
   assert.match(source, /form\("Add Ambience"/);
-  assert.match(source, /ambienceNameFromPath\(file\.path\)/);
+  assert.doesNotMatch(source, /ambienceNameFromPath/);
+  assert.match(source, /input\("name", ""/);
+  assert.match(source, /ambienceGroupName\(s\)/);
   assert.match(source, /data-tooltip="\$\{e\(file\.path\)\}"/);
   assert.match(source, /data-tooltip-direction="LEFT"/);
   assert.match(source, /aria-label="\$\{e\(file\.path\)\}"/);
