@@ -120,9 +120,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('data-mlgm-bulk="inspiration"'));
     const xpRow = xpCard.slice(xpCard.indexOf('class="gm-specialty-row"'));
-    assert.match(xpRow, /name="bulkXpAction"/);
-    assert.match(xpRow, /name="xp"/);
-    assert.match(xpRow, /data-action="bulk-xp"/);
+    const actionRow = xpRow.slice(0, xpRow.indexOf('</div>'));
+    assert.match(xpCard, /class="gm-xp-fields"/);
+    assert.match(actionRow, /name="bulkXpAction"/);
+    assert.match(actionRow, /data-action="bulk-xp"/);
+    assert.doesNotMatch(actionRow, /name="xp"/);
+    assert.match(xpCard, /name="xp"/);
     assert.match(xpCard, /class="gm-label-help"/);
     assert.match(css, /align-items:flex-start/);
     assert.match(css, /#mlgm select, \.ml-window \.ml-dialog-shell select \{ width:auto; min-width:fit-content/);
@@ -142,7 +145,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tokensCard, /data-action="bulk-tokens-help"/);
     assert.match(tokensCard, /fa-circle-question/);
     assert.match(tokensCard, /aria-label="Copied token settings"/);
-    assert.match(tokensCard, /data-tooltip="Copies each party character&#39;s token on the active GM&#39;s current scene onto that character&#39;s prototype token\. A selected token is used when several are placed\."/);
+    assert.match(tokensCard, /name="bulkTokenScope"/);
+    assert.match(tokensCard, />Party</);
+    assert.match(tokensCard, />Selected Tokens</);
+    assert.match(tokensCard, />All Tokens</);
+    assert.match(tokensCard, /<strong class="gm-specialty-title">Prototype Token Sync<\/strong><div class="gm-specialty-row"><label class="gm-specialty-field">/);
+    assert.match(tokensCard, /data-tooltip="Party copies each party character&#39;s token on the active GM&#39;s current scene\. Selected Tokens copies the selected tokens, including NPCs\. All Tokens copies every token on the scene, including NPCs\. A selected token is used when one actor has several\."/);
     assert.doesNotMatch(tokensCard, /ml-help-button[^>]*\stitle=/);
     assert.doesNotMatch(tokensCard, /<p>/);
     assert.doesNotMatch(tokensCard, /image and scale/);
@@ -159,6 +167,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     const tray = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
     assert.match(tray, /endsWith\('-remove'\) \? 'Take' : bulkText\('coins\.apply'\)/);
     assert.match(tray, /bulk-tokens-help"\) return form\(bulkText\('tokens\.help'\), `<p>\$\{bulkHTML\('tokens\.copied', \{fields: tokenFieldList\(\)\}\)\}<\/p>`/);
+    assert.match(tray, /bulkTokenScope = tokenScopeChoice\(el\.value\)/);
+    assert.match(tray, /sendBulkTokens\(root\.querySelector\('\[name="bulkTokenScope"\]'\)\?\.value\)/);
     const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
     assert.match(undo, /disabled/);
     assert.match(undo, />Nothing to undo</);

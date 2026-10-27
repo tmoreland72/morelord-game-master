@@ -1,5 +1,7 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
 /* Above the Foundry window layer and the sidebar. Popups are raised above this in tray-stack.mjs. Tooltips and notifications keep their layers. */
+/* A body-level dnd5e roll dialog stays above the tray even if Foundry later writes a window-band z-index without !important. */
+body > dialog.roll-configuration { z-index: calc(var(--z-index-window) + 1001) !important; }
 .ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); }
 #mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; --mlgm-window-gap:1000; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-window) + var(--mlgm-window-gap)); pointer-events:auto; }
 #mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.gm-macro):not(.ml-stepper button),
@@ -102,6 +104,8 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk > .ml-card > button { align-self:flex-start; }
 #mlgm .gm-bulk .gm-specialty-row > button, #mlgm .gm-bulk-coin-fields > button { align-self:flex-end; }
 #mlgm .gm-bulk .ml-horizontal-scroll, #mlgm .gm-bulk form { overflow:visible; width:100%; max-width:100%; min-width:0; margin:0; align-self:stretch; }
+#mlgm .gm-xp-fields { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:var(--ml-space-2); width:100%; }
+#mlgm .gm-xp-fields > .gm-specialty-row { align-self:flex-start; width:auto; max-width:100%; }
 #mlgm .gm-bulk-coin-fields { display:flex; flex-wrap:wrap; gap:var(--ml-space-2); justify-content:flex-start; align-items:flex-end; width:100%; max-width:100%; min-width:0; margin-inline-start:0; }
 #mlgm .gm-bulk-coin-fields > label { align-items:flex-start; justify-content:flex-start; flex:0 0 auto; width:max-content; max-width:100%; margin-left:0; }
 #mlgm .gm-bulk-coin-action { width:max-content; max-width:100%; }

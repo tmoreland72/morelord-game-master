@@ -17,6 +17,7 @@ function element(tag, z = '100') {
 test('the tray layer stays above windows and below tooltips', () => {
   assert.match(css, /--mlgm-window-gap:\s*1000/);
   assert.match(css, /z-index:\s*calc\(var\(--z-index-window\)\s*\+\s*var\(--mlgm-window-gap\)\)/);
+  assert.match(css, /body > dialog\.roll-configuration \{ z-index: calc\(var\(--z-index-window\) \+ 1001\) !important; \}/);
   assert.doesNotMatch(css, /z-index:\s*calc\(var\(--z-index-tooltip\)/);
 });
 
@@ -119,7 +120,14 @@ test('dialogs and chat popouts stack above the tray and focused windows stay bel
   env.foundry.applications.instances.set('sheet', sheet);
   env.foundry.applications.instances.set('roll', waiting);
   assert.equal(installTrayStack(root, env), true);
-  assert.deepEqual(calls.map(([name]) => name), ['renderApplicationV2', 'renderApplication']);
+  const hookNames = calls.map(([name]) => name);
+  assert.ok(hookNames.includes('renderApplicationV2'));
+  assert.ok(hookNames.includes('renderRollConfigurationDialog'));
+  assert.ok(hookNames.includes('renderD20RollConfigurationDialog'));
+  assert.ok(hookNames.includes('renderAttackRollConfigurationDialog'));
+  assert.ok(hookNames.includes('renderDamageRollConfigurationDialog'));
+  assert.ok(hookNames.includes('renderSkillToolRollConfigurationDialog'));
+  assert.equal(hookNames.includes('renderBasicRollConfigurationDialog'), false);
   assert.ok(z(sheet) < 1100, 'an open sheet stays below the tray');
   assert.ok(z(waiting) > 1100 && z(waiting) < 9999, 'an open roll dialog is raised below tooltips');
 
@@ -217,4 +225,64 @@ test('a roll configuration dialog opened inside a sheet is moved above the tray'
   roll.element.style.zIndex = '20';
   roll.bringToFront();
   assert.ok(z(roll) > 1100, 'focusing the roll dialog keeps it above the tray');
+});
+
+test('a roll dialog inserted into a sheet after render is moved above the tray', async () => {
+  const vars = {'--z-index-window': '100', '--z-index-tooltip': '9999'};
+  const documentElement = {};
+  const root = element('ASIDE', '1100');
+  const view = {
+    getComputedStyle(node) {
+      if (node === documentElement) return {zIndex: 'auto', position: 'static', getPropertyValue: name => vars[name] ?? ''};
+      return {zIndex: node.style?.zIndex ?? 'auto', position: node.style?.position || 'absolute', getPropertyValue: () => ''};
+    }
+  };
+  const body = {append(node) { node.parentElement = body; }};
+  class ApplicationV2 {
+    static _maxZ = 100;
+    constructor() {
+      this.element = element('SECTION', '150');
+      this.element.ownerDocument = {body, defaultView: view};
+      this.element.append = node => { node.parentElement = this.element; };
+      this.position = {zIndex: 100};
+      this.options = {tag: 'section'};
+    }
+    bringToFront() {}
+    setPosition() {}
+    render() {
+      return Promise.resolve().then(() => { this.element.style.zIndex = '40'; });
+    }
+    async renderChild(child) {
+      await child.render();
+      this.element.append(child.element);
+      child.element.style.zIndex = '40';
+    }
+  }
+  class Dialog5e extends ApplicationV2 {}
+  class RollConfigurationDialog extends Dialog5e {
+    constructor() {
+      super();
+      this.options = {tag: 'dialog', classes: ['roll-configuration']};
+      this.element = element('DIALOG', '40');
+      this.element.ownerDocument = {body, defaultView: view};
+      this.element.parentElement = null;
+    }
+  }
+  const env = {
+    _maxZ: 100,
+    document: {documentElement, defaultView: view, body},
+    Hooks: {on() {}},
+    ui: {windows: {}},
+    foundry: {applications: {api: {ApplicationV2}, instances: new Map()}}
+  };
+  const sheet = new ApplicationV2();
+  const roll = new RollConfigurationDialog();
+  assert.equal(installTrayStack(root, env), true);
+  await sheet.renderChild(roll);
+  assert.equal(roll.element.parentElement, body, 'renderChild cannot leave the roll dialog inside the sheet');
+  assert.equal(roll.element.style.position, 'fixed');
+  assert.ok(Number(roll.element.style.zIndex) > 1100 && Number(roll.element.style.zIndex) < 9999);
+  roll.element.style.zIndex = '25';
+  await roll.render();
+  assert.ok(Number(roll.element.style.zIndex) > 1100, 'a z-index written when render resolves is raised again');
 });

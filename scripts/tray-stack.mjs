@@ -1,13 +1,22 @@
 // The tray sits above Foundry's window layer and below tooltips.
-// ApplicationV2.bringToFront (and Application v1 bringToTop) raise a window by
-// incrementing the shared _maxZ counter from that window layer. Dialogs, roll
-// prompts, and chat popouts use the same counter, so a tray at the tooltip
-// layer covers them. Popups are moved above the tray. A popup rendered inside
-// another window, including a dnd5e roll configuration dialog or Foundry's
-// RollResolver opened from a sheet, is moved to the document body first so
-// that window cannot keep it under the tray. A normal window whose counter
-// crosses the tray is put back under it, and _maxZ is returned to the window
-// band so the next focused sheet does not follow the popup up.
+// ApplicationV2.bringToFront raises a window by incrementing the shared _maxZ
+// counter from that window layer. Dialogs use the same counter, so a tray at
+// the tooltip layer covers them.
+//
+// dnd5e 6.0.6 has no BasicRollConfigurationDialog class. The dialog is
+// RollConfigurationDialog (hook renderRollConfigurationDialog), extending
+// Dialog5e. Its element is a non-modal <dialog class="application roll-configuration">
+// shown with show(), not showModal(), so it is not in the browser top layer and
+// z-index does apply. BasicRoll.buildConfigure sets dialog.sheet from the
+// .application under the click, and RollConfigurationDialog.configure then calls
+// sheet._renderChild. Foundry renders that child inside the sheet or sidebar.
+// A z-index written on the dialog cannot escape that window, which itself sits
+// under the tray. renderApplicationV2 runs before renderChild finishes moving
+// the element, and Foundry then assigns element.style.zIndex from the window
+// band. That assignment clears an !important inline value. The dialog is lifted
+// to document.body after render and renderChild settle, and again on the next
+// frame, and a stylesheet rule keeps a body-level roll dialog above the tray
+// when that later assignment wins.
 
 const WRAPPED = Symbol("mlgmTrayStack");
 const hooked = new WeakSet();
@@ -20,6 +29,18 @@ const POPUP_CLASS_NAMES = new Set([
   "SkillToolRollConfigurationDialog",
   "RollResolver"
 ]);
+const RENDER_HOOKS = [
+  "renderApplicationV2",
+  "renderApplication",
+  "renderDialogV2",
+  "renderDialog5e",
+  "renderRollConfigurationDialog",
+  "renderD20RollConfigurationDialog",
+  "renderAttackRollConfigurationDialog",
+  "renderDamageRollConfigurationDialog",
+  "renderSkillToolRollConfigurationDialog",
+  "renderRollResolver"
+];
 export const TRAY_Z_OFFSET = 1000;
 
 function named(app, name) {
@@ -31,23 +52,33 @@ function named(app, name) {
   return false;
 }
 
+function classNames(element) {
+  if (!element) return [];
+  if (element.classList && typeof element.classList[Symbol.iterator] === "function") return [...element.classList];
+  if (typeof element.className === "string") return element.className.split(/\s+/).filter(Boolean);
+  return [];
+}
+
+export function isPopupElement(element) {
+  if (!element || element.nodeType === 3) return false;
+  if (element.matches?.(":modal")) return false;
+  if (typeof HTMLDialogElement === "function" && element instanceof HTMLDialogElement) return true;
+  if (element.tagName === "DIALOG") return true;
+  return classNames(element).includes("roll-configuration");
+}
+
 export function isTrayPopup(app, {DialogV2, Dialog, ChatPopout, FilePicker} = {}) {
   if (!app) return false;
   if (DialogV2 && app instanceof DialogV2) return true;
   if (Dialog && app instanceof Dialog) return true;
   if (ChatPopout && app instanceof ChatPopout) return true;
   if (FilePicker && (app instanceof FilePicker || (FilePicker.implementation && app instanceof FilePicker.implementation))) return true;
-  // Subclasses keep the base name in the chain when the live class is not the one Foundry exported.
   if (named(app, "ChatPopout") || named(app, "FilePicker")) return true;
   if ([...POPUP_CLASS_NAMES].some(name => named(app, name))) return true;
   const classes = app.options?.classes;
   if (Array.isArray(classes) && classes.includes("roll-configuration")) return true;
-  if (app.element?.classList?.contains?.("roll-configuration") === true) return true;
   if (app.options?.tag === "dialog") return true;
-  const element = app.element;
-  if (!element) return false;
-  if (typeof HTMLDialogElement === "function" && element instanceof HTMLDialogElement) return true;
-  return element.tagName === "DIALOG";
+  return isPopupElement(app.element);
 }
 
 function numeric(value) {
@@ -75,7 +106,6 @@ export function createStackController({root, windowLayer = 100, tooltipLayer = 9
   function place(app) {
     const element = app?.element;
     if (!element || element === root) return;
-    // Native modal dialogs use the top layer, which already paints above the tray.
     if (element.matches?.(":modal")) { capMax(); return; }
     const tray = trayZ();
     const limit = tooltipLayer - 1;
@@ -116,7 +146,7 @@ function wrap(object, name, after) {
   if (typeof original !== "function" || original[WRAPPED]) return;
   function stacked(...args) {
     const result = original.apply(this, args);
-    after(this);
+    after(this, args, result);
     return result;
   }
   stacked[WRAPPED] = true;
@@ -127,6 +157,13 @@ function legacyDialog(foundry) {
   const dialog = foundry?.appv1?.api?.Dialog ?? globalThis.Dialog;
   if (typeof dialog !== "function" || dialog === foundry?.applications?.api?.DialogV2) return undefined;
   return dialog;
+}
+
+function hookTarget(app, html) {
+  if (app?.element) return app;
+  const element = html?.nodeType ? html : app?.nodeType ? app : null;
+  if (!element) return app;
+  return {element, options: {tag: element.tagName === "DIALOG" ? "dialog" : undefined, classes: classNames(element)}, position: {}};
 }
 
 export function installTrayStack(root, env = globalThis) {
@@ -155,10 +192,19 @@ export function installTrayStack(root, env = globalThis) {
     const element = app.element;
     const body = element?.ownerDocument?.body;
     if (!element || !body || element === root || element.matches?.(":modal")) return;
-    if (!element.parentElement || element.parentElement === body) return;
-    body.append(element);
     const position = element.ownerDocument.defaultView?.getComputedStyle(element)?.position;
-    if (position !== "fixed") element.style.position = "fixed";
+    if (!element.parentElement || element.parentElement === body) {
+      if (position && position !== "fixed" && element.style) element.style.position = "fixed";
+      return;
+    }
+    const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+    body.append(element);
+    if (!element.style) return;
+    element.style.position = "fixed";
+    if (rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && (rect.width || rect.height)) {
+      element.style.left = `${rect.left}px`;
+      element.style.top = `${rect.top}px`;
+    }
   };
   const controller = createStackController({
     root,
@@ -179,25 +225,64 @@ export function installTrayStack(root, env = globalThis) {
   });
   let placing = false;
   const place = app => {
-    if (placing) return;
+    if (placing || !app) return;
     placing = true;
     try { liftPopup(app); controller.place(app); }
     finally { placing = false; }
   };
-  wrap(ApplicationV2.prototype, "bringToFront", place);
-  wrap(ApplicationV2.prototype, "setPosition", place);
+  const settle = app => {
+    place(app);
+    Promise.resolve().then(() => place(app));
+    const ownerView = app?.element?.ownerDocument?.defaultView;
+    if (typeof ownerView?.requestAnimationFrame === "function") ownerView.requestAnimationFrame(() => place(app));
+    if (typeof ownerView?.setTimeout === "function") ownerView.setTimeout(() => place(app), 0);
+  };
+  const afterStack = (app, args, result) => {
+    const target = args.length && args[0]?.element ? args[0] : app;
+    settle(target?.element ? target : app);
+    Promise.resolve(result).then(() => settle(target?.element ? target : app), () => {});
+  };
+  wrap(ApplicationV2.prototype, "bringToFront", app => settle(app));
+  wrap(ApplicationV2.prototype, "setPosition", app => settle(app));
+  wrap(ApplicationV2.prototype, "render", afterStack);
+  wrap(ApplicationV2.prototype, "renderChild", (_parent, args, result) => {
+    const child = args?.[0];
+    settle(child);
+    Promise.resolve(result).then(() => settle(child), () => {});
+  });
   const ApplicationV1 = foundry.appv1?.api?.Application;
   if (ApplicationV1?.prototype && ApplicationV1 !== ApplicationV2) {
-    wrap(ApplicationV1.prototype, "bringToTop", place);
-    wrap(ApplicationV1.prototype, "setPosition", place);
+    wrap(ApplicationV1.prototype, "bringToTop", app => settle(app));
+    wrap(ApplicationV1.prototype, "setPosition", app => settle(app));
   }
   const hooks = env.Hooks;
   if (hooks && typeof hooks.on === "function" && !hooked.has(hooks)) {
     hooked.add(hooks);
-    hooks.on("renderApplicationV2", place);
-    hooks.on("renderApplication", place);
+    const onRender = (app, html) => settle(hookTarget(app, html));
+    for (const name of RENDER_HOOKS) hooks.on(name, onRender);
   }
-  for (const app of foundry.applications.instances?.values?.() ?? []) place(app);
-  for (const app of Object.values(env.ui?.windows ?? {})) place(app);
+  const appFor = element => {
+    for (const app of foundry.applications.instances?.values?.() ?? []) if (app?.element === element) return app;
+    return hookTarget(element);
+  };
+  if (typeof doc.body?.querySelectorAll === "function") {
+    for (const element of doc.body.querySelectorAll("dialog.roll-configuration")) settle(appFor(element));
+  }
+  if (typeof view.MutationObserver === "function" && doc.body) {
+    const observer = new view.MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes ?? []) {
+          if (!node || node.nodeType !== 1) continue;
+          const found = [];
+          if (node.matches?.("dialog.roll-configuration")) found.push(node);
+          if (typeof node.querySelectorAll === "function") found.push(...node.querySelectorAll("dialog.roll-configuration"));
+          for (const element of found) settle(appFor(element));
+        }
+      }
+    });
+    observer.observe(doc.body, {childList: true, subtree: true});
+  }
+  for (const app of foundry.applications.instances?.values?.() ?? []) settle(app);
+  for (const app of Object.values(env.ui?.windows ?? {})) settle(app);
   return true;
 }

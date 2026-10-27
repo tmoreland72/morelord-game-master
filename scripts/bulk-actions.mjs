@@ -8,6 +8,9 @@ export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
 export function bulkXpChoice(value) {
   return Object.hasOwn(XP_ACTIONS, value) ? value : 'split';
 }
+export function tokenScopeChoice(value) {
+  return value === 'selected' || value === 'all' ? value : 'party';
+}
 // Foundry 14 PrototypeToken settings that describe how a token looks and behaves.
 // movementAction is the token's current movement, and level is a scene level id.
 // https://foundryvtt.com/api/v14/types/foundry.documents.types.PrototypeTokenData.html
@@ -113,6 +116,47 @@ export function chooseSceneToken(tokens, controlledIds = []) {
   const controlled = new Set(controlledIds);
   const pool = list.some(token => controlled.has(token.id)) ? list.filter(token => controlled.has(token.id)) : list;
   return pool.slice().sort((left, right) => String(left.id).localeCompare(String(right.id)))[0];
+}
+
+function sceneTokenList(scene) {
+  const embedded = scene?.tokens?.contents ?? scene?.tokens ?? [];
+  return [...embedded].filter(Boolean);
+}
+
+function controlledTokenRecords() {
+  return (globalThis.canvas?.tokens?.controlled ?? []).map(token => token?.document ?? token).filter(Boolean);
+}
+
+function actorForToken(token) {
+  const id = token?.actorId || token?.actor?.id;
+  const actor = id ? globalThis.game?.actors?.get?.(id) : null;
+  if (!actor || actor.type === 'group') return null;
+  return actor;
+}
+
+// Party uses the Player Settings characters. Selected Tokens and All Tokens use
+// placed tokens on the current scene, including NPC tokens. One prototype is
+// written per actor; a selected token wins when that actor has several.
+export function collectTokenTargets(scope, partyIds) {
+  const choice = tokenScopeChoice(scope);
+  const scene = globalThis.canvas?.scene;
+  if (!scene) throw Error(bulkText('tokens.scene'));
+  const controlled = controlledTokenRecords();
+  const controlledIds = controlled.map(token => token.id).filter(Boolean);
+  if (choice === 'party') {
+    return partyActors(partyIds).map(actor => ({actor, token: chooseSceneToken(tokensForActor(actor, scene), controlledIds)}));
+  }
+  const pool = choice === 'selected' ? controlled : sceneTokenList(scene);
+  const grouped = new Map();
+  for (const token of pool) {
+    const actor = actorForToken(token);
+    if (!actor?.id || grouped.has(actor.id)) {
+      if (actor?.id && grouped.has(actor.id)) grouped.get(actor.id).tokens.push(token);
+      continue;
+    }
+    grouped.set(actor.id, {actor, tokens: [token]});
+  }
+  return [...grouped.values()].map(({actor, tokens}) => ({actor, token: chooseSceneToken(tokens, controlledIds)}));
 }
 
 export function tokensForActor(actor, scene = globalThis.canvas?.scene) {
@@ -229,7 +273,7 @@ function xpContent(amount, action, busy, actorIds) {
   const hint = bulkHTML('xp.remainder');
   const actionField = `<label class="gm-bulk-coin-action"><span class="gm-label-help">${bulkHTML('xp.action')}<button type="button" class="ml-icon-button ml-help-button" data-tooltip="${hint}" aria-label="${hint}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></span><select name="bulkXpAction" ${busy ? 'disabled' : ''}>${Object.entries(XP_ACTIONS).map(([operation, key]) => `<option value="${operation}" ${operation === selected ? 'selected' : ''}>${bulkHTML(key)}</option>`).join('')}</select></label>`;
   const amountField = `<label class="gm-specialty-field"><span>${bulkHTML('xp.amount')}</span><div class="ml-stepper" data-layout="stacked"><input type="number" name="xp" min="0" step="1" max="${Number.MAX_SAFE_INTEGER}" value="${Number(amount) || 0}" required><button type="button" data-step="up" data-action="bulk-xp-step" data-id="1" title="${bulkHTML('xp.increase')}" aria-label="${bulkHTML('xp.increase')}"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button><button type="button" data-step="down" data-action="bulk-xp-step" data-id="-1" title="${bulkHTML('xp.decrease')}" aria-label="${bulkHTML('xp.decrease')}"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button></div></label>`;
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="xp"><strong class="gm-specialty-title">${bulkHTML('xp.title')}</strong><form data-mlgm-bulk-xp class="gm-specialty-row">${actionField}${amountField}<button type="button" data-action="bulk-xp" ${disabled}>${bulkHTML('xp.apply')}</button></form></section>`;
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="xp"><strong class="gm-specialty-title">${bulkHTML('xp.title')}</strong><form data-mlgm-bulk-xp class="gm-xp-fields"><div class="gm-specialty-row">${actionField}<button type="button" data-action="bulk-xp" ${disabled}>${bulkHTML('xp.apply')}</button></div>${amountField}</form></section>`;
 }
 
 function inspirationContent(action, busy, actorIds) {
@@ -238,10 +282,13 @@ function inspirationContent(action, busy, actorIds) {
   return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="inspiration"><strong class="gm-specialty-title">${bulkHTML('inspiration.title')}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span>${bulkHTML('inspiration.action')}</span><select name="bulkInspirationAction" ${busy ? 'disabled' : ''}>${[['grant', 'inspiration.grant'], ['clear', 'inspiration.clear']].map(([value, key]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${bulkHTML(key)}</option>`).join('')}</select></label><button type="button" data-action="bulk-inspiration" ${disabled}>${bulkHTML('inspiration.apply')}</button></div></section>`;
 }
 
-function tokenContent(busy, actorIds) {
+function tokenContent(busy, actorIds, scope) {
   const help = bulkHTML('tokens.help');
   const hint = bulkHTML('tokens.hint');
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><div class="gm-specialty-row"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><button type="button" class="ml-icon-button ml-help-button gm-row-action" data-action="bulk-tokens-help" data-tooltip="${hint}" aria-label="${help}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></div><button type="button" data-action="bulk-tokens" ${busy || !actorIds.length ? 'disabled' : ''}>${bulkHTML('tokens.sync')}</button></section>`;
+  const selected = tokenScopeChoice(scope);
+  const disabled = busy || (selected === 'party' && !actorIds.length) ? 'disabled' : '';
+  const options = [['party', 'tokens.party'], ['selected', 'tokens.selected'], ['all', 'tokens.all']].map(([value, key]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${bulkHTML(key)}</option>`).join('');
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span class="gm-label-help">${bulkHTML('tokens.target')}<button type="button" class="ml-icon-button ml-help-button" data-action="bulk-tokens-help" data-tooltip="${hint}" aria-label="${help}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></span><select name="bulkTokenScope" ${busy ? 'disabled' : ''}>${options}</select></label><button type="button" data-action="bulk-tokens" ${disabled}>${bulkHTML('tokens.sync')}</button></div></section>`;
 }
 
 function undoContent(snapshot, busy) {
@@ -252,13 +299,13 @@ function undoContent(snapshot, busy) {
   return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="undo"><strong class="gm-specialty-title">${bulkHTML('undo.title')}</strong>${detail}<button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${label}</button></section>`;
 }
 
-export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', busy = false, undo = null, cards} = {}) {
+export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', tokenScope = 'party', busy = false, undo = null, cards} = {}) {
   const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'undo'];
   const html = {
     coins: bulkCoinsContent(actorIds, coins, busy, coinAction),
     xp: xpContent(xp, xpAction, busy, actorIds),
     inspiration: inspirationContent(inspiration, busy, actorIds),
-    tokens: tokenContent(busy, actorIds),
+    tokens: tokenContent(busy, actorIds, tokenScope),
     undo: undoContent(undo, busy)
   };
   return `<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
@@ -386,15 +433,13 @@ export function initializeBulkActions(getActorIds) {
       complete: () => inspirationCard(action, changed, rows.length - changed.length)
     });
   }, queue);
-  channel.on('tokens', async ({operationId}, execution) => {
+  channel.on('tokens', async ({operationId, scope}, execution) => {
     assertBulkGm(execution);
     assertOperationId(operationId);
-    const scene = globalThis.canvas?.scene;
-    if (!scene) throw Error(bulkText('tokens.scene'));
-    const controlled = (globalThis.canvas?.tokens?.controlled ?? []).map(token => token.id).filter(Boolean);
-    const actors = partyActors(getActorIds());
-    const rows = actors.map(actor => {
-      const token = chooseSceneToken(tokensForActor(actor, scene), controlled);
+    const choice = tokenScopeChoice(scope);
+    const targets = collectTokenTargets(choice, getActorIds());
+    if (choice !== 'party' && !targets.length) return {unchanged: true, notice: bulkText(choice === 'selected' ? 'tokens.noneSelected' : 'tokens.empty')};
+    const rows = targets.map(({actor, token}) => {
       if (!token) return {actorId: actor.id, skipped: true};
       let changes;
       try { changes = cloneData(prototypeTokenChanges(token)); }
@@ -478,8 +523,8 @@ export function applyBulkXp(operationName, amount, operationId) {
 export function applyBulkInspiration(action, operationId) {
   return executeBulk('inspiration', {action, operationId: operation(operationId)});
 }
-export function applyBulkTokens(operationId) {
-  return executeBulk('tokens', {operationId: operation(operationId)});
+export function applyBulkTokens(operationId, scope = 'party') {
+  return executeBulk('tokens', {operationId: operation(operationId), scope: tokenScopeChoice(scope)});
 }
 export function applyBulkUndo(operationId) {
   return executeBulk('undo', {operationId: operation(operationId)});
