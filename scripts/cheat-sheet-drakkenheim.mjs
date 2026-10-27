@@ -36,6 +36,8 @@ let pollTimer = null;
 let polls = 0;
 let pollDelay = DEFAULT_POLL_MS;
 let signature = "";
+let lastDebug = {indexed: [], used: [], chips: []};
+let lastDebugLog = "";
 
 export function drakkenheimConditions() {
   return conditions;
@@ -65,8 +67,25 @@ export function resetDrakkenheimCheat() {
   polls = 0;
   pollDelay = DEFAULT_POLL_MS;
   signature = "";
+  lastDebug = {indexed: [], used: [], chips: []};
+  lastDebugLog = "";
   if (pollTimer) clearTimeout(pollTimer);
   pollTimer = null;
+}
+
+export function debugDrakkenheimCheat(game = globalThis.game) {
+  const report = {
+    modules: drakkenheimModuleIds(game),
+    status: drakkenheimStatus(game),
+    indexed: lastDebug.indexed,
+    used: lastDebug.used,
+    chips: lastDebug.chips?.length ? lastDebug.chips : [
+      ...conditions.map(entry => ({role: "condition", label: entry.labelText, path: entry.documentPath})),
+      ...items.map(entry => ({role: entry.id, label: entry.labelText, path: entry.documentPath}))
+    ]
+  };
+  globalThis.console?.debug?.("morelord-game-master | Drakkenheim cheat", report);
+  return report;
 }
 
 export function stopDrakkenheimCheat() {
@@ -165,46 +184,61 @@ export async function openDrakkenheimDocument(uuid, pageId, game = globalThis) {
 
 export async function collectDrakkenheimContent(game = globalThis.game) {
   if (!drakkenheimContentActive(game)) return { conditions: [], items: [] };
+  const indexed = [];
   try {
     const grouped = { contamination: [], search: [], values: [], conditions: [] };
-    const journals = await matchedDocuments(game, "JournalEntry", journalWorthOpening);
+    const journals = await matchedDocuments(game, "JournalEntry", journalWorthOpening, indexed);
     for (const entry of journals) addJournal(entry.pack, entry.doc, grouped);
-    const tables = await matchedDocuments(game, "RollTable", row => Boolean(tableKind(row?.name)));
+    const tables = await matchedDocuments(game, "RollTable", row => Boolean(tableKind(row?.name)), indexed);
     for (const entry of tables) addTable(entry.pack, entry.doc, grouped);
-    const documents = await matchedDocuments(game, "Item", itemWorthOpening);
+    const documents = await matchedDocuments(game, "Item", itemWorthOpening, indexed);
     for (const entry of documents) addItem(entry.pack, entry.doc, grouped);
-    return {
+    const found = {
       conditions: uniqueChips(grouped.conditions),
       items: CHIP_ORDER.map(id => mergeSummaries(grouped[id === "delerium-search" ? "search" : id === "delerium" ? "values" : id])).filter(Boolean)
     };
+    const chipEntries = [...found.conditions, ...found.items];
+    lastDebug = {
+      indexed,
+      used: [...grouped.conditions, ...grouped.contamination, ...grouped.search, ...grouped.values].filter(Boolean).map(entry => ({
+        label: entry.labelText,
+        path: entry.documentPath
+      })),
+      chips: chipEntries.map(entry => ({role: entry.id, label: entry.labelText, path: entry.documentPath}))
+    };
+    const debugLog = `${lastDebug.indexed.map(row => `${row.opened ? 1 : 0}:${row.name}`).join("|")}|${lastDebug.used.map(row => row.path).join("|")}`;
+    if (debugLog !== lastDebugLog) {
+      lastDebugLog = debugLog;
+      debugDrakkenheimCheat(game);
+    }
+    return found;
   } catch {
+    lastDebug = {indexed, used: [], chips: []};
     return { conditions: [], items: [] };
   }
 }
 
 function addJournal(pack, entry, grouped) {
-  const entryIsConditions = /^conditions?\b/.test(normalize(entry?.name));
+  const entryName = normalize(entry?.name);
+  const entryIsConditions = /condition/.test(entryName);
   for (const page of pagesOf(entry)) {
+    const pageName = normalize(page?.name);
     const kind = pageKind(page?.name) || (entryIsConditions ? "condition" : "");
     const html = pageHtml(page);
     if (kind === "contamination") {
       const summary = levelSummary(contaminationLevelsFromHTML(html));
       if (summary) grouped.contamination.push(summaryChip(pack, entry, page, "contamination", "Contamination", summary));
-    } else if (kind === "search") {
-      const summary = zoneSummary(searchZonesFromHTML(html), skillsMentioned(strip(html)));
+      continue;
+    }
+    const zones = searchZonesFromHTML(html);
+    const searchNamed = kind === "search" || /deleri|search|prospect|harvest/.test(`${entryName} ${pageName}`);
+    if (zones.length && searchNamed) {
+      const summary = zoneSummary(zones, skillsMentioned(strip(html)));
       if (summary) grouped.search.push(summaryChip(pack, entry, page, "delerium-search", "Delerium Search", summary));
-    } else if (kind === "condition") {
-      const label = strip(page?.name);
-      const text = strip(html);
-      if (!shortLabel(label) || !text) continue;
-      grouped.conditions.push(chip({
-        id: `condition-${slug(label)}`,
-        label,
-        text,
-        uuid: page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id),
-        pageId: page?.id ?? "",
-        path: documentPath(pack, entry.name, page?.name)
-      }));
+      continue;
+    }
+    if (kind === "condition" || (/condition/.test(pageName) && !entryIsConditions)) {
+      pushConditionPages(pack, entry, page, html, grouped);
     }
   }
 }
@@ -255,11 +289,15 @@ function addItem(pack, item, grouped) {
     }));
     return;
   }
-  if (!/^deleri(?:um|ium)\b/i.test(item?.name ?? "")) return;
+  if (!deleriumSizeName(item?.name)) return;
+  const described = descriptionText(item);
+  // A bare "Chip" is a size only when the item itself says it is delerium.
+  // "Delerium-Forged Blade" is a magic item and is not a size.
+  if (!prefixedSizeName(item?.name) && !/deleri/.test(normalize(`${item?.name} ${described}`))) return;
   const price = priceText(item.system);
-  if (!price) return;
   const weight = weightText(item.system);
-  const text = [item.name, `Price: ${price}.`, weight ? `Weight: ${weight}.` : "", descriptionText(item)].filter(Boolean).join(" ");
+  if (!price && !weight) return;
+  const text = [item.name, price ? `Price: ${price}.` : "", weight ? `Weight: ${weight}.` : "", described].filter(Boolean).join(" ");
   grouped.values.push(chip({
     id: "delerium",
     label: "Delerium",
@@ -354,11 +392,19 @@ function levelList(levels) {
 
 export function searchZonesFromHTML(html) {
   const zones = [];
+  const seen = new Set();
+  const push = zone => {
+    const label = String(zone?.label ?? "").replace(/\s*\(\s*dc\s*\d{1,2}\s*\)\s*$/i, "").trim();
+    if (!label || !zone?.dc || !searchZoneLabel(label) || seen.has(canonical(`${label}|${zone.dc}`))) return;
+    seen.add(canonical(`${label}|${zone.dc}`));
+    zones.push({...zone, label});
+  };
   for (const rows of tableRows(html)) {
     if (!rows.length) continue;
     const header = rows[0];
     const dcIndex = header.findIndex(cell => /\bdc\b/i.test(cell) || /difficulty/i.test(cell));
-    const body = dcIndex >= 0 ? rows.slice(1) : rows;
+    if (dcIndex < 0) continue;
+    const body = rows.slice(1);
     for (const cells of body) {
       let index = dcIndex;
       let dc = index >= 0 ? dcValue(cells[index] ?? "") : 0;
@@ -370,21 +416,46 @@ export function searchZonesFromHTML(html) {
       const label = cells.find((cell, cellIndex) => cellIndex !== index && !headerLabel(cell) && !skillsOnly(cell));
       if (!label || headerLabel(label)) continue;
       const extra = cells.filter((cell, cellIndex) => cell !== label && cellIndex !== index && !skillsOnly(cell)).join(" ");
-      zones.push({ label, dc, skills: skillsMentioned(cells.join(" ")), extra: withoutDc(extra) });
+      push({ label, dc, skills: skillsMentioned(cells.join(" ")), extra: withoutDc(extra) });
     }
+  }
+  const heading = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>([\s\S]*?)(?=<h[1-6][^>]*>|$)/gi;
+  for (const match of String(html ?? "").matchAll(heading)) {
+    const label = strip(match[1]);
+    const body = strip(match[2]);
+    const dc = explicitDc(label) || explicitDc(body);
+    if (!dc) continue;
+    push({ label, dc, skills: skillsMentioned(`${label} ${body}`), extra: withoutDc(body).slice(0, 240) });
   }
   return zones;
 }
 
-async function matchedDocuments(game, documentName, predicate) {
+function searchZoneLabel(label) {
+  const text = String(label ?? "").trim();
+  if (!text || /haze|sludge|contamination|mutation|madness|effect on/i.test(text)) return false;
+  return /deleri|deposit|search|prospect|harvest|wall|\bouter\b|\binner\b/i.test(text);
+}
+
+async function matchedDocuments(game, documentName, predicate, indexed) {
   const found = [];
   for (const pack of modulePacks(game, documentName)) {
     let index = [];
-    try { index = listOf(await pack.getIndex?.({ fields: ["type", "system.type"] })); }
-    catch { continue; }
+    try { index = listOf(await pack.getIndex?.({ fields: ["type", "system.type", "pages"] })); }
+    catch {
+      try { index = listOf(await pack.getIndex?.()); }
+      catch { continue; }
+    }
     const ids = [];
     for (const row of index) {
-      if (!predicate(row)) continue;
+      const opened = Boolean(predicate(row));
+      indexed?.push({
+        pack: pack.metadata?.id ?? pack.collection ?? "",
+        document: documentName,
+        name: row?.name ?? "",
+        type: row?.type ?? row?.system?.type?.value ?? row?.system?.type ?? "",
+        opened
+      });
+      if (!opened) continue;
       const id = row?._id ?? row?.id;
       if (id) ids.push(id);
     }
@@ -411,19 +482,36 @@ async function loadDocuments(pack, ids) {
   return docs;
 }
 
-function journalWorthOpening(row) {
-  const name = normalize(row?.name);
+function journalSignal(name) {
   if (!name || /emberwood/.test(name) || /^appendix d\b/.test(name)) return false;
-  if (/mutation|madness|spell|long rest/.test(name) && !/appendix c\b/.test(name)) return false;
+  if (/mutation|madness|spell|long rest|forged/.test(name) && !/appendix c\b|condition/.test(name)) return false;
   if (/^contaminat/.test(name) || /appendix c\b/.test(name)) return true;
   if (/contamination symptoms|eldritch contamination/.test(name)) return true;
-  if (/deleri/.test(name) && /search|prospect/.test(name)) return true;
-  if (/^conditions?\b/.test(name)) return true;
+  if (/condition/.test(name)) return true;
+  if (/deleri/.test(name)) return true;
+  if (/search|prospect|harvest|deposit/.test(name)) return true;
+  if (/exploring|ruins|\bhaze\b/.test(name)) return true;
   return false;
 }
 
+function journalWorthOpening(row) {
+  const name = normalize(row?.name);
+  if (!journalSignal(name) && !listOf(row?.pages).some(page => journalSignal(normalize(page?.name ?? page)))) return false;
+  if (!name || /emberwood/.test(name) || /^appendix d\b/.test(name)) return false;
+  if (/mutation|madness|spell|long rest|forged/.test(name) && !/appendix c\b/.test(name)) return false;
+  return true;
+}
+
+function deleriumSizeName(name) {
+  return /^(?:deleri(?:um|ium)[\s-]+)?(?:dust|chips?|fragments?|shards?|crystals?|geodes?)$/i.test(String(name ?? "").trim());
+}
+
+function prefixedSizeName(name) {
+  return /^deleri(?:um|ium)[\s-]+(?:dust|chips?|fragments?|shards?|crystals?|geodes?)$/i.test(String(name ?? "").trim());
+}
+
 function itemWorthOpening(row) {
-  if (/^deleri(?:um|ium)\b/i.test(row?.name ?? "")) return true;
+  if (deleriumSizeName(row?.name)) return true;
   const type = row?.type ?? row?.system?.type?.value ?? row?.system?.type;
   return type === "condition";
 }
@@ -447,6 +535,41 @@ function pageKind(name) {
 function isConditionItem(item) {
   const type = item?.type ?? item?.system?.type?.value ?? item?.system?.type;
   return type === "condition";
+}
+
+function pushConditionPages(pack, entry, page, html, grouped) {
+  const pageName = normalize(page?.name);
+  if (/overview|introduction|contents|summary/.test(pageName)) return;
+  const headings = conditionHeadings(html);
+  if (headings.length >= 2 && /condition/.test(pageName)) {
+    for (const heading of headings) addConditionChip(pack, entry, page, heading.label, heading.text, grouped);
+    return;
+  }
+  addConditionChip(pack, entry, page, strip(page?.name), strip(html), grouped);
+}
+
+function addConditionChip(pack, entry, page, label, text, grouped) {
+  if (!shortLabel(label) || !text || /^(?:contamination|delerium|overview)$/i.test(label)) return;
+  const pageLabel = strip(page?.name);
+  grouped.conditions.push(chip({
+    id: `condition-${slug(label)}`,
+    label,
+    text,
+    uuid: page?.uuid || entry.uuid || compendiumUuid(pack, "JournalEntry", entry.id),
+    pageId: page?.id ?? "",
+    path: documentPath(pack, entry.name, pageLabel && pageLabel !== label ? `${pageLabel} / ${label}` : pageLabel)
+  }));
+}
+
+function conditionHeadings(html) {
+  const found = [];
+  const heading = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>([\s\S]*?)(?=<h[1-6][^>]*>|$)/gi;
+  for (const match of String(html ?? "").matchAll(heading)) {
+    const label = strip(match[1]);
+    const text = strip(match[2]);
+    if (label && text) found.push({label, text});
+  }
+  return found;
 }
 
 function validLevelRun(levels) {

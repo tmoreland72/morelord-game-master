@@ -101,6 +101,16 @@ test('typing in a tray field and clicking once applies the control under the poi
   const playlistRun = source.slice(source.indexOf('if (type === "playlist")'), source.indexOf('if (type === "ambience")'));
   assert.doesNotMatch(playlistRun, /closeTray/);
   assert.ok(coins.indexOf('if (result?.unchanged)') < coins.indexOf('closeTray()'));
+  for (const name of ['sendBulkCoins', 'sendBulkXp', 'sendBulkInspiration', 'sendBulkTokens']) {
+    const start = source.indexOf(`async function ${name}`);
+    const fn = source.slice(start, source.indexOf('async function', start + 20));
+    assert.match(fn, /if \(result\?\.unchanged\)/);
+    assert.doesNotMatch(fn, /unchanged[\s\S]{0,220}return;/);
+    assert.match(fn, /closeTray\(\)/);
+  }
+  assert.match(source, /if \(action === "stop-all-sound"\) return stopEverySound\(\);/);
+  const stopAll = source.slice(source.indexOf('async function stopEverySound'), source.indexOf('async function setAmbienceVolumes'));
+  assert.doesNotMatch(stopAll, /closeTray/);
 
   const {control, root} = tray();
   const field = {id: 'ml-game-master-track-volume', value: '25'};

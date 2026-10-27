@@ -55,6 +55,11 @@ describe('bulk actions', {concurrency: 1}, () => {
     const plain = actors[1];
     assert.equal(planInspiration([inspired], 'clear')[0].before, true);
     assert.deepEqual(planInspiration([inspired, plain], 'grant').map(row => row.skipped), [true, false]);
+    const wrapped = {id: 'w', type: 'character', system: {attributes: {inspiration: {}}}};
+    assert.equal(planInspiration([wrapped], 'grant')[0].skipped, false);
+    assert.equal(planInspiration([wrapped], 'grant')[0].before, false);
+    const stored = {id: 's', type: 'character', _source: {system: {attributes: {inspiration: false}}}, system: {attributes: {inspiration: true}}};
+    assert.equal(planInspiration([stored], 'grant')[0].skipped, false);
     assert.equal(planInspiration([plain], 'clear')[0].skipped, true);
     assert.throws(() => planInspiration(actors, 'maybe'), /grant or clear/);
   });
@@ -100,9 +105,11 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.ok(html.indexOf('data-mlgm-bulk="xp"') < html.indexOf('data-mlgm-bulk="inspiration"'));
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
-    assert.match(css, /#mlgm \.gm-bulk \{[^}]*display:grid/);
-    assert.match(css, /@container gm-bulk \(min-width: 32rem\) \{\s*#mlgm \.gm-bulk \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\); \}\s*#mlgm \.gm-bulk > \[data-mlgm-bulk="coins"\] \{ grid-column:1 \/ -1; \}\s*\}/);
-    assert.match(css, /@container gm-bulk \(min-width: 48rem\) \{ #mlgm \.gm-bulk \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \} \}/);
+    assert.match(css, /#mlgm \.gm-bulk \{[^}]*display:grid !important/);
+    assert.match(css, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,17rem\),1fr\)\) !important/);
+    assert.match(css, /#mlgm \.gm-bulk > \.ml-card \{[^}]*grid-column:auto !important/);
+    assert.match(css, /#mlgm \.gm-bulk > \[data-mlgm-bulk="coins"\] \{ grid-column:1 \/ -1 !important; \}/);
+    assert.doesNotMatch(css, /@container gm-bulk/);
     assert.match(html, /Give amount to each party member/);
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('data-mlgm-bulk="inspiration"'));

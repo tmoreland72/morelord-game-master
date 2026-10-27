@@ -15,7 +15,12 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.match(source, /form\("Add Ambience"/);
   assert.match(source, /const fileName = file\.path\.split\("\/"\)\.pop\(\)/);
   assert.match(source, /data-tooltip="\$\{e\(file\.path\)\}"/);
+  assert.match(source, /data-tooltip-direction="LEFT"/);
   assert.match(source, /aria-label="\$\{e\(file\.path\)\}"/);
+  assert.match(source, /gm-ambience-layer/);
+  assert.match(css, /#morelord-game-master-add-ambience :is\(\.form-footer/);
+  assert.match(css, /flex:0 0 auto !important/);
+  assert.match(css, /grid-template-columns:auto minmax\(0,1fr\) auto max-content/);
   assert.match(css, /#mlgm \.gm-ambience-column button\[data-action="ambience"\][\s\S]*padding:var\(--ml-space-2\) var\(--ml-space-3\)/);
   assert.match(css, /white-space:normal/);
   const writes = [];
@@ -44,8 +49,11 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   const later = playlist('later', [track('one'), track('two')], {name: 'Later'});
   const empty = playlist('empty', []);
   const rain = track('rain', true);
+  rain.path = 'modules/psfx-ambience/library/ambient/animals/birds/birds-forest-farmland-spring-loop-10mins-001.ogg';
   const drip = track('drip', false);
   const ambience = playlist('bed', [rain, drip], {ambience: true, name: 'Bed'});
+  const ghost = track('ghost', false);
+  ghost.sound = {playing: true, stop() { ghost.audioStopped = true; }};
   const playlists = [now, later, empty, ambience];
   playlists.get = id => playlists.find(item => item.id === id);
   const foundry = {audio: {AudioHelper: {inputToVolume: n => n ** 1.5}}};
@@ -72,7 +80,8 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
       return null;
     }},
     persist: async change => change(state),
-    ui: {notifications: {info(message) { notices.push(message); }}}
+    ui: {notifications: {info(message) { notices.push(message); }}},
+    Howler: { _howls: [{ _src: rain.path, stop() { this.audioStopped = true; } }] }
   });
   vm.runInContext(`let settingTrackVolumes=false; ${fn}`, context);
   await vm.runInContext('setTrackVolumes()', context);
@@ -103,8 +112,20 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.deepEqual(JSON.parse(JSON.stringify(writes.at(-1).updates)), [{_id: 'one', volume: 0.125}, {_id: 'two', volume: 0.125}]);
   assert.equal(writes.at(-1).options.diff, false);
   assert.equal(rain.volume, 0.4 ** 1.5);
-  const stop = source.match(/if \(action === "stop-all-sound"\) \{([^}]+)\}/)[1];
+  later.sounds.push(ghost);
+  later.sounds.size = later.sounds.length;
+  assert.match(source, /if \(action === "stop-all-sound"\) return stopEverySound\(\);/);
+  const stopper = source.slice(source.indexOf('function audioPlaying'), source.indexOf('async function setAmbienceVolumes'));
+  assert.doesNotMatch(stopper, /closeTray/);
   stopped.length = 0;
-  await vm.runInContext(`(async () => { ${stop} })()`, context);
+  const writesBeforeStop = writes.length;
+  await vm.runInContext('stopEverySound()', context);
   assert.deepEqual(stopped, ['now', 'later', 'empty', 'bed']);
+  const stoppedWrites = writes.slice(writesBeforeStop);
+  const stoppedIds = stoppedWrites.flatMap(write => write.updates.map(update => update._id));
+  assert.deepEqual(stoppedIds, ['playing', 'ghost', 'rain', 'drip']);
+  assert.ok(stoppedWrites.every(write => write.type === 'PlaylistSound' && write.options?.diff === false));
+  assert.ok(stoppedWrites.flatMap(write => write.updates).every(update => update.playing === false && update.pausedTime === null));
+  assert.equal(ghost.audioStopped, true);
+  assert.equal(context.Howler._howls[0].audioStopped, true);
 });

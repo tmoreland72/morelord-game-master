@@ -14,7 +14,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambiencePickerOptions, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
-import {openDrakkenheimDocument, scheduleDrakkenheimCheat, stopDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {debugDrakkenheimCheat, openDrakkenheimDocument, scheduleDrakkenheimCheat, stopDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
@@ -108,7 +108,7 @@ Hooks.once("ready", async () => {
       resolve: uuid => fromUuid(uuid)
     });
   } catch (error) { console.error(`${ID} | Could not run macros on load.`, error); }
-  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger };
+  game.modules.get(ID).api = { toggle, requestCheck, requestEncounter:encounter, requestDeathSave:() => requestCheck({kind:"death",...state?.last.death}), rollOfFate, addTrigger, installTrigger, debugDrakkenheimCheat };
   initializeDeferredClockSettlement(() => (game.settings.get(ID,'board').triggers ?? []).some(t => t.kind === 'world-clock' && t.enabled && triggerStatus(t.id) === 'Running'));
   try { initializeRequests(); initializeBulkCoins(partyActorIds); initializeBulkActions(partyActorIds); initializeAmmoTracking(); await initializeGlobalTriggers(); initializeTriggers(); await replacePastedTriggerMacros(); await initializeTriggerMacros(); await core().compendiums?.organize([{collection:`${ID}.macros`,label:"Game Master Macros"},{collection:`${ID}.roll-tables`,label:"Game Master Roll Tables"}],["Morelord Gaming","Game Master"]); } catch(error) { ui.notifications.error(error.message); return; }
   core().ui.documentation.register({id:ID,title:'Morelord Game Master',icon:'fa-solid fa-dice-d20',source:'modules/morelord-game-master/README.md'});
@@ -356,11 +356,13 @@ async function sendBulkCoins(operation) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkCoins(operation, coins);
-    if (result?.unchanged) { notify(result.notice || 'No coin balances changed.'); return; }
-    if (!result?.messageId) throw Error('The coordinating GM must refresh Game Master before using party coins.');
-    for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
-    await persist(n => { n.last.bulkCoins = readCoins(); });
-    notify('Party coins updated. See the chat card for changes and deficits.');
+    if (result?.unchanged) notify(result.notice || 'No coin balances changed.');
+    else {
+      if (!result?.messageId) throw Error('The coordinating GM must refresh Game Master before using party coins.');
+      for (const input of root.querySelectorAll('[data-mlgm-bulk-coins] input')) input.value = '0';
+      await persist(n => { n.last.bulkCoins = readCoins(); });
+      notify('Party coins updated. See the chat card for changes and deficits.');
+    }
     closeTray();
   } finally { bulkBusy = false; render(); }
 }
@@ -374,12 +376,14 @@ async function sendBulkXp(operation) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkXp(operation, amount);
-    if (result?.unchanged) { notify(result.notice); return; }
-    if (!result?.messageId) throw Error(bulkText('error.noGm'));
-    const input = root.querySelector('[data-mlgm-bulk-xp] input[name="xp"]');
-    if (input) input.value = '0';
-    await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
-    notify(bulkText('xp.updated'));
+    if (result?.unchanged) notify(result.notice);
+    else {
+      if (!result?.messageId) throw Error(bulkText('error.noGm'));
+      const input = root.querySelector('[data-mlgm-bulk-xp] input[name="xp"]');
+      if (input) input.value = '0';
+      await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
+      notify(bulkText('xp.updated'));
+    }
     closeTray();
   } finally { bulkBusy = false; render(); }
 }
@@ -390,10 +394,12 @@ async function sendBulkInspiration(action) {
   bulkBusy = true; render();
   try {
     const result = await applyBulkInspiration(action);
-    if (result?.unchanged) { notify(result.notice); return; }
-    if (!result?.messageId) throw Error(bulkText('error.noGm'));
-    await persist(n => { n.last.bulkInspiration = action; });
-    notify(bulkText('inspiration.updated'));
+    if (result?.unchanged) notify(result.notice);
+    else {
+      if (!result?.messageId) throw Error(bulkText('error.noGm'));
+      await persist(n => { n.last.bulkInspiration = action; });
+      notify(bulkText('inspiration.updated'));
+    }
     closeTray();
   } finally { bulkBusy = false; render(); }
 }
@@ -404,9 +410,11 @@ async function sendBulkTokens() {
   bulkBusy = true; render();
   try {
     const result = await applyBulkTokens();
-    if (result?.unchanged) { notify(result.notice); return; }
-    if (!result?.messageId) throw Error(bulkText('error.noGm'));
-    notify(bulkText('tokens.updatedNotice'));
+    if (result?.unchanged) notify(result.notice);
+    else {
+      if (!result?.messageId) throw Error(bulkText('error.noGm'));
+      notify(bulkText('tokens.updatedNotice'));
+    }
     closeTray();
   } finally { bulkBusy = false; render(); }
 }
@@ -537,7 +545,7 @@ async function act(action, id, target) {
   if (action === "ambience") return ambienceForm();
   if (action === "set-track-volumes") return setTrackVolumes();
   if (action === "set-ambience-volumes") return setAmbienceVolumes();
-  if (action === "stop-all-sound") { for (const p of game.playlists) await p.stopAll(); }
+  if (action === "stop-all-sound") return stopEverySound();
   if (action === "stop-music" || action === "stop-ambience") for (const p of game.playlists) if (Boolean(p.getFlag(ID,"ambience")) === (action === "stop-ambience")) await p.stopAll();
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
   if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); closeTray(); }
@@ -701,6 +709,68 @@ async function setTrackVolumes() {
     render();
   }
 }
+function audioPlaying(sound) {
+  const audio = sound?.sound;
+  if (!audio) return false;
+  if (typeof audio.playing === "function") return audio.playing() === true;
+  return audio.playing === true;
+}
+function playlistSounds(playlist) {
+  return [...(playlist?.sounds?.contents ?? playlist?.sounds ?? [])];
+}
+function soundDocumentId(sound) {
+  return sound?.id ?? sound?._id ?? "";
+}
+function stopAudioHandle(sound) {
+  const audio = sound?.sound;
+  try { if (typeof audio?.stop === "function") audio.stop(); }
+  catch { /* The document update already ended playback. */ }
+  try { if (typeof audio?.howl?.stop === "function") audio.howl.stop(); }
+  catch { /* Howler already released this layer. */ }
+}
+async function stopEverySound() {
+  gm();
+  const playlists = [...(game.playlists?.contents ?? game.playlists ?? [])];
+  const paths = new Set();
+  for (const playlist of playlists) {
+    const ambience = playlist?.getFlag?.(ID, "ambience") === true;
+    const sounds = playlistSounds(playlist);
+    for (const sound of sounds) if (sound?.path) paths.add(String(sound.path));
+    // Ambience layers can keep a Howl playing after the document flag is cleared.
+    const live = sounds.filter(sound => {
+      if (!soundDocumentId(sound)) return false;
+      if (ambience) return true;
+      return Boolean(sound.playing || sound.pausedTime || audioPlaying(sound));
+    });
+    if ((playlist?.playing || ambience) && typeof playlist.update === "function") {
+      try { await playlist.update({playing: false}, {diff: false}); }
+      catch { /* stopAll still runs for this playlist. */ }
+    }
+    if (live.length && typeof playlist.updateEmbeddedDocuments === "function") {
+      try {
+        await playlist.updateEmbeddedDocuments("PlaylistSound", live.map(sound => ({
+          _id: soundDocumentId(sound), playing: false, pausedTime: null
+        })), {diff: false});
+      } catch { /* stopAll and the audio handle still run. */ }
+    }
+    if (typeof playlist.stopAll === "function") {
+      try { await playlist.stopAll(); }
+      catch { /* Each live sound was already marked stopped. */ }
+    }
+    for (const sound of sounds) stopAudioHandle(sound);
+  }
+  const howls = globalThis.Howler?._howls;
+  if (howls?.length && paths.size) {
+    for (const howl of [...howls]) {
+      const sources = [].concat(howl?._src ?? []).map(String);
+      if (sources.some(src => paths.has(src) || [...paths].some(path => src.endsWith(path)))) {
+        try { howl.stop(); }
+        catch { /* This layer was already stopped. */ }
+      }
+    }
+  }
+  render();
+}
 async function setAmbienceVolumes() {
   gm();
   const field = root.querySelector("#ml-game-master-ambience-volume");
@@ -809,7 +879,7 @@ async function ambienceForm() {
   const playable = presentAmbienceScan({files, errors}, {warn: error => console.warn(`${ID} |`, error), notify});
   if (!playable.length) return;
   const last = state.last.ambience?.files ?? [];
-  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); const fileName = file.path.split("/").pop(); return `<div class="ml-card ml-item-row gm-ambience-layer"><label class="ml-check"><input type="checkbox" name="file" value="${i}" ${prev ? "checked" : ""}><span>${e(fileName)}</span></label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button>${label("Volume (%)", input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required'))}</div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
+  const result = await form("Add Ambience", `<fieldset class="ml-stack"><legend>Layers and volume (%)</legend>${playable.map((file, i) => { const prev = last.find(entry => entry.path === file.path); const fileName = file.path.split("/").pop(); const fieldId = `ml-game-master-ambience-file-${i}`; return `<div class="ml-card gm-ambience-layer"><input class="gm-ambience-check" type="checkbox" name="file" id="${fieldId}" value="${i}" ${prev ? "checked" : ""}><label class="gm-ambience-name" for="${fieldId}">${e(fileName)}</label><button type="button" class="ml-icon-button ml-help-button" data-tooltip="${e(file.path)}" data-tooltip-direction="LEFT" aria-label="${e(file.path)}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button><label class="gm-ambience-volume"><span>${e("Volume (%)")}</span>${input(`volume${i}`, prev ? percentFromVolume(prev.volume) : 40, 'type="number" min="0" max="100" required')}</label></div>`; }).join("")}</fieldset>`, [["save", "Save button"]]);
   if (!result) return;
   const selected = result.data.getAll("file").map(i => ({path: playable[Number(i)].path, volume: volumeFromPercent(result.data.get(`volume${i}`))}));
   if (!selected.length) throw new Error("Select at least one sound.");

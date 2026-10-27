@@ -67,12 +67,17 @@ export function planXp(actors, operation, amount) {
   });
 }
 
+export function inspirationHeld(actor) {
+  const raw = actor?._source?.system?.attributes?.inspiration ?? actor?.system?.attributes?.inspiration;
+  return raw === true || raw === 1;
+}
+
 export function planInspiration(actors, action) {
   if (action !== 'grant' && action !== 'clear') throw Error(bulkText('inspiration.invalid'));
   const grant = action === 'grant';
   return actors.map(actor => {
     if (actor?.type !== 'character') throw Error(bulkText('error.character'));
-    const before = Boolean(actor.system?.attributes?.inspiration);
+    const before = inspirationHeld(actor);
     // Grant and clear are idempotent. An actor who already has the requested
     // value must not be written: Foundry omits that no-op from updateDocuments,
     // and the shorter result was reported as a cancelled character update.
@@ -164,13 +169,17 @@ async function rememberUndo(snapshot) {
 async function updateActors(updates) {
   if (!updates.length) return;
   const updated = await Actor.updateDocuments(updates);
-  if (updated.length === updates.length) return;
-  const returned = new Set(updated.map(document => document?.id).filter(Boolean));
+  const list = Array.isArray(updated) ? updated : [];
+  const returned = new Set(list.flatMap(document => [document?.id, document?._id]).filter(Boolean));
+  if (list.length === updates.length && updates.every(update => returned.has(update._id))) return;
   for (const update of updates) {
     if (returned.has(update._id)) continue;
-    // Foundry omits a prototype write whose cleaned diff is empty. That is not
-    // a cancelled update. Any other short result still is.
-    if (update.prototypeToken && !prototypeTokenDiff(prototypeBefore(game.actors.get(update._id)), update.prototypeToken)) continue;
+    const actor = game.actors?.get?.(update._id);
+    // Foundry omits a write whose cleaned diff is empty. That is not a cancelled update.
+    if (update.prototypeToken && !prototypeTokenDiff(prototypeBefore(actor), update.prototypeToken)) continue;
+    if ('system.attributes.inspiration' in update) {
+      if (inspirationHeld(actor) === Boolean(update['system.attributes.inspiration'])) continue;
+    }
     throw Error(bulkText('error.cancelled'));
   }
 }
@@ -348,7 +357,17 @@ export function initializeBulkActions(getActorIds) {
       receipt: {operationId, action, actorIds: changed.map(row => row.actorId)},
       title: bulkHTML(action === 'grant' ? 'inspiration.cardGrant' : 'inspiration.cardClear'),
       async mutate() {
-        await updateActors(changed.map(row => ({_id: row.actorId, 'system.attributes.inspiration': row.after})));
+        const updates = changed.map(row => ({_id: row.actorId, 'system.attributes.inspiration': row.after}));
+        try {
+          await updateActors(updates);
+        } catch (error) {
+          // Foundry can apply the boolean and still omit the actor from the
+          // result. Undo records the characters whose sheet now matches.
+          const applied = changed.filter(row => inspirationHeld(game.actors.get(row.actorId)) === row.after);
+          if (!applied.length) throw error;
+          await rememberUndo({kind: 'inspiration', labelKey: action === 'grant' ? 'inspiration.grant' : 'inspiration.clear', action, actors: applied.map(row => ({id: row.actorId, before: row.before}))});
+          return;
+        }
         await rememberUndo({kind: 'inspiration', labelKey: action === 'grant' ? 'inspiration.grant' : 'inspiration.clear', action, actors: changed.map(row => ({id: row.actorId, before: row.before}))});
       },
       complete: () => inspirationCard(action, changed, rows.length - changed.length)

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CHEAT_ATTRIBUTION, CHEAT_SECTIONS, cheatStringEntries} from '../scripts/cheat-sheet-data.mjs';
 import {activateCheatTooltip, cheatChipClass, cheatTooltipHTML, deactivateCheatTooltip, renderCheatSheet} from '../scripts/cheat-sheet.mjs';
-import {DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, collectDrakkenheimContent, contaminationLevelsFromHTML, drakkenheimConditions, drakkenheimContentActive, drakkenheimItems, openDrakkenheimDocument, resetDrakkenheimCheat, scheduleDrakkenheimCheat, searchZonesFromHTML, setDrakkenheimContent, setDrakkenheimPollDelay, stopDrakkenheimCheat} from '../scripts/cheat-sheet-drakkenheim.mjs';
+import {DRAKKENHEIM_CORE_MODULE_ID, DRAKKENHEIM_MODULE_IDS, DRAKKENHEIM_MONSTERS_MODULE_ID, DRAKKENHEIM_SCGD_MODULE_ID, collectDrakkenheimContent, contaminationLevelsFromHTML, debugDrakkenheimCheat, drakkenheimConditions, drakkenheimContentActive, drakkenheimItems, openDrakkenheimDocument, resetDrakkenheimCheat, scheduleDrakkenheimCheat, searchZonesFromHTML, setDrakkenheimContent, setDrakkenheimPollDelay, stopDrakkenheimCheat} from '../scripts/cheat-sheet-drakkenheim.mjs';
 
 const section = id => CHEAT_SECTIONS.find(entry => entry.id === id);
 const item = (group, id) => group.items.find(entry => entry.id === id);
@@ -326,7 +326,12 @@ test('the Drakkenheim section is three pack chips, and conditions join the main 
       {id: 'mad', name: 'Madness', text: {content: '<p><strong>Whispers</strong> Fixture dread.</p>'}},
       {id: 'numbered', name: '01 Contamination Symptoms', text: {content: '<p>Fixture symptoms.</p>'}}
     ]},
-    {id: 'conds', name: 'Conditions', pages: [{id: 'haze', name: 'Haze Bound', uuid: 'Compendium.journal.haze', text: {content: '<p>Fixture condition.</p>'}}]}
+    {id: 'conds', name: 'Conditions', pages: [{id: 'haze', name: 'Haze Bound', uuid: 'Compendium.journal.haze', text: {content: '<p>Fixture condition.</p>'}}]},
+    {id: 'explore', name: 'Exploring Drakkenheim', pages: [{id: 'find', name: 'Finding Delerium Deposits', uuid: 'Compendium.journal.find', text: {content: '<h2>Outer City Delerium Deposits (DC 15)</h2><p>Fixture outer result. Arcana or Survival.</p><h2>Inner City Delerium Deposits (DC 20)</h2><p>Fixture inner result.</p><h2>Deep Haze</h2><p>DC 15 Constitution.</p>'}}]},
+    {id: 'dconds', name: 'Drakkenheim Conditions', pages: [
+      {id: 'blight', name: 'Arcane Blight', uuid: 'Compendium.journal.blight', text: {content: '<p>Fixture blight.</p>'}},
+      {id: 'list', name: 'Conditions', text: {content: '<h2>Haze Mark</h2><p>Fixture mark.</p><h2>Crystal Rot</h2><p>Fixture rot.</p>'}}
+    ]}
   ]);
   const original = journal.getDocuments.bind(journal);
   journal.getDocuments = async query => {
@@ -335,8 +340,13 @@ test('the Drakkenheim section is three pack chips, and conditions join the main 
   };
   const items = packDocuments('Item', 'drakkenheim-monsters.items', [
     {id: 'chip', name: 'Delerium Chip', uuid: 'Compendium.item.chip', system: {price: {value: 50, denomination: 'gp'}, weight: 0.1, description: {value: '<p>Fixture crystal.</p>'}}},
+    {id: 'fragment', name: 'Delerium Fragment', uuid: 'Compendium.item.fragment', system: {price: {value: 100, denomination: 'gp'}, weight: {value: 0.5}, description: {value: '<p>Fixture fragment.</p>'}}},
+    {id: 'shard', name: 'Delerium Shard', system: {price: {value: 500, denomination: 'gp'}, weight: {value: 1}}},
+    {id: 'crystal', name: 'Delerium Crystal', system: {price: {value: 1000, denomination: 'gp'}, weight: {value: 2}}},
     {id: 'dust', name: 'Delerium Dust', system: {}},
+    {id: 'blade', name: 'Delerium-Forged Blade', uuid: 'Compendium.item.blade', system: {price: {value: 4000, denomination: 'gp'}, weight: 2, description: {value: '<p>Fixture weapon.</p>'}}},
     {id: 'rope', name: 'Rope', system: {price: {value: 1, denomination: 'gp'}}},
+    {id: 'bare', name: 'Chip', system: {price: {value: 10, denomination: 'gp'}, weight: 0.25, description: {value: '<p>Fixture delerium sample.</p>'}}},
     {id: 'sick', name: 'Haze Sick', type: 'condition', uuid: 'Compendium.item.sick', system: {description: {value: '<p>Fixture sickness.</p>'}}}
   ]);
   const itemIds = [];
@@ -347,8 +357,17 @@ test('the Drakkenheim section is three pack chips, and conditions join the main 
   };
   items.getDocument = async () => { throw new Error('scan'); };
   const found = await collectDrakkenheimContent(drakkenheimGame({packs: [journal, items]}));
-  assert.deepEqual(requested, ['abc', 'conds']);
-  assert.deepEqual(itemIds, ['chip', 'dust', 'sick']);
+  assert.deepEqual(requested, ['abc', 'conds', 'explore', 'dconds']);
+  assert.deepEqual(itemIds, ['chip', 'fragment', 'shard', 'crystal', 'dust', 'bare', 'sick']);
+  const report = debugDrakkenheimCheat(drakkenheimGame({packs: [journal, items]}));
+  assert.equal(report.indexed.find(row => row.name === 'Delerium-Forged Blade')?.opened, false);
+  assert.equal(report.indexed.find(row => row.name === 'Delerium Chip')?.opened, true);
+  assert.equal(report.indexed.find(row => row.name === 'Drakkenheim Conditions')?.opened, true);
+  assert.equal(report.indexed.find(row => row.name === 'Appendix D: Delerium')?.opened, false);
+  assert.ok(report.used.some(row => row.path.includes('Delerium Chip')));
+  assert.ok(report.used.some(row => row.path.includes('Delerium Fragment')));
+  assert.ok(report.used.some(row => row.path.includes('Finding Delerium Deposits')));
+  assert.ok(report.chips.some(row => row.label === 'Delerium'));
   assert.deepEqual(found.items.map(item => item.labelText), ['Contamination', 'Delerium Search', 'Delerium']);
   assert.match(found.items[0].tipHTML, /Level 1: Fixture effect one/);
   assert.match(found.items[0].tipHTML, /Level 2: Fixture effect two/);
@@ -357,15 +376,24 @@ test('the Drakkenheim section is three pack chips, and conditions join the main 
   const search = found.items[1];
   assert.match(search.tipHTML, /Outside the Wall: DC 15/);
   assert.match(search.tipHTML, /Inside the Wall: DC 20/);
+  assert.match(search.tipHTML, /Outer City Delerium Deposits: DC 15/);
+  assert.match(search.tipHTML, /Inner City Delerium Deposits: DC 20/);
+  assert.match(search.tipHTML, /Fixture outer result/);
   assert.match(search.tipHTML, /Arcana, Investigation, or Survival/);
-  assert.doesNotMatch(search.tipHTML, /Deep Haze|Sludge|Effects on Characters/);
+  assert.doesNotMatch(search.tipHTML, /Deep Haze|Sludge|Effects on Characters|Constitution/);
   const values = found.items[2];
   assert.match(values.tipHTML, /Delerium Chip/);
+  assert.match(values.tipHTML, /Delerium Fragment/);
+  assert.match(values.tipHTML, /Delerium Shard/);
+  assert.match(values.tipHTML, /Delerium Crystal/);
   assert.match(values.tipHTML, /Price: 50 GP/);
   assert.match(values.tipHTML, /Weight: 0\.1 lb/);
+  assert.match(values.tipHTML, /Price: 100 GP/);
+  assert.match(values.tipHTML, /Weight: 0\.5 lb/);
   assert.match(values.tipHTML, /Fixture crystal/);
-  assert.doesNotMatch(values.tipHTML, /Appendix D|Rope|Delerium Dust/);
-  assert.deepEqual(found.conditions.map(item => item.labelText), ['Haze Bound', 'Haze Sick']);
+  assert.match(values.tipHTML, /Fixture delerium sample/);
+  assert.doesNotMatch(values.tipHTML, /Appendix D|Rope|Delerium Dust|Delerium-Forged Blade|4000/);
+  assert.deepEqual(found.conditions.map(item => item.labelText), ['Arcane Blight', 'Crystal Rot', 'Haze Bound', 'Haze Mark', 'Haze Sick']);
   assert.match(found.conditions.map(item => item.tipHTML).join(' '), /Fixture condition/);
   assert.match(found.conditions.map(item => item.tipHTML).join(' '), /Fixture sickness/);
   setDrakkenheimContent(found);
@@ -375,6 +403,8 @@ test('the Drakkenheim section is three pack chips, and conditions join the main 
     assert.match(conditions, /gm-cheat-chip--drakkenheim/);
     assert.match(conditions, />Haze Bound</);
     assert.match(conditions, />Haze Sick</);
+    assert.match(conditions, />Arcane Blight</);
+    assert.match(conditions, />Crystal Rot</);
     assert.doesNotMatch(html, /data-cheat-section="drakkenheim-mutations"|Madness|Amorphous/);
     const group = html.indexOf('data-cheat-section="drakkenheim"');
     const note = html.indexOf('class="gm-cheat-note"');
@@ -493,6 +523,7 @@ test('the tray adds Cheat Sheet after Triggers and does not register a new setti
   assert.match(main, /cheat-document/);
   assert.match(main, /focusin/);
   assert.match(main, /activateCheatTooltip/);
+  assert.match(main, /debugDrakkenheimCheat/);
   const calls = [...main.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g)].map(match => match[0]);
   assert.equal(calls.length, 8);
 });

@@ -55,24 +55,31 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-trigger-rule dd { margin:0; }
 
-/* Compact action selector above the single scrollable coin row. */
-#mlgm .gm-bulk { container: gm-bulk / inline-size; display:grid; grid-template-columns:minmax(0,1fr); gap:var(--ml-space-4); min-width:0; align-items:stretch; }
-#mlgm .gm-bulk > .ml-card { height:100%; min-width:0; }
-#mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,6.5rem) repeat(2,minmax(4rem,max-content)); gap:var(--ml-space-4); }
+/* The bulk panel is a one-column Core grid. Cards inside it must not inherit that span. */
+#mlgm .gm-bulk { display:grid !important; grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)) !important; gap:var(--ml-space-2); min-width:0; align-items:start; }
+#mlgm .gm-bulk > .ml-card { grid-column:auto !important; width:auto; max-width:none; height:auto; min-width:0; align-self:start; }
+#mlgm .gm-bulk > [data-mlgm-bulk="coins"] { grid-column:1 / -1 !important; }
+#mlgm .gm-bulk .gm-specialty-row { justify-content:flex-start; width:auto; max-width:100%; }
+#mlgm .gm-bulk .gm-specialty-field { flex:0 1 auto; width:auto; max-width:100%; }
+#mlgm .gm-bulk .gm-specialty-field > select,
+#mlgm .gm-bulk .gm-specialty-field > .ml-stepper { flex:0 1 14rem; width:auto; min-width:8rem; max-width:100%; }
+#mlgm .gm-bulk .gm-specialty-row > button { flex:0 0 auto; width:auto; margin-inline-start:0; }
+#mlgm .gm-bulk-coin-fields { display:grid; grid-template-columns:repeat(5,minmax(4.5rem,6.5rem)) repeat(2,max-content); gap:var(--ml-space-2); justify-content:start; }
 #mlgm .gm-bulk-coin-action { width:min(100%,26rem); }
 #mlgm .gm-label-help { display:inline-flex; align-items:center; gap:var(--ml-space-1); }
-@container gm-bulk (min-width: 32rem) {
-  #mlgm .gm-bulk { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  #mlgm .gm-bulk > [data-mlgm-bulk="coins"] { grid-column:1 / -1; }
-}
-@container gm-bulk (min-width: 48rem) { #mlgm .gm-bulk { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 #mlgm .gm-ambience-column .gm-ambience-actions { display:flex; flex-direction:column; align-items:stretch; gap:var(--ml-space-2); min-width:0; }
 #mlgm .gm-ambience-column .gm-ambience-actions .ml-item-row { align-items:stretch; }
 #mlgm .gm-ambience-column button[data-action="ambience"],
 #mlgm .gm-ambience-column button[data-action="saved"] { height:auto; min-height:var(--ml-control-height); width:100%; padding:var(--ml-space-2) var(--ml-space-3); white-space:normal; overflow:visible; text-align:center; line-height:1.3; }
-.gm-ambience-layer { align-items:center; gap:var(--ml-space-2); }
-.gm-ambience-layer .ml-check { flex:1 1 auto; min-width:0; }
-.gm-ambience-layer .ml-check > span { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Foundry v14: .application.dialog .standard-form .form-footer > button { flex:1 }. */
+#morelord-game-master-add-ambience :is(.form-footer, .window-footer, .dialog-buttons, footer) { justify-content:flex-start; align-items:center; }
+#morelord-game-master-add-ambience :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { flex:0 0 auto !important; width:auto !important; max-width:max-content; align-self:flex-start; padding:0.35rem 0.85rem; }
+#morelord-game-master-add-ambience .gm-ambience-layer { display:grid !important; grid-template-columns:auto minmax(0,1fr) auto max-content; align-items:center; gap:var(--ml-space-2); }
+#morelord-game-master-add-ambience .gm-ambience-check { margin:0; justify-self:start; }
+#morelord-game-master-add-ambience .gm-ambience-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#morelord-game-master-add-ambience .gm-ambience-layer > .ml-help-button { width:auto; flex:none; justify-self:center; padding:0.2rem; }
+#morelord-game-master-add-ambience .gm-ambience-volume { display:flex; align-items:center; gap:var(--ml-space-2); margin:0; white-space:nowrap; justify-self:end; }
+#morelord-game-master-add-ambience .gm-ambience-volume input { width:4.5rem; flex:none; }
 
 #mlgm .gm-bulk-coin-fields > button { align-self:end; }
 
