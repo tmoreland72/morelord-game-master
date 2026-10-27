@@ -34,17 +34,29 @@ module.exports = async function syncRelease({ github, context, core, root }) {
   // A queued run always reads current master; stop if it changed during validation.
   const { data: currentBranch } = await github.rest.repos.getBranch({ ...repo, branch: 'master' });
   if (currentBranch.commit.sha !== sha) throw new Error('master changed during synchronization; rerun the workflow');
+  // Tags that already exist were announced outside this run. 0.2.0 is one of them.
+  const tagExisted = Boolean(tag);
+  let createdRelease = false;
   if (!release) {
     ({ data: release } = await github.rest.repos.createRelease({
       ...repo, tag_name: version, target_commitish: sha, name: version,
       make_latest: 'true', generate_release_notes: true,
       body: 'Records the version already published through the master branch manifest. Installation and updates continue through the manifest URL in README.md. This entry does not add a new Foundry compatibility certification.'
     }));
+    createdRelease = true;
   } else if (latest?.tag_name !== version) {
     await github.rest.repos.updateRelease({ ...repo, release_id: release.id, make_latest: 'true' });
   }
   const verified = await manifest(`refs/tags/${version}`);
   const { data: published } = await github.rest.repos.getLatestRelease(repo);
   if (verified.version !== version || published.tag_name !== version) throw new Error('Release synchronization verification failed');
+  const publishWebsite = createdRelease && !tagExisted;
+  if (publishWebsite) core.info(`Website publish queued for new release ${version}.`);
+  else if (createdRelease) core.info(`Website publish skipped for existing tag ${version}.`);
   core.info(`Manifest, tag and latest release agree: ${version}`);
+  return {
+    publishWebsite,
+    version,
+    githubReleaseUrl: release.html_url || `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${version}`
+  };
 };
