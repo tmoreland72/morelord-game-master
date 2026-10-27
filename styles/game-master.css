@@ -11,7 +11,8 @@
 #mlgm .ml-stepper button { height:auto; min-height:0; max-height:none; width:auto; flex:1 1 0; align-self:stretch; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) { justify-content:flex-start; align-items:center; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { flex:0 0 auto !important; width:auto !important; max-width:max-content; align-self:center; padding-inline:0.85rem; }
-#mlgm [hidden] { display:none!important; }
+#mlgm [hidden],
+#mlgm .gm-request-row > .gm-inline[data-mlgm-character-field][hidden] { display:none!important; }
 #mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:75vh; }
 #mlgm .gm-column { min-width:0; }

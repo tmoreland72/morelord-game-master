@@ -70,7 +70,7 @@ test("changing the request type replaces the second dropdown with that type's SR
   assert.match(source, /if \(el\.name === "checkType"\) refreshCheckSelect\(card\);/);
 });
 
-test("the character field shows only when who rolls is one character", () => {
+test("changing who rolls shows and hides the character field without a refresh", async () => {
   assert.equal(characterFieldVisible("player"), true);
   assert.equal(characterFieldVisible("party"), false);
   assert.equal(characterFieldVisible("tokens"), false);
@@ -78,26 +78,72 @@ test("the character field shows only when who rolls is one character", () => {
   const css = readFileSync(new URL("../styles/game-master.css", import.meta.url), "utf8");
   assert.match(source, /data-mlgm-character-field\$\{characterFieldVisible\(scope\) \? "" : " hidden"\}/);
   assert.doesNotMatch(source, /scope === "player" \? inlineField\("Character"/);
+  assert.match(source, /if \(card\?\.dataset\.rollCard === "check"\) syncCharacterField\(card\);/);
+  assert.match(css, /data-mlgm-character-field\]\[hidden\] \{ display:none!important; \}/);
   const sync = source.slice(source.indexOf("function syncCharacterField"), source.indexOf("function specialtyGrid"));
-  const field = {hidden: false, value: "actor-a"};
-  const scope = {value: "party"};
-  const card = {querySelector(selector) {
-    if (selector === "[data-mlgm-character-field]") return field;
-    if (selector.includes("scope")) return scope;
-    return null;
-  }};
-  const context = vm.createContext({characterFieldVisible, card});
-  vm.runInContext(sync, context);
-  vm.runInContext("syncCharacterField(card)", context);
-  assert.equal(field.hidden, true);
-  assert.equal(field.value, "actor-a");
-  scope.value = "player";
-  vm.runInContext("syncCharacterField(card)", context);
+  const change = source.slice(source.indexOf("async function onChange"), source.indexOf("function volumeFromPercent"));
+  const character = {value: "ada"};
+  const scope = {name: "scope", value: "party"};
+  const field = {
+    hidden: true,
+    value: character.value,
+    style: {
+      display: "none",
+      setProperty(_name, value) { this.display = value; },
+      removeProperty() { this.display = ""; }
+    }
+  };
+  const card = {
+    dataset: {rollCard: "check"},
+    querySelector(selector) {
+      if (selector === "[data-mlgm-character-field]") return field;
+      if (selector.includes("scope")) return scope;
+      return null;
+    }
+  };
+  const saved = [];
+  let rendered = 0;
+  const context = vm.createContext({
+    characterFieldVisible,
+    tab: "rolls",
+    state: {last: {check: {scope: "party", actorId: "ada"}}},
+    card,
+    render() { rendered += 1; },
+    readBuilder: () => ({scope: scope.value, actorId: character.value}),
+    persist: async changeFn => {
+      const next = {last: {check: {}}};
+      changeFn(next);
+      saved.push(next.last.check.scope);
+    }
+  });
+  vm.runInContext(`${sync}\n${change}`, context);
+  const choose = async (value, target = scope) => {
+    scope.value = value;
+    context.event = {target};
+    await vm.runInContext("onChange(event)", context);
+  };
+  scope.closest = selector => selector === "[data-roll-card]" ? card : null;
+  await choose("player");
   assert.equal(field.hidden, false);
-  assert.equal(field.value, "actor-a");
-  assert.match(source, /if \(el\.name === "scope"\) syncCharacterField\(card\);/);
-  assert.match(source, /syncCharacterField\(root\.querySelector\('\[data-roll-card="check"\]'\)\)/);
-  assert.match(css, /#mlgm \[hidden\] \{ display:none!important; \}/);
+  assert.equal(field.style.display, "");
+  assert.equal(rendered, 0);
+  assert.deepEqual(saved, ["player"]);
+  assert.equal(context.state.last.check.scope, "player");
+  assert.equal(character.value, "ada");
+  const option = {name: "", closest: selector => selector === "[data-roll-card]" ? card : null};
+  await choose("party", option);
+  assert.equal(field.hidden, true);
+  assert.equal(field.style.display, "none");
+  assert.equal(rendered, 0);
+  assert.deepEqual(saved, ["player", "party"]);
+  assert.equal(character.value, "ada");
+  await choose("tokens", option);
+  assert.equal(field.hidden, true);
+  assert.equal(rendered, 0);
+  await choose("player", option);
+  assert.equal(field.hidden, false);
+  assert.equal(rendered, 0);
+  assert.equal(character.value, "ada");
 });
 
 test("who rolls uses the party, selected party tokens, or one player", () => {

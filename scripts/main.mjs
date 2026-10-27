@@ -146,7 +146,11 @@ Hooks.once("ready", async () => {
     text: macroRunLabel
   }),{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
-  root.addEventListener("change", event => onChange(event).catch(fail));
+  root.addEventListener("change", event => {
+    const card = event.target?.closest?.("[data-roll-card]");
+    if (card?.dataset.rollCard === "check") syncCharacterField(card);
+    onChange(event).catch(fail);
+  });
   root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
   root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropTrayItem(event).catch(fail);}});
   root.addEventListener("dragstart",event=>{
@@ -166,6 +170,8 @@ Hooks.once("ready", async () => {
     if (next) { event.preventDefault(); tab = next; render(); root.querySelector(`#mlgm-tab-${next}`).focus(); }
   });
   root.addEventListener("input", event => {
+    const card = event.target?.closest?.("[data-roll-card]");
+    if (card?.dataset.rollCard === "check") syncCharacterField(card);
     const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
     if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
@@ -298,7 +304,10 @@ function refreshCheckSelect(card) {
 function syncCharacterField(card) {
   const field = card?.querySelector("[data-mlgm-character-field]");
   if (!field) return;
-  field.hidden = !characterFieldVisible(card.querySelector('[name="scope"]')?.value);
+  const show = characterFieldVisible(card.querySelector('[name="scope"]')?.value);
+  field.hidden = !show;
+  if (!show) field.style?.setProperty?.("display", "none", "important");
+  else field.style?.removeProperty?.("display");
 }
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
@@ -640,8 +649,12 @@ async function onChange(event) {
     // The tray stays in place so a field save does not swallow the next click.
     // The second dropdown is the exception: its options belong to the new type.
     if (el.name === "checkType") refreshCheckSelect(card);
-    if (el.name === "scope") syncCharacterField(card);
-    await persist(n => { n.last.check = readBuilder(); });
+    // Visibility follows the select immediately. The tray does not rebuild on
+    // this change, and the saved scope is only read again on the next render.
+    syncCharacterField(card);
+    const draft = readBuilder();
+    if (state?.last) state.last.check = draft;
+    await persist(n => { n.last.check = draft; });
     return;
   }
   if (card?.dataset.rollCard === "fate") { await persist(n => { n.last.fate = {scope: new FormData(card).get("scope") === "party" ? "party" : "tokens"}; }); return; }
