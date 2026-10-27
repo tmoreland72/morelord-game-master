@@ -40,8 +40,8 @@ try {
         const checks=await player.evaluate(`({tray:!!document.querySelector('#mlgm'),button:!!document.querySelector('[data-message-id="${fixture.requestId}"] [data-mlgm-actor="${fixture.actorId}"]'),prompts:[...document.querySelectorAll('.application.dialog')].length})`);
         if(checks.tray || !checks.button)throw Error('Player did not receive the chat request, or received a GM tray.');
         const replies=await Promise.all([
-          player.evaluate(`var requests=await import("./modules/morelord-game-master/scripts/requests.mjs");await requests.rollRequest(${JSON.stringify(fixture.requestId)},${JSON.stringify(fixture.actorId)},undefined,"adv")`),
-          browser.evaluate(`await requests.rollRequest(${JSON.stringify(fixture.requestId)},${JSON.stringify(fixture.actorId)},undefined,"adv")`)
+          player.evaluate(`var requests=await import("./modules/morelord-game-master/scripts/requests.mjs");await requests.rollRequest(${JSON.stringify(fixture.requestId)},${JSON.stringify(fixture.actorId)})`),
+          browser.evaluate(`await requests.rollRequest(${JSON.stringify(fixture.requestId)},${JSON.stringify(fixture.actorId)})`)
         ]);
         if(replies.some(r=>!r.accepted || 'total' in r))throw Error('Player/GM race returned an invalid acknowledgement.');
         const result=await browser.evaluate(`var results=game.messages.filter(m=>m.getFlag('morelord-game-master','result')?.requestId===${JSON.stringify(fixture.requestId)});({count:results.length,id:results[0]?.id,private:results[0]?.blind&&results[0].whisper.every(id=>game.users.get(id).isGM)})`);

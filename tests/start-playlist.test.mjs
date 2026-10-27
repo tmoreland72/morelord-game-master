@@ -12,7 +12,15 @@ test('the tray stays above Foundry dialogs and below notifications', () => {
 });
 
 test('Game Master forms use the native modal layer above the tray', () => {
-  assert.match(source.slice(source.indexOf('async function form('), source.indexOf('Hooks.once("init"')), /DialogV2\.wait\(\{ modal: true,/);
+  const form = source.slice(source.indexOf('async function form('), source.indexOf('Hooks.once("init"'));
+  const dialog = readFileSync(new URL('../scripts/dialog.mjs', import.meta.url), 'utf8');
+  assert.match(form, /\{modal = true, validate\} = \{\}/);
+  assert.match(form, /openDialog\(/);
+  assert.match(dialog, /DialogV2/);
+  assert.match(dialog, /rejectClose: false/);
+  assert.match(dialog, /result === false/);
+  assert.match(dialog, /form\.noValidate = true/);
+  assert.match(dialog, /notifications\?\.warn/);
 });
 
 test('a tray action re-enables its button and shows a notification when it fails', async () => {
@@ -31,7 +39,7 @@ test('a tray action re-enables its button and shows a notification when it fails
   assert.deepEqual(notes, ['Add tracks to this playlist before starting it.']);
 });
 
-test('Start Playlist starts the chosen playlist at the dialog volume', async () => {
+test('Add Playlist starts the chosen playlist at the dialog volume', async () => {
   const fn = source.slice(source.indexOf('async function run(type, config)'), source.indexOf('async function ambienceForm'));
   const writes = [];
   const played = [];
@@ -84,8 +92,11 @@ test('Start Playlist starts the chosen playlist at the dialog volume', async () 
   });
   vm.runInContext(fn, context);
   await vm.runInContext('playlistForm()', context);
-  assert.equal(dialog.title, 'Start Playlist');
-  assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['start', 'Start']]);
+  assert.equal(dialog.title, 'Add Playlist');
+  assert.deepEqual(JSON.parse(JSON.stringify(dialog.actions)), [['add', 'Add']]);
+  assert.equal(state.saved[0].config.playlist, 'later');
+  assert.equal(state.last.playlist.playlist, '');
+  assert.equal(state.last.playlist.volume, state.saved[0].config.volume);
   assert.deepEqual(stopped, ['now']);
   assert.deepEqual(played, ['later']);
   const curved = 0.4 ** 1.5;

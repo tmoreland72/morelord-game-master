@@ -3,12 +3,15 @@ import { holdTestRollAnimations, untilRollCheck } from "../../../morelord-core/s
 import { createRequest } from "../requests.mjs";
 export const completedRollCheck = { id: "game-master.completed-roll-presentation", async run() {
   const actors = [], gate = holdTestRollAnimations(message => actors.some(actor => actor.id === message.speaker?.actor));
+  const suppressDialog = (_config, dialog) => { dialog.configure = false; };
   let request;
   try {
+    Hooks.on("dnd5e.preRollSkill", suppressDialog);
+    Hooks.on("dnd5e.preRollSkillV2", suppressDialog);
     for (const name of ["Immediate roll A", "Immediate roll B"]) actors.push(await Actor.create({name,type:"character",ownership:{default:3}}));
     request = await createRequest({kind:"skill",skill:"arc",actorIds:actors.map(actor => actor.id),dc:10,blind:true});
     for (const [index, actor] of actors.entries()) {
-      const select = () => document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-actor="${actor.id}"][data-mlgm-mode="normal"]`);
+      const select = () => document.querySelector(`[data-message-id="${request.id}"] [data-mlgm-actor="${actor.id}"]`);
       await untilRollCheck(select, "The grouped request renders a separate button for each actor.");
       const button=select(), row=button.closest(".ml-card");
       assert(!button.disabled,"The GM can roll the next character while earlier dice animate.");
@@ -24,6 +27,8 @@ export const completedRollCheck = { id: "game-master.completed-roll-presentation
     gate.stop();
     await untilRollCheck(() => summaries().length === 1, "Exactly one summary appears after the animations.");
   } finally {
+    Hooks.off("dnd5e.preRollSkill", suppressDialog);
+    Hooks.off("dnd5e.preRollSkillV2", suppressDialog);
     gate.stop();
     if(request) {
       const ids=game.messages.filter(message=>message.id===request.id || message.getFlag("morelord-game-master","result")?.requestId===request.id || message.getFlag("morelord-game-master","summary")?.requestId===request.id).map(message=>message.id);

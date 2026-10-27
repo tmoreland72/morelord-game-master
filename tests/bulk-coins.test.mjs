@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {COINS, readCoins, coinShares, planCoins, initializeBulkCoins, applyBulkCoins, formatCoins} from '../scripts/bulk-coins.mjs';
+import {readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
 
 const coins = values => Object.fromEntries(COINS.map(key => [key, values[key] ?? 0]));
 const actor = (id, values) => ({id, uuid:`Actor.${id}`, name:id, type:'character', system:{currency:coins(values)}});
@@ -93,7 +94,7 @@ test('Core-routed GM actions update only configured characters, post public card
     messages.push(message); return message;
   }};
   initializeBulkCoins(() => ['a', 'b', 'a']);
-  assert.equal(registrations.get('apply').options.serialize, 'morelord-game-master.bulk-coins');
+  assert.equal(registrations.get('apply').options.serialize, 'morelord-game-master.bulk-actions');
   await applyBulkCoins('each-remove', {gp:5});
   assert.equal(actors.get('a').system.currency.gp, 0); assert.equal(actors.get('b').system.currency.gp, 5);
   assert.equal(actors.get('outside').system.currency.gp, 100);
@@ -102,14 +103,36 @@ test('Core-routed GM actions update only configured characters, post public card
   assert.match(messages[0].content, /ml-chat-card/); assert.match(messages[0].content, /ml-actor-identity/);
   assert.equal((await applyBulkCoins('each-remove', {gp:5})).alreadyApplied, true);
   assert.equal(writes.length, 1);
-  await assert.rejects(registrations.get('apply').handler({operation:'each-add', coins:{gp:99}, operationId:'test-forgery-0001'}, {senderUserId:player.id}), /eligible GM/);
+  const stored = new Map();
+  game.settings = {
+    get: (namespace, key) => stored.get(`${namespace}.${key}`),
+    set: async (namespace, key, value) => { stored.set(`${namespace}.${key}`, value); }
+  };
+  await writeBulkUndo({kind: 'xp', labelKey: 'xp.each', operation: 'each', actors: [{id: 'a', before: 1}]});
+  actors.get('a').system.currency = coins({});
+  actors.get('b').system.currency = coins({});
+  const none = await applyBulkCoins('each-remove', {gp: 1}, 'coin-noop-operation01');
+  assert.equal(none.unchanged, true);
+  assert.equal(none.notice, 'No coin balances changed.');
+  assert.equal(readBulkUndo().kind, 'xp');
   assert.equal(writes.length, 1);
+  assert.match(messages.at(-1).content, /Skipped 2 whose coins did not change/);
+  actors.get('b').system.currency = coins({gp: 4});
+  const mixed = await applyBulkCoins('each-remove', {gp: 1}, 'coin-skip-operation01');
+  assert.equal(mixed.unchanged, undefined);
+  assert.deepEqual(writes.at(-1).map(update => update._id), ['b']);
+  assert.equal(actors.get('a').system.currency.gp, 0);
+  assert.equal(actors.get('b').system.currency.gp, 3);
+  assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b']);
+  assert.match(messages.at(-1).content, /Skipped 1 whose coins did not change/);
+  await assert.rejects(registrations.get('apply').handler({operation:'each-add', coins:{gp:99}, operationId:'test-forgery-0001'}, {senderUserId:player.id}), /eligible GM/);
+  assert.equal(writes.length, 2);
   game.user = player; await assert.rejects(applyBulkCoins('each-add', {gp:1}), /Only GMs/); game.user = gm;
   Actor.updateDocuments = async () => { throw Error('Fixture update failure'); };
   await assert.rejects(applyBulkCoins('each-add', {gp:1}, 'test-operation-0002'), /Fixture/);
-  assert.equal(messages[1].getFlag('', 'bulkCoins').stage, 'failed');
+  assert.equal(messages.at(-1).getFlag('', 'bulkCoins').stage, 'failed');
   await assert.rejects(applyBulkCoins('each-add', {gp:1}, 'test-operation-0002'), /already started/);
-  assert.equal(actors.get('b').system.currency.gp, 5);
+  assert.equal(actors.get('b').system.currency.gp, 3);
   assert.deepEqual(warnings, []);
 });
 

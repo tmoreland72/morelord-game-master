@@ -1,5 +1,5 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
-import { rollControls, canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
+import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
 
 export const core = () => {
@@ -83,11 +83,12 @@ function canRoll(message, actor, user = game.user) {
   if (!actor || !validRequest(message)?.actorIds.includes(actor.id) || core().users.isIgnored(user) || !user?.active) return false;
   return canRollForActor(actor,user);
 }
-export function requestHTML(req) {
-  return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${skillButtons(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : ["skill","foraging","ability","save"].includes(req.kind) ? skillButtons(id) : `<button type="button" data-mlgm-actor="${e(id)}">Roll</button>`}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
+function rollButton(id) {
+  return `<button type="button" data-mlgm-actor="${e(id)}">Roll</button>`;
 }
-function skillButtons(id) {
-  return rollControls(mode => `data-mlgm-actor="${e(id)}" data-mlgm-mode="${mode}"`);
+export function requestHTML(req) {
+  const controls = id => req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${rollButton(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : rollButton(id);
+  return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${controls(id)}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
 }
 
 export async function createRequest(config) {
@@ -123,34 +124,70 @@ export async function createRequest(config) {
   return message;
 }
 
-export async function rollRequest(requestId, actorId, skillId, mode = "normal") {
+export class RollCancelled extends Error {
+  constructor() { super("Roll cancelled."); this.name = "RollCancelled"; }
+}
+const firstRoll = result => Array.isArray(result) ? result[0] : result?.rolls?.[0] ?? result?.roll ?? result ?? null;
+function packRoll(roll) {
+  if (!roll || typeof roll !== "object") return null;
+  if (typeof roll.toJSON === "function") return {packed: true, data: roll.toJSON(), evaluated: roll._evaluated === true};
+  return {packed: false, roll};
+}
+async function materializeRoll(prepared, kind) {
+  if (!prepared) return null;
+  if (prepared.packed === false) return prepared.roll ?? null;
+  const data = prepared.data;
+  if (!data || typeof data !== "object") throw new Error("The prepared roll could not be read.");
+  const RollClass = CONFIG.Dice?.D20Roll ?? globalThis.Roll;
+  const roll = typeof RollClass.fromData === "function" ? RollClass.fromData(data) : new RollClass(data.formula);
+  if (kind === "death") return roll;
+  const formula = roll.formula ?? data.formula;
+  const fresh = new RollClass(formula, roll.data, roll.options);
+  if (typeof fresh.evaluate === "function") await fresh.evaluate({allowInteractive: false});
+  return fresh;
+}
+export async function prepareRequestRoll(req, actor, skillId) {
+  if (!req || !actor) throw new Error("This request is no longer available.");
+  if (["encounter", "surge"].includes(req.kind)) return null;
+  if (req.kind === "death") {
+    if (req.blind !== false) return null;
+    const roll = firstRoll(await actor.rollDeathSave({}, {}, {create: false}));
+    if (!roll) throw new RollCancelled();
+    return roll;
+  }
+  if (req.kind === "delerium" && skillId === "decline") return null;
+  const roll = await rollNative(actor, req, skillId, {}, {evaluate: false});
+  if (!roll) throw new RollCancelled();
+  return roll;
+}
+export async function rollRequest(requestId, actorId, skillId, prepared = null) {
   const gm = authority(game.messages.get(requestId));
   if (!gm) throw new Error("An active GM is required to resolve this check.");
-  const acknowledgement = await channel.executeAsUser("roll",{requestId,actorId,skillId,mode},gm.id);
+  const data = {requestId, actorId, skillId};
+  if (prepared && typeof prepared === "object") data.roll = packRoll(prepared);
+  const acknowledgement = await channel.executeAsUser("roll", data, gm.id);
   if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
   return acknowledgement;
 }
-async function rollActorCheck(actor, req, mode) {
-  const advantage = mode === "adv", disadvantage = mode === "dis";
+async function rollNative(actor, req, skillId, dialog, {evaluate} = {}) {
+  const message = {create: false};
+  const target = req.dc == null ? {} : {target: req.dc};
+  const pending = evaluate === false ? {evaluate: false} : {};
   if (req.kind === "ability" || req.kind === "save") {
     const method = req.kind === "ability" ? "rollAbilityCheck" : "rollSavingThrow";
     if (typeof actor[method] !== "function") throw new Error(`${actor.name} cannot make ${req.kind === "ability" ? "an ability check" : "a saving throw"}.`);
-    const result = await actor[method](
-      {ability: req.ability, ...(req.dc == null ? {} : {target: req.dc}), ...(advantage ? {advantage: true} : {}), ...(disadvantage ? {disadvantage: true} : {})},
-      {configure: false},
-      {create: false}
-    );
-    return Array.isArray(result) ? result[0] : result?.rolls?.[0] ?? result?.roll ?? result ?? null;
+    return firstRoll(await actor[method]({ability: req.ability, ...target, ...pending}, dialog, message));
   }
-  return (await core().rolls.skill(actor, req.skill, {dc: req.dc ?? null, configure: false, create: false, advantage, disadvantage})).roll;
+  const skill = req.kind === "delerium" ? skillId : req.skill;
+  if (typeof actor.rollSkill !== "function") throw new Error(`${actor.name} cannot make a skill check.`);
+  return firstRoll(await actor.rollSkill({skill, ...target, ...pending}, dialog, message));
 }
-async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execution) {
+async function resolveRequest({requestId,actorId,skillId,roll:prepared}, execution) {
   const message = game.messages.get(requestId), req = validRequest(message), actor = game.actors.get(actorId), sender = game.users.get(execution.senderUserId);
   if (!game.user.isGM || game.user.id !== authority(message)?.id) return {accepted:false,reason:"The request's active GM must resolve this check."};
   if (!req || !req.actorIds.includes(actorId)) return {accepted:false,reason:"This request is no longer available."};
   if (!canRoll(message,actor,sender)) return {accepted:false,reason:"The check is assigned to another player. Any GM may roll for this character."};
-  if (!["normal","adv","dis"].includes(mode) || (mode !== "normal" && !["skill","delerium","foraging","ability","save"].includes(req.kind))) return {accepted:false,reason:"Invalid roll mode for this check."};
-  // Results are authored by the authority GM. Never trust client-supplied dice or totals.
+  // Results are authored by the authority GM. Client dice are rebuilt and evaluated here, except a public death save that already updated its sheet.
   if (isComplete(message,actorId)) { scheduleRequestOutcomes(message); return {accepted:true,alreadyResolved:true}; }
   if (req.kind === "surge") {
     // Finish any interrupted earlier check before consuming this trigger's next threshold.
@@ -166,7 +203,9 @@ async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execu
     return {accepted:true};
   }
   let roll, declined = false;
-  if (["encounter","surge"].includes(req.kind)) roll = await new Roll(`1d${req.kind === "surge" ? surgeDie(req) : req.die}`).evaluate({allowInteractive:false});
+  const supplied = prepared && !["encounter","surge"].includes(req.kind) && !(req.kind === "delerium" && skillId === "decline");
+  if (supplied) roll = await materializeRoll(prepared, req.kind);
+  else if (["encounter","surge"].includes(req.kind)) roll = await new Roll(`1d${req.kind === "surge" ? surgeDie(req) : req.die}`).evaluate({allowInteractive:false});
   else if (req.kind === "death") {
     // Native bonuses and advantage apply, but private checks must not reveal the outcome through sheet counters.
     const preventUpdate = req.blind !== false && Hooks.on("dnd5e.rollDeathSave", (_rolls, data) => { if (data.subject === actor) return false; });
@@ -177,9 +216,9 @@ async function resolveRequest({requestId,actorId,skillId,mode = "normal"}, execu
     if (skillId === "decline") declined = true;
     else {
       if (!api.deleriumSearch.getSkillOptions().some(s => s.id === skillId)) return {accepted:false,reason:"Choose a Craftworks search skill."};
-      roll = (await core().rolls.skill(actor,skillId,{dc:req.dc,configure:false,create:false,advantage:mode === "adv",disadvantage:mode === "dis"})).roll;
+      roll = await rollNative(actor, req, skillId, {configure:false});
     }
-  } else roll = await rollActorCheck(actor, req, mode);
+  } else roll = await rollNative(actor, req, skillId, {configure:false});
   if (!roll && !declined) return {accepted:false,reason:"No roll was made. For death saves, verify the character is at zero HP and has not already completed their saves."};
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),flavor:e(`${actor.name} · ${requestTitle(req)}`),rolls:roll ? [roll] : [],content:declined ? `<section class="ml-chat-card"><p>${e(actor.name)} declined the search.</p></section>` : "",blind:req.blind !== false,
     whisper:req.blind === false ? [] : game.users.filter(u => u.isGM).map(u => u.id),
@@ -287,8 +326,13 @@ export function initializeRequests() {
       btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
       btn.addEventListener("click",async () => {
         const skill = btn.dataset.mlgmSkill ?? btn.closest('.ml-card')?.querySelector('[data-mlgm-search-skill]')?.value;
-        try { await submitChatRoll(message,actor.id,btn.closest(".ml-card"), () => rollRequest(message.id,actor.id,skill,btn.dataset.mlgmMode ?? "normal")); }
-        catch(error) { ui.notifications.error(error.message); }
+        try {
+          await submitChatRoll(message,actor.id,btn.closest(".ml-card"), async () => {
+            const prepared = await prepareRequestRoll(validRequest(message), actor, skill);
+            return rollRequest(message.id, actor.id, skill, prepared);
+          });
+        }
+        catch(error) { if (error?.name !== "RollCancelled") ui.notifications.error(error.message); }
         finally { refreshRequests(); }
       });
     }

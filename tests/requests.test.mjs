@@ -7,7 +7,7 @@ import * as rolls from "../../morelord-core/scripts/services/skill-roll-service.
 import { actorIdentity } from "../../morelord-core/scripts/ui/actor-identity.js";
 import { DeleriumSearchService } from "../../morelord-craftworks/scripts/acquisition/delerium-search-service.mjs";
 import { AcquisitionSessionManager } from "../../morelord-craftworks/scripts/acquisition/session-manager.mjs";
-import { initializeRequests,createRequest,requestHTML,recipient } from "../scripts/requests.mjs";
+import { initializeRequests,createRequest,requestHTML,recipient,prepareRequestRoll } from "../scripts/requests.mjs";
 const ID="morelord-game-master";
 class Collection extends Map {get contents(){return [...this.values()];} [Symbol.iterator](){return this.values();} filter(f){return this.contents.filter(f);} find(f){return this.contents.find(f);} some(f){return this.contents.some(f);} }
 const collection=a=>new Collection(a.map(x=>[x.id,x]));
@@ -18,7 +18,11 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   let dieTotal=4;
   let skillCalls=0,dieCalls=0,deathUpdates=0,dispatch,holdAnimations=false; const warnings=[];
   const actor={id:"actor",uuid:"Actor.actor",name:"Aster",type:"character",hasPlayerOwner:true,isOwner:true,system:{skills:{prc:{}}},testUserPermission:u=>u.isGM||u.id==="player",
-    async rollSkill(config,_dialog,message){assert.equal(message.create,false);skillCalls++;return [{total:15,options:{target:config.target},dice:[{faces:20,results:[{result:15}]}]}];},
+    async rollSkill(config,dialog,message){
+      assert.equal(message.create,false);assert.equal(config.advantage,undefined);assert.equal(config.disadvantage,undefined);
+      if(config.evaluate===false){assert.deepEqual(dialog,{});return [{formula:"1d20+1",options:{},_evaluated:false,toJSON(){return {formula:this.formula,options:this.options,evaluated:false};}}];}
+      assert.equal(dialog.configure,false);skillCalls++;return [{total:15,options:{target:config.target},dice:[{faces:20,results:[{result:15}]}]}];
+    },
     async rollDeathSave(_config,_dialog,message){assert.equal(message.create,false);const result=[{total:12}];if(Hooks.call("dnd5e.rollDeathSave",result,{subject:this}))deathUpdates++;return result;}};
   player.character=actor;
   globalThis.game={user:gm,users:collection([gm,assistant,player,other]),actors:collection([actor]),messages:collection([]),system:{id:"dnd5e"},modules:collection([{id:"morelord-core",active:true}]),i18n:{localize:x=>x},settings:{settings:new Map([["morelord-core.ignoredUserIds",true]]),get:()=>[]},packs:[]};
@@ -35,7 +39,8 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   const settle=async()=>{await new Promise(resolve=>setImmediate(resolve));await transport.runSerialized(`${ID}.rolls`,()=>{});};
   const resolve=async(m,who=player,skillId)=>{const ack=await dispatch({namespace:ID,type:"roll",data:{requestId:m.id,actorId:actor.id,skillId},context:{},senderUserId:who.id,messageId:crypto.randomUUID(),targetUserId:gm.id});await settle();return ack;};
   const check=await createRequest({actorIds:[actor.id],skill:"prc",dc:14});
-  assert.match(check.content,/DC 14/);assert.doesNotMatch(requestHTML({...check.getFlag(ID,"request"),dc:null}),/DC /);
+  assert.match(check.content,/DC 14/);assert.match(check.content,/>Roll</);assert.doesNotMatch(check.content,/data-mlgm-mode|ml-roll-controls/);
+  assert.doesNotMatch(requestHTML({...check.getFlag(ID,"request"),dc:null}),/DC /);
   assert.equal(recipient(actor),player);assert.deepEqual(check.whisper,[]);assert.equal(check.blind,false);
   assert.equal((await resolve(check,other)).accepted,false);
   const replies=await Promise.all([resolve(check,player),resolve(check,assistant)]);
@@ -54,7 +59,7 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   assert.equal((events.get("dnd5e.rollDeathSave")??[]).length,0);
   const sessions=new AcquisitionSessionManager(),service=new DeleriumSearchService({sessions,contentPacks:{enabled:()=>[{id:"monsters-of-drakkenheim"}]}});
   game.modules.set("morelord-craftworks",{active:true,api:{sessions,deleriumSearch:service}});
-  const search=await createRequest({kind:"delerium",actorIds:[actor.id],zoneId:"outer"});assert.match(search.content,/Arcana/);assert.match(search.content,/Investigation/);assert.match(search.content,/Survival/);
+  const search=await createRequest({kind:"delerium",actorIds:[actor.id],zoneId:"outer"});assert.match(search.content,/Arcana/);assert.match(search.content,/Investigation/);assert.match(search.content,/Survival/);assert.match(search.content,/Decline search/);assert.doesNotMatch(search.content,/data-mlgm-mode|ml-roll-controls/);
   assert.equal(Object.isFrozen(search.getFlag(ID,"request").searchSkills),false);
   await resolve(search,gm,"inv");
   const summary=game.messages.find(m=>m.getFlag(ID,"search")?.requestId===search.id);
@@ -78,7 +83,7 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   game.settings.get=(ns,key)=>ns==='morelord-journeys'?{foraging:[7,11,16,21,26,31]}:previousGet(ns,key);
   const forage=await createRequest({kind:'foraging',skill:'sur',terrainIndex:0,actorIds:[actor.id]});
   assert.equal(forage.getFlag(ID,'request').dc,7);
-  assert.match(forage.content,/Lush forest or meadow/);
+  assert.match(forage.content,/Lush forest or meadow/);assert.doesNotMatch(forage.content,/data-mlgm-mode|ml-roll-controls/);
   await resolve(forage,gm);
   const food=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===forage.id);
   assert.match(food.content,/Food found: 1 meals/);assert.doesNotMatch(food.content,/Average/);
@@ -150,11 +155,15 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   holdAnimations=false;
   CONFIG.DND5E.abilities={str:{label:"Strength"},dex:{label:"Dexterity"},wis:{label:"Wisdom"}};
   const abilityConfigs=[];
-  const rollAbility=async(config,_dialog,message)=>{assert.equal(message.create,false);abilityConfigs.push(config);return [{total:18,dice:[{faces:20,results:[{result:18}]}]}];};
+  const rollAbility=async(config,dialog,message)=>{
+    assert.equal(message.create,false);assert.equal(config.advantage,undefined);assert.equal(config.disadvantage,undefined);
+    if(config.evaluate===false){assert.deepEqual(dialog,{});return [{formula:"1d20+2",options:{},_evaluated:false,toJSON(){return {formula:this.formula,options:this.options,evaluated:false};}}];}
+    assert.equal(dialog.configure,false);abilityConfigs.push(config);return [{total:18,dice:[{faces:20,results:[{result:18}]}]}];
+  };
   actor.rollAbilityCheck=rollAbility;second.rollAbilityCheck=rollAbility;
-  actor.rollSavingThrow=async(config,_dialog,message)=>{assert.equal(message.create,false);assert.equal(config.ability,"dex");assert.equal(config.target,12);return [{total:9,dice:[{faces:20,results:[{result:9}]}]}];};
+  actor.rollSavingThrow=async(config,dialog,message)=>{assert.equal(message.create,false);assert.equal(dialog.configure,false);assert.equal(config.advantage,undefined);assert.equal(config.ability,"dex");assert.equal(config.target,12);return [{total:9,dice:[{faces:20,results:[{result:9}]}]}];};
   const ability=await createRequest({kind:"ability",ability:"wis",dc:15,blind:false,actorIds:[actor.id,second.id]});
-  assert.match(ability.content,/Wisdom check/);assert.match(ability.content,/DC 15/);assert.match(ability.content,/data-mlgm-mode="adv"/);
+  assert.match(ability.content,/Wisdom check/);assert.match(ability.content,/DC 15/);assert.match(ability.content,/>Roll</);assert.doesNotMatch(ability.content,/data-mlgm-mode|ml-roll-controls/);
   await resolve(ability,gm);
   assert.equal(game.messages.some(m=>m.getFlag(ID,"summary")?.requestId===ability.id),false);
   await dispatch({namespace:ID,type:"roll",data:{requestId:ability.id,actorId:second.id,mode:"adv"},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
@@ -162,7 +171,7 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   const abilitySummary=game.messages.find(m=>m.getFlag(ID,"summary")?.requestId===ability.id);
   assert.match(abilitySummary.content,/Average: 18.00/);assert.match(abilitySummary.content,/Pass/);
   assert.equal(abilitySummary.blind,false);assert.deepEqual(abilitySummary.whisper,[]);
-  assert.equal(abilityConfigs.at(-1).advantage,true);assert.equal(abilityConfigs.at(-1).ability,"wis");
+  assert.equal(abilityConfigs.at(-1).advantage,undefined);assert.equal(abilityConfigs.at(-1).ability,"wis");assert.equal(abilityConfigs.at(-1).target,15);
   const save=await createRequest({kind:"save",ability:"dex",dc:12,actorIds:[actor.id]});
   assert.match(save.content,/Dexterity saving throw/);
   await resolve(save,gm);
@@ -170,4 +179,32 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   assert.match(saveSummary.content,/Fail/);assert.match(saveSummary.content,/Average: 9.00/);
   assert.equal(saveSummary.blind,true);assert.deepEqual(saveSummary.whisper,["gm","assistant"]);
   await assert.rejects(()=>createRequest({kind:"ability",ability:"luck",actorIds:[actor.id]}),/ability/);
+
+  const preparedSkill=await prepareRequestRoll(check.getFlag(ID,"request"),actor);
+  assert.equal(preparedSkill._evaluated,false);assert.equal(preparedSkill.toJSON().formula,"1d20+1");
+  const deathCallsBefore=deathUpdates;
+  assert.equal(await prepareRequestRoll({kind:"death",blind:true,actorIds:[actor.id]},actor),null);
+  assert.equal(deathUpdates,deathCallsBefore);
+  const deathCalls=[];
+  const previousDeath=actor.rollDeathSave;
+  actor.rollDeathSave=async(_config,dialog,message)=>{deathCalls.push({dialog,message});return [{total:11,_evaluated:true,formula:"1d20",toJSON(){return {formula:"1d20",total:11,evaluated:true};}}];};
+  const publicDeath=await prepareRequestRoll({kind:"death",blind:false,actorIds:[actor.id]},actor);
+  assert.deepEqual(deathCalls[0].dialog,{});assert.equal(deathCalls[0].message.create,false);assert.equal(publicDeath._evaluated,true);
+  actor.rollDeathSave=previousDeath;
+
+  const nativeRequest=await createRequest({kind:"ability",ability:"wis",dc:15,actorIds:[actor.id]});
+  let evaluated=0;
+  const PreviousRoll=globalThis.Roll;
+  globalThis.Roll=class extends PreviousRoll{
+    static fromData(data){const roll=new this(data.formula);roll.planted=99;roll.total=99;return roll;}
+    async evaluate(){evaluated++;this.total=21;this.dice=[{faces:20,results:[{result:21}]}];this._evaluated=true;return this;}
+  };
+  const prepared=await prepareRequestRoll(nativeRequest.getFlag(ID,"request"),actor);
+  const ack=await dispatch({namespace:ID,type:"roll",data:{requestId:nativeRequest.id,actorId:actor.id,roll:{packed:true,data:prepared.toJSON(),evaluated:false}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  await settle();
+  assert.equal(ack.accepted,true);assert.equal("total" in ack,false);assert.equal(evaluated,1);
+  const nativeResult=game.messages.find(m=>m.getFlag(ID,"result")?.requestId===nativeRequest.id);
+  assert.equal(nativeResult.rolls[0].total,21);assert.equal(nativeResult.rolls[0].planted,undefined);
+  assert.equal(nativeResult.blind,true);
+  globalThis.Roll=PreviousRoll;
 });
