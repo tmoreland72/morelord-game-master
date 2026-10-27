@@ -79,7 +79,7 @@ test('every Game Master setting registration is world-scoped and GM-restricted, 
     ...main.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g),
     ...runner.matchAll(/settings\.register\((?:(?!settings\.register)[\s\S])*?\);/g)
   ].map(match => match[0]);
-  assert.equal(calls.length, 10);
+  assert.equal(calls.length, 11);
   const client = calls.filter(call => /scope:\s*"client"/.test(call));
   assert.equal(client.length, 1);
   assert.match(client[0], /RUN_ON_LOAD_FOR_ME/);
