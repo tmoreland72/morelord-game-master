@@ -531,7 +531,7 @@ function settingsRow(group, id, text, checked) {
   return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
 }
 function settingsSection(title, group, rows) {
-  return `<section class="ml-surface ml-section ml-stack" data-gap="3" data-tray-section="${e(group)}"><strong class="gm-specialty-title">${e(title)}</strong><div class="gm-settings-list ml-stack" data-gap="1">${rows}</div></section>`;
+  return `<section class="ml-card ml-stack" data-tray-section="${e(group)}"><strong class="gm-specialty-title">${e(title)}</strong><div class="gm-settings-list ml-stack" data-gap="1">${rows}</div></section>`;
 }
 function gmSettings() {
   const layout = trayLayout();
