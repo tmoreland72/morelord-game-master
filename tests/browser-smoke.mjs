@@ -101,7 +101,7 @@ try {
     await wait(`document.querySelectorAll('[data-macro-uuid]').length===${i+2}`);
   }
   assert.equal(await evaluate('document.querySelectorAll("[data-macro-uuid]").length'),12);
-  await evaluate('(()=>{const pins=[...document.querySelectorAll("[data-macro-uuid]")];const transfer=new DataTransfer();pins.at(-1).dispatchEvent(new DragEvent("dragstart",{bubbles:true,dataTransfer:transfer}));pins[0].dispatchEvent(new DragEvent("drop",{bubbles:true,dataTransfer:transfer}));pins.at(-1).dispatchEvent(new DragEvent("dragend",{bubbles:true}));pins.at(-1).click();})()');
+  await evaluate('(()=>{const pins=[...document.querySelectorAll("[data-macro-uuid]")];const transfer=new DataTransfer();const box=pins[0].getBoundingClientRect();const point={clientX:box.left+1,clientY:box.top+box.height/2};pins.at(-1).dispatchEvent(new DragEvent("dragstart",{bubbles:true,dataTransfer:transfer,...point}));pins[0].dispatchEvent(new DragEvent("drop",{bubbles:true,dataTransfer:transfer,...point}));pins.at(-1).dispatchEvent(new DragEvent("dragend",{bubbles:true}));pins.at(-1).click();})()');
   await wait('JSON.stringify(game.settings.get("morelord-game-master","macros"))===JSON.stringify(["Macro.extra10","Macro.macro","Macro.extra0","Macro.extra1","Macro.extra2","Macro.extra3","Macro.extra4","Macro.extra5","Macro.extra6","Macro.extra7","Macro.extra8","Macro.extra9"])');
   assert.equal(await evaluate('testState().macroRuns'),1);
   await evaluate('game.macros.get("macro").name="A very long macro name that cannot fit beside its icon in a compact row";document.querySelector("[data-action=tab][data-id=macros]").click()');

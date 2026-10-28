@@ -6,19 +6,20 @@ import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
-import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
 import {sceneTokenScopeChoice} from './scene-tokens.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
-import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds} from './tray-layout.mjs';
+import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, toggledHidden, visibleIds} from './tray-layout.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 import {openDialog, percentIssue} from './dialog.mjs';
 import {installTrayStack} from './tray-stack.mjs';
+import {bindVisibleSortables} from './tray-sort.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -27,6 +28,8 @@ let settingTrackVolumes = false;
 let bulkBusy = false;
 let suppressMacroClick = false;
 let suppressSpecialtyToggle = false;
+let sortingPin = false;
+let sortableWarned = false;
 const get = key => game.settings.get(ID, key);
 const button = (action, label, id = "", extra = "") => `<button type="button" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const deleteButton = (action, id, name) => `<button type="button" class="ml-icon-button" data-action="${action}" data-id="${e(id)}" title="Delete ${e(name)}" aria-label="Delete ${e(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>`;
@@ -147,16 +150,21 @@ Hooks.once("ready", async () => {
     if (card?.dataset.rollCard === "check") syncCharacterField(card);
     onChange(event).catch(fail);
   });
-  root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
-  root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropTrayItem(event).catch(fail);}});
-  root.addEventListener("dragstart",event=>{
-    const tile=event.target.closest('[data-macro-uuid]');
-    const handle=event.target.closest(".gm-drag-handle");
-    const row=handle?.closest("[data-tray-item]");
-    if(tile){suppressMacroClick=true;event.dataTransfer.setData('text/plain',JSON.stringify({type:'Macro',uuid:tile.dataset.macroUuid}));event.dataTransfer.effectAllowed="copyMove";return;}
-    if(row && tab === "settings"){suppressSpecialtyToggle=true;event.dataTransfer.setData("text/plain",JSON.stringify({type:"TrayItem",group:row.dataset.trayGroup,id:row.dataset.trayItem}));event.dataTransfer.effectAllowed="move";}
+  root.addEventListener("dragover", event => {
+    if (tab === "macros" && !sortingPin) event.preventDefault();
   });
-  root.addEventListener("dragend",()=>{setTimeout(()=>{suppressMacroClick=false;suppressSpecialtyToggle=false;});});
+  root.addEventListener("drop", event => {
+    if (tab !== "macros" || sortingPin) return;
+    event.preventDefault();
+    dropMacro(event).catch(fail);
+  });
+  root.addEventListener("dragstart", event => {
+    if (event.target.closest?.("[data-macro-uuid]")) { suppressMacroClick = true; sortingPin = true; }
+    const row = event.target.closest?.("[data-tray-item]");
+    const control = event.target.closest?.("input, textarea, select, button, a, summary, [contenteditable='true']");
+    if (row && (!control || control === row || !row.contains(control))) suppressSpecialtyToggle = true;
+  }, true);
+  root.addEventListener("dragend", () => { setTimeout(() => { suppressMacroClick = false; suppressSpecialtyToggle = false; sortingPin = false; }); });
   root.addEventListener("keydown", event => {
     if (event.key === "Escape") { toggle(false); event.stopPropagation(); }
     const current = event.target.closest('[role="tab"]');
@@ -243,6 +251,7 @@ function render() {
   syncCharacterField(root.querySelector('[data-roll-card="check"]'));
   syncUndoButton();
   core().ui.applyPageLayout({element:root});
+  bindTraySorting();
 }
 function syncUndoButton() {
   const button = root?.querySelector?.('[data-action="bulk-undo"]');
@@ -492,7 +501,7 @@ function macroRunLabel(key) {
 function macroButtons() {
   const mine = new Set(uuidList(get(RUN_ON_LOAD_FOR_ME)));
   const everyone = new Set(uuidList(get(RUN_ON_LOAD_FOR_EVERYONE)));
-  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" draggable="true" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span>${macroRunMarks({ forMe: mine.has(uuid), forEveryone: everyone.has(uuid), text: macroRunLabel })}</button>`;}).join("");
+  return (get("macros") ?? []).map(uuid=>{const macro=fromUuidSync(uuid),name=macro?.name ?? "Missing macro";return `<button type="button" class="gm-macro" data-macro-uuid="${e(uuid)}" data-action="macro" data-id="${e(uuid)}" title="${e(name)}" aria-label="${e(name)}"><img src="${e(macro?.img ?? "icons/svg/dice-target.svg")}" alt="" width="32" height="32" draggable="false"><span>${e(name)}</span>${macroRunMarks({ forMe: mine.has(uuid), forEveryone: everyone.has(uuid), text: macroRunLabel })}</button>`;}).join("");
 }
 async function toggleMacroRunOnLoad(key, uuid) {
   gm();
@@ -519,7 +528,7 @@ function readLayout(group) {
 }
 function settingsRow(group, id, text, checked) {
   const name = group === "rolls" ? "specialty" : "tray-visible";
-  return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" draggable="true" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
+  return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
 }
 function settingsSection(title, group, rows) {
   return `<section class="gm-settings-section" data-tray-section="${e(group)}"><strong class="gm-section-heading">${e(title)}</strong><div class="gm-settings-list">${rows}</div></section>`;
@@ -542,27 +551,47 @@ function layoutRows(group, catalog, order, hidden) {
     return settingsRow(group, id, item?.label || id, !off.has(id));
   }).join("");
 }
-async function dropTrayItem(event) {
+function bindTraySorting() {
+  let sortable;
+  try { sortable = core().sortable; }
+  catch { return; }
+  if (typeof sortable?.bind !== "function") {
+    if (!sortableWarned) {
+      sortableWarned = true;
+      console.warn(`${ID} | Reordering requires Morelord Core's sortable helper.`);
+    }
+    return;
+  }
+  try {
+    bindVisibleSortables(sortable, root, tab, {
+      onMacros: ids => { saveMacroOrder(ids).catch(fail); },
+      onSettings: (group, ids) => { saveSettingsOrder(group, ids).catch(fail); }
+    });
+  } catch (error) {
+    if (!sortableWarned) {
+      sortableWarned = true;
+      console.error(`${ID} | Sortable reorder`, error);
+    }
+  }
+}
+async function saveMacroOrder(ids) {
   gm();
-  let data = {};
-  try { data = JSON.parse(event.dataTransfer.getData("text/plain") || "{}"); } catch { data = {}; }
-  if (data.type === "Specialty") data = {type: "TrayItem", group: "rolls", id: data.id};
-  if (data.type !== "TrayItem" || !data.id) return;
-  const target = event.target.closest("[data-tray-item]");
-  const before = target?.dataset.trayGroup === data.group ? target.dataset.trayItem : undefined;
-  if (data.group === "rolls") {
-    const order = moveSpecialty(get("specialtyOrder"), data.id, before);
-    if (JSON.stringify(order) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
-    await game.settings.set(ID, "specialtyOrder", order);
+  if (!Array.isArray(ids) || JSON.stringify(ids) === JSON.stringify(get("macros") ?? [])) return;
+  await game.settings.set(ID, "macros", ids);
+  render();
+}
+async function saveSettingsOrder(group, ids) {
+  gm();
+  if (!Array.isArray(ids)) return;
+  if (group === "rolls") {
+    if (JSON.stringify(ids) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
+    await game.settings.set(ID, "specialtyOrder", ids);
     render();
     return;
   }
-  const key = {bulk: "bulkOrder", triggers: "triggerOrder", cheat: "cheatOrder"}[data.group];
-  if (!key) return;
-  const layout = trayLayout();
-  const order = moveId(layoutCatalog(data.group), layout[key], data.id, before);
-  if (JSON.stringify(order) === JSON.stringify(arrangedIds(layoutCatalog(data.group), layout[key]))) return;
-  await game.settings.set(ID, "trayLayout", {...layout, [key]: order});
+  const key = {bulk: "bulkOrder", triggers: "triggerOrder", cheat: "cheatOrder"}[group];
+  if (!key || JSON.stringify(ids) === JSON.stringify(arrangedIds(layoutCatalog(group), trayLayout()[key]))) return;
+  await game.settings.set(ID, "trayLayout", {...trayLayout(), [key]: ids});
   render();
 }
 async function dropMacro(event) {

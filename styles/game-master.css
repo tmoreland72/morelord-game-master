@@ -63,8 +63,7 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-settings-section { display:flex; flex-direction:column; gap:var(--ml-space-2); min-width:0; }
 #mlgm .gm-settings-list { display:flex; flex-direction:column; gap:var(--ml-space-1); min-width:0; }
 #mlgm .gm-settings-row { display:flex; align-items:center; gap:var(--ml-space-2); min-width:0; }
-#mlgm .gm-drag-handle { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:1.25rem; color:var(--ml-color-muted); cursor:grab; }
-#mlgm .gm-drag-handle:active { cursor:grabbing; }
+#mlgm .gm-drag-handle { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:1.25rem; color:var(--ml-color-muted); }
 #mlgm .gm-settings-row .ml-check { flex:1 1 auto; min-width:0; }
 @container gm-rolls (min-width: 24rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @container gm-rolls (min-width: 40rem) { #mlgm .gm-specialty-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
