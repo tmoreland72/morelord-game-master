@@ -208,8 +208,9 @@ export const gameMasterChecks=[{
       document.querySelector('#mlgm-panel').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:otherTransfer}));
       await wait(()=>document.querySelector(`[data-macro-uuid="${other.uuid}"]`));
       const first=document.querySelector(`[data-macro-uuid="${macro.uuid}"]`),second=document.querySelector(`[data-macro-uuid="${other.uuid}"]`),move=new DataTransfer();
-      second.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:move}));
-      first.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:move}));
+      const box=first.getBoundingClientRect(),point={clientX:box.left+1,clientY:box.top+box.height/2};
+      second.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:move,...point}));
+      first.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:move,...point}));
       second.dispatchEvent(new DragEvent('dragend',{bubbles:true}));
       second.click();
       await wait(()=>{const order=game.settings.get(ID,'macros');return order.indexOf(other.uuid)===order.indexOf(macro.uuid)-1;});

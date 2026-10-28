@@ -3,7 +3,7 @@ title: Morelord Game Master Documentation
 description: Your in-game Dungeon Master Screen for roll requests, party rewards, macros, sound, triggers, and a rules cheat sheet.
 slug: morelord-game-master
 product: morelord-game-master
-version: 0.3.0
+version: 0.4.0
 foundry: 14
 order: 0
 ---
@@ -14,7 +14,7 @@ Morelord Game Master is free. Every DM needs a screen. This one lives inside Fou
 
 ## Setup
 
-Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.5.2 or newer. Enable Core and Game Master in your world.
+Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.8.0 or newer. Enable Core and Game Master in your world.
 
 As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. You can change the shortcut in Foundry's keybinding settings. The screen opens as a tray above the canvas and below Foundry windows and dialogs, so you can keep working while it is open.
 
@@ -38,7 +38,7 @@ Undo restores the latest of those changes. Until something can be undone, the Un
 
 ## Macros
 
-Drag a macro into the panel to pin it, drag pins to reorder them, and click to run. Each pin is tall enough to show its icon, with the name beside it. Pins are saved for the world. Unpinning does not delete the macro.
+Drag a macro into the panel to pin it, drag pins to reorder them, and click to run. While a pin is moving, the whole pin follows the pointer and a line shows where it will drop. Each pin is tall enough to show its icon, with the name beside it. Pins are saved for the world. Unpinning does not delete the macro.
 
 Right-click a pin to run it on load for you, or, as a GM, for everyone in the world.
 
@@ -56,4 +56,4 @@ Look up conditions, actions, DCs, exhaustion, travel pace, and other quick rules
 
 ## GM Settings
 
-Roll Requests, Bulk Actions, Triggers, and Cheat Sheet each have a list. A grip on the row reorders that list for this world. The checkbox shows or hides the item. These choices are saved for the world. Ambience folders stay in Foundry's Game Settings.
+Roll Requests, Bulk Actions, Triggers, and Cheat Sheet each have a list. A grip on the row reorders that list for this world. While a row is moving, the whole row follows the pointer and a line shows where it will drop. The checkbox shows or hides the item. These choices are saved for the world. Ambience folders stay in Foundry's Game Settings.

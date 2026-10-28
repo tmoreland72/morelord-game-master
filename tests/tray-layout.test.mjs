@@ -23,6 +23,7 @@ test('GM Settings lists Roll Requests, Bulk Actions, Triggers, and Cheat Sheet w
   assert.match(main, /settingsSection\("Cheat Sheet"/);
   assert.match(main, /fa-grip-vertical/);
   assert.match(main, /gm-section-heading">Verify characters/);
+  assert.match(main, /<strong class="gm-specialty-title">\$\{e\(title\)\}<\/strong>/);
   assert.doesNotMatch(main, /ml-section-heading/);
   assert.match(css, /#mlgm \.gm-specialty-field, #mlgm \.gm-field[\s\S]*flex-direction:column/);
   assert.match(css, /#mlgm \.gm-request-row > \.gm-inline \{ display:flex; flex:0 0 auto; flex-direction:column; align-items:flex-start/);
