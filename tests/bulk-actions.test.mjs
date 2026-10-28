@@ -101,7 +101,14 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.game = {i18n: {localize: key => key}};
     globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(['pp', 'gp', 'ep', 'sp', 'cp'].map(key => [key, {label: key}]))}};
     const html = bulkPanel({actorIds: ['a'], coins: {gp: 2}, coinAction: 'split-add', xp: 4, xpAction: 'each', inspiration: 'clear', busy: false, undo: null});
-    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'undo']);
+    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
+    assert.match(html, /class="gm-undo-bar"><button type="button" data-action="bulk-undo" disabled>Undo Last Action<\/button>/);
+    assert.ok(html.indexOf('class="gm-undo-bar"') < html.indexOf('class="gm-bulk"'));
+    assert.doesNotMatch(html, /data-mlgm-bulk="undo"/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Disposition<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Vision<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Display Bars<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Display Name<\/strong>/);
     assert.ok(html.indexOf('data-mlgm-bulk="xp"') < html.indexOf('data-mlgm-bulk="inspiration"'));
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
@@ -120,9 +127,12 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('data-mlgm-bulk="inspiration"'));
     const xpRow = xpCard.slice(xpCard.indexOf('class="gm-specialty-row"'));
-    assert.match(xpRow, /name="bulkXpAction"/);
-    assert.match(xpRow, /name="xp"/);
-    assert.match(xpRow, /data-action="bulk-xp"/);
+    const actionRow = xpRow.slice(0, xpRow.indexOf('</div>'));
+    assert.match(xpCard, /class="gm-xp-fields"/);
+    assert.match(actionRow, /name="bulkXpAction"/);
+    assert.match(actionRow, /data-action="bulk-xp"/);
+    assert.doesNotMatch(actionRow, /name="xp"/);
+    assert.match(xpCard, /name="xp"/);
     assert.match(xpCard, /class="gm-label-help"/);
     assert.match(css, /align-items:flex-start/);
     assert.match(css, /#mlgm select, \.ml-window \.ml-dialog-shell select \{ width:auto; min-width:fit-content/);
@@ -138,11 +148,16 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
-    const tokensCard = html.slice(html.indexOf('data-mlgm-bulk="tokens"'), html.indexOf('data-mlgm-bulk="undo"'));
+    const tokensCard = html.slice(html.indexOf('data-mlgm-bulk="tokens"'), html.indexOf('data-mlgm-bulk="disposition"'));
     assert.match(tokensCard, /data-action="bulk-tokens-help"/);
     assert.match(tokensCard, /fa-circle-question/);
     assert.match(tokensCard, /aria-label="Copied token settings"/);
-    assert.match(tokensCard, /data-tooltip="Copies each party character&#39;s token on the active GM&#39;s current scene onto that character&#39;s prototype token\. A selected token is used when several are placed\."/);
+    assert.match(tokensCard, /name="bulkTokenScope"/);
+    assert.match(tokensCard, />Party</);
+    assert.match(tokensCard, />Selected Tokens</);
+    assert.match(tokensCard, />All Tokens</);
+    assert.match(tokensCard, /<strong class="gm-specialty-title">Prototype Token Sync<\/strong><div class="gm-specialty-row"><label class="gm-specialty-field">/);
+    assert.match(tokensCard, /data-tooltip="Party copies each party character&#39;s token on the active GM&#39;s current scene\. Selected Tokens copies the selected tokens, including NPCs\. All Tokens copies every token on the scene, including NPCs\. A selected token is used when one actor has several\."/);
     assert.doesNotMatch(tokensCard, /ml-help-button[^>]*\stitle=/);
     assert.doesNotMatch(tokensCard, /<p>/);
     assert.doesNotMatch(tokensCard, /image and scale/);
@@ -159,16 +174,20 @@ describe('bulk actions', {concurrency: 1}, () => {
     const tray = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
     assert.match(tray, /endsWith\('-remove'\) \? 'Take' : bulkText\('coins\.apply'\)/);
     assert.match(tray, /bulk-tokens-help"\) return form\(bulkText\('tokens\.help'\), `<p>\$\{bulkHTML\('tokens\.copied', \{fields: tokenFieldList\(\)\}\)\}<\/p>`/);
-    const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
+    assert.match(tray, /bulkTokenScope = tokenScopeChoice\(el\.value\)/);
+    assert.match(tray, /sendBulkTokens\(root\.querySelector\('\[name="bulkTokenScope"\]'\)\?\.value\)/);
+    const undo = html.slice(html.indexOf('class="gm-undo-bar"'), html.indexOf('class="gm-bulk"'));
     assert.match(undo, /disabled/);
-    assert.match(undo, />Nothing to undo</);
+    assert.match(undo, />Undo Last Action</);
+    assert.doesNotMatch(undo, />Nothing to undo</);
     assert.doesNotMatch(undo, /<p>/);
+    assert.doesNotMatch(undo, /ml-card/);
     const ready = bulkPanel({actorIds: ['a'], undo: {kind: 'xp', labelKey: 'xp.split'}});
-    assert.doesNotMatch(ready.slice(ready.indexOf('data-mlgm-bulk="undo"')), /disabled/);
-    assert.match(ready, /Last action: Split amount amongst party members/);
+    const readyUndo = ready.slice(ready.indexOf('class="gm-undo-bar"'), ready.indexOf('class="gm-bulk"'));
+    assert.doesNotMatch(readyUndo, /disabled/);
+    assert.match(readyUndo, />Undo Last Action</);
     const paused = bulkPanel({actorIds: ['a'], undo: {kind: 'coins', operation: 'each-add'}, busy: true});
-    assert.match(paused.slice(paused.indexOf('data-mlgm-bulk="undo"')), /disabled/);
-    assert.match(paused, /Last action: Give amount to all party members/);
+    assert.match(paused.slice(paused.indexOf('class="gm-undo-bar"'), paused.indexOf('class="gm-bulk"')), /disabled/);
     assert.match(bulkPanel({actorIds: [], undo: {kind: 'xp', labelKey: 'xp.each'}}), /data-action="bulk-xp"[^>]*disabled/);
   });
 
@@ -397,19 +416,22 @@ describe('bulk actions', {concurrency: 1}, () => {
     }};
     const undoSection = () => {
       const html = bulkPanel({actorIds: ['a', 'b', 'c'], undo: readBulkUndo(), busy: false});
-      return html.slice(html.indexOf('data-mlgm-bulk="undo"'));
+      return html.slice(html.indexOf('class="gm-undo-bar"'), html.indexOf('class="gm-bulk"'));
     };
     const assertUndoReady = label => {
       for (const section of [undoSection(), undoSection()]) {
         assert.equal(section.includes('Nothing to undo'), false, label);
         assert.equal(section.includes('disabled'), false, label);
-        assert.equal(section.includes(`Last action: ${label}`), true, label);
+        assert.equal(section.includes('Undo Last Action'), true, label);
+        assert.equal(section.includes('ml-card'), false, label);
       }
     };
     const assertUndoEmpty = () => {
       const section = undoSection();
-      assert.equal(section.includes('>Nothing to undo<'), true);
+      assert.equal(section.includes('>Undo Last Action<'), true);
+      assert.equal(section.includes('>Nothing to undo<'), false);
       assert.equal(section.includes('<p>'), false);
+      assert.equal(section.includes('ml-card'), false);
       assert.equal(section.includes('disabled'), true);
     };
     const savedSnapshot = () => {
@@ -498,7 +520,7 @@ describe('bulk actions', {concurrency: 1}, () => {
 
   test('unchanged party members are skipped and do not replace undo', async () => {
     const source = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
-    for (const action of ['applyBulkCoins', 'applyBulkXp', 'applyBulkInspiration', 'applyBulkTokens']) {
+    for (const action of ['applyBulkCoins', 'applyBulkXp', 'applyBulkInspiration', 'applyBulkTokens', 'applySceneTokens']) {
       const sender = source.slice(source.indexOf(`await ${action}`), source.indexOf(`await ${action}`) + 220);
       assert.match(sender, /result\?\.unchanged/);
     }

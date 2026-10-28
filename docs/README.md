@@ -3,7 +3,7 @@ title: Morelord Game Master Documentation
 description: Your in-game Dungeon Master Screen for roll requests, party rewards, macros, sound, triggers, and a rules cheat sheet.
 slug: morelord-game-master
 product: morelord-game-master
-version: 0.2.0
+version: 0.3.0
 foundry: 14
 order: 0
 ---
@@ -20,21 +20,21 @@ As a GM, click the **Game Master** handle at the bottom of the screen, or press 
 
 ## Player Settings
 
-Choose the characters in scope once. Party requests, selected-token requests, and Bulk Actions use that scope. The heading matches the other sections in the tray.
+Choose the characters in scope once. Party requests, selected-token requests, and the party bulk actions use that scope. The heading matches the other sections in the tray.
 
 ## Roll Requests
 
-Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
+Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. One character lists every player character in the world. The label sits above that select. Sending with none chosen warns and leaves the form as it is. The request names only the chosen character, so only that character's owner can roll. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
 
 Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, and Roll of Fate. GM Settings can hide any of them or change their order.
 
 ## Bulk Actions
 
-Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action, Amount, and Apply together, and that row wraps inside the card when the card is narrow. Inspiration puts Action and Apply together the same way. Card titles stay on one line. Prototype Token Sync and Undo use a normal-width button on the left.
+Coins and XP share the first row. Inspiration and Prototype Token Sync share the next. Undo Last Action is one right-aligned button between the tab bar and those sections. It is disabled when nothing can be undone, and that state updates as soon as an undoable action is stored or undone. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action and Apply on one line and Amount on the next line, with the label above the field. Inspiration puts Action and Apply together the same way. Card titles stay on one line. Prototype Token Sync uses that same row: Target above its select, then Apply. Party, Selected Tokens, and All Tokens are the choices. All Tokens includes NPC tokens on the scene. Token Disposition, Token Vision, Token Display Bars, and Token Display Name use the same card row as the other bulk actions. Each one has a title, then Target and the setting with labels above the selects, then Apply. Target is All Tokens on Current Scene or Selected Tokens. Apply updates those scene tokens in one batch. An empty target warns. Undo restores the previous token fields.
 
-Enter coins once, then split them amongst the party, give the amount to each member, or take coins back. Removal uses personal coins first, then the shared party purse, and reports any shortfall in chat. You can also grant or set XP, grant or clear Heroic Inspiration, and copy each character's token on the current scene onto that character's prototype token.
+Enter coins once, then split them amongst the party, give the amount to each member, or take coins back. Removal uses personal coins first, then the shared party purse, and reports any shortfall in chat. You can also grant or set XP, grant or clear Heroic Inspiration, and copy prototype tokens for the party, the selected tokens, or every token on the scene, including NPCs.
 
-Undo restores the latest of those changes. Until something can be undone, the button reads Nothing to undo.
+Undo restores the latest of those changes. Until something can be undone, the Undo Last Action button stays disabled.
 
 ## Macros
 

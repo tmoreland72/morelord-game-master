@@ -6,9 +6,10 @@ import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
-import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
-import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList} from './bulk-actions.mjs';
+import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
+import {sceneTokenScopeChoice} from './scene-tokens.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
@@ -18,6 +19,7 @@ import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSh
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 import {openDialog, percentIssue} from './dialog.mjs';
+import {installTrayStack} from './tray-stack.mjs';
 
 const tabs = { rolls: "Roll Requests", bulk: "Bulk Actions", macros: "Macros", sound: "Sound", triggers: "Triggers", cheat: "Cheat Sheet", settings: "GM Settings", party: "Player Settings" };
 let root, open = false, tab = "rolls", state, saving = Promise.resolve();
@@ -79,7 +81,7 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true, v
 Hooks.once("init", () => {
   promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
-    render() { closeTrayForSettings(); settings().catch(fail); return this; }
+    render() { settings().catch(fail); return this; }
   }
   game.settings.registerMenu(ID,"configure",{name:"Morelord Game Master",label:"Configure",hint:"Ambience folders.",icon:"fa-solid fa-dice-d20",type:GameMasterSettings,restricted:true});
   game.settings.register(ID, "board", { scope: "world", config: false, restricted: true, type: Object,
@@ -120,6 +122,7 @@ Hooks.once("ready", async () => {
   foragingTerrains().then(options=>{terrainOptions=options;render();}).catch(()=>{});
   root = document.createElement("aside"); root.id = "mlgm"; root.className = "ml-window"; root.setAttribute("aria-label", "Morelord Game Master");
   document.body.append(root);
+  try { installTrayStack(root); } catch (error) { console.error(`${ID} | Tray stacking`, error); }
   root.addEventListener("pointerdown", event => {
     if (event.button !== 0) return;
     trayPointer++;
@@ -144,7 +147,11 @@ Hooks.once("ready", async () => {
     text: macroRunLabel
   }),{jQuery:false,fixed:true});
   root.addEventListener("submit",event=>{event.preventDefault();const id=event.target.dataset.rollCard;if(id==="check")sendCheck().catch(fail);else if(id)sendQuick(id).catch(fail);});
-  root.addEventListener("change", event => onChange(event).catch(fail));
+  root.addEventListener("change", event => {
+    const card = event.target?.closest?.("[data-roll-card]");
+    if (card?.dataset.rollCard === "check") syncCharacterField(card);
+    onChange(event).catch(fail);
+  });
   root.addEventListener("dragover",event=>{if(tab === "macros" || tab === "settings")event.preventDefault();});
   root.addEventListener("drop",event=>{if(tab === "macros"){event.preventDefault();dropMacro(event).catch(fail);}else if(tab === "settings"){event.preventDefault();dropTrayItem(event).catch(fail);}});
   root.addEventListener("dragstart",event=>{
@@ -164,6 +171,8 @@ Hooks.once("ready", async () => {
     if (next) { event.preventDefault(); tab = next; render(); root.querySelector(`#mlgm-tab-${next}`).focus(); }
   });
   root.addEventListener("input", event => {
+    const card = event.target?.closest?.("[data-roll-card]");
+    if (card?.dataset.rollCard === "check") syncCharacterField(card);
     const readout = event.target.dataset.sound && event.target.parentElement?.querySelector("[data-volume-readout]");
     if (readout) readout.textContent = `${Math.round(Number(event.target.value) * 100)}%`;
   });
@@ -178,17 +187,6 @@ function toggle(value = !open, {focus = true} = {}) {
   open = Boolean(value); document.body.classList.toggle("mlgm-open", open); render();
   if (focus) root.querySelector(open ? "[role=tab][aria-selected=true]" : ".gm-handle")?.focus();
 }
-function closeTray() {
-  if (!open) return;
-  toggle(false, {focus: false});
-}
-function closeTrayForSettings() {
-  closeTray();
-}
-Hooks.on("renderSettingsConfig", (_application, _element, _context, options) => {
-  if (options?.isFirstRender === false) return;
-  closeTrayForSettings();
-});
 function saved(type) {
   return state.saved.filter(s => s.type === type).map(s => savedButton("saved",savedName(s.type,s.config),s.id,"remove-saved")).join("");
 }
@@ -247,11 +245,18 @@ function render() {
     <nav class="ml-tabs ml-compact" role="tablist" aria-label="Game Master tools">${Object.keys(tabs).map(id => `<a data-action="tab" data-id="${id}" id="mlgm-tab-${id}" role="tab" tabindex="${tab === id ? 0 : -1}" aria-selected="${tab === id}" aria-controls="mlgm-panel">${e(tabLabel(id))}</a>`).join("")}</nav>
     <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings","cheat"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
+  syncCharacterField(root.querySelector('[data-roll-card="check"]'));
+  syncUndoButton();
   core().ui.applyPageLayout({element:root});
+}
+function syncUndoButton() {
+  const button = root?.querySelector?.('[data-action="bulk-undo"]');
+  if (!button) return;
+  button.disabled = bulkBusy || !readBulkUndo();
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
+  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, tokenScope: last.bulkTokenScope, sceneTokens: last.sceneTokens, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack gm-settings" data-gap="4">${gmSettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
@@ -273,23 +278,29 @@ function partyActorIds() {
   return selected.filter(id=>eligible.some(a=>a.id===id));
 }
 function catalogs() { return {skills: CONFIG.DND5E?.skills ?? {}, abilities: CONFIG.DND5E?.abilities ?? {}}; }
+function worldActors() {
+  if (Array.isArray(game.actors?.contents)) return game.actors.contents;
+  return typeof game.actors?.values === "function" ? [...game.actors.values()] : [];
+}
+function playerCharacters() { return playerCharacterChoices(worldActors()); }
 function checkBuilder() {
   const c = state.last.check ?? {};
   const checkType = CHECK_TYPES.some(type => type.id === c.checkType) ? c.checkType : "skill";
   const choices = checkChoices(checkType, catalogs());
   const checkId = defaultCheckId(checkType, choices, c.checkId);
   const scope = ["party","tokens","player"].includes(c.scope) ? c.scope : "party";
-  const actors = partyActorIds().map(id => game.actors.get(id)).filter(Boolean);
-  const actorId = actors.some(actor => actor.id === c.actorId) ? c.actorId : actors[0]?.id ?? "";
+  const partyIds = partyActorIds().filter(id => game.actors.get(id));
+  const characters = playerCharacters();
+  const actorId = characters.some(actor => actor.id === c.actorId) ? c.actorId : "";
   const checkLabel = checkType === "skill" ? "Skill" : "Ability";
   const fields = [
     inlineField("Type", select("checkType", CHECK_TYPES.map(type => option(type.id, type.label, checkType)).join(""))),
     inlineField(checkLabel, select("checkId", choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join(""))),
     inlineField("DC", input("dc", c.dc ?? "", 'type="number" min="0" step="1"')),
     inlineField("Who rolls", select("scope", [["party","Party"],["tokens","Selected tokens"],["player","One character"]].map(([id, name]) => option(id, name, scope)).join(""))),
-    scope === "player" ? inlineField("Character", select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))) : ""
+    `<label class="gm-inline" data-mlgm-character-field${characterFieldVisible(scope) ? "" : " hidden"}><span>Character</span>${select("actorId", [option("", "Choose a character", actorId), ...characters.map(actor => option(actor.id, actor.name, actorId))].join(""))}</label>`
   ].join("");
-  return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: !(scope === "tokens" || actors.length)})}</section>`;
+  return `<section class="ml-card gm-builder-card">${requestRow({card: "check", fields, blind: c.blind === true, action: "send-check", name: "Send check", disabled: scope === "party" && !partyIds.length})}</section>`;
 }
 function refreshCheckSelect(card) {
   const typeSelect = card.querySelector('[name="checkType"]');
@@ -302,6 +313,14 @@ function refreshCheckSelect(card) {
   const checkId = defaultCheckId(checkType, choices, select.value);
   select.innerHTML = choices.map(choice => option(choice.id, game.i18n.localize(choice.label), checkId)).join("");
   select.value = checkId;
+}
+function syncCharacterField(card) {
+  const field = card?.querySelector("[data-mlgm-character-field]");
+  if (!field) return;
+  const show = characterFieldVisible(card.querySelector('[name="scope"]')?.value);
+  field.hidden = !show;
+  if (!show) field.style?.setProperty?.("display", "none", "important");
+  else field.style?.removeProperty?.("display");
 }
 function specialtyGrid() {
   const settings = Object.fromEntries(SPECIALTIES.map(specialty => [specialty.setting, game.settings.get(ID, specialty.setting)]));
@@ -345,10 +364,13 @@ function readQuick(id) {
 async function sendCheck() {
   await saving;
   const draft = readBuilder();
-  const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds()});
+  const actorIds = resolveRollActors({scope: draft.scope, actorId: draft.actorId, partyIds: partyActorIds(), selectedActorIds: selectedTokenActorIds(), characterIds: playerCharacters().map(actor => actor.id)});
+  if (!actorIds) {
+    ui.notifications.warn("Choose a character.");
+    return;
+  }
   await persist(n => { n.last.check = draft; });
   await createRequest(buildCheckRequest({...draft, type: draft.checkType, actorIds}));
-  closeTray();
 }
 async function sendBulkCoins(operation) {
   if (bulkBusy) return;
@@ -367,7 +389,6 @@ async function sendBulkCoins(operation) {
       await persist(n => { n.last.bulkCoins = readCoins(); });
       notify('Party coins updated. See the chat card for changes and deficits.');
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkXp(operation) {
@@ -388,7 +409,6 @@ async function sendBulkXp(operation) {
       await persist(n => { n.last.bulkXp = 0; n.last.bulkXpAction = operation; });
       notify(bulkText('xp.updated'));
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkInspiration(action) {
@@ -404,22 +424,41 @@ async function sendBulkInspiration(action) {
       await persist(n => { n.last.bulkInspiration = action; });
       notify(bulkText('inspiration.updated'));
     }
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
-async function sendBulkTokens() {
+async function sendBulkTokens(scope) {
   if (bulkBusy) return;
+  const choice = tokenScopeChoice(scope);
   await saving;
   if (bulkBusy) return;
   bulkBusy = true; render();
   try {
-    const result = await applyBulkTokens();
+    const result = await applyBulkTokens(undefined, choice);
     if (result?.unchanged) notify(result.notice);
     else {
       if (!result?.messageId) throw Error(bulkText('error.noGm'));
       notify(bulkText('tokens.updatedNotice'));
     }
-    closeTray();
+    await persist(n => { n.last.bulkTokenScope = choice; });
+  } finally { bulkBusy = false; render(); }
+}
+async function sendSceneTokens(action) {
+  if (bulkBusy) return;
+  const card = root.querySelector(`[data-mlgm-bulk="${action}"]`);
+  const scope = sceneTokenScopeChoice(card?.querySelector('[name$="Scope"]')?.value);
+  const value = card?.querySelector('select:not([name$="Scope"])')?.value ?? '';
+  await saving;
+  if (bulkBusy) return;
+  bulkBusy = true; render();
+  try {
+    const result = await applySceneTokens(action, scope, value);
+    if (result?.warning) ui.notifications.warn(result.warning);
+    else if (result?.unchanged) notify(result.notice);
+    else {
+      if (!result?.messageId) throw Error(bulkText('error.noGm'));
+      notify(bulkText('sceneTokens.updated'));
+    }
+    await persist(n => { n.last.sceneTokens = {...(n.last.sceneTokens ?? {}), [action]: {scope, value}}; });
   } finally { bulkBusy = false; render(); }
 }
 async function sendBulkUndo() {
@@ -431,7 +470,6 @@ async function sendBulkUndo() {
     const result = await applyBulkUndo();
     if (!result?.messageId) throw Error(bulkText('error.noGm'));
     notify(bulkText('undo.done'));
-    closeTray();
   } finally { bulkBusy = false; render(); }
 }
 async function sendQuick(id) {
@@ -441,15 +479,12 @@ async function sendQuick(id) {
   if (!config.actorIds.length) throw new Error(id === "death" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
   await persist(n => { n.last[id] = config; if (id === "encounter") n.last.die = config.die; });
   await createRequest(config);
-  closeTray();
 }
 async function sendFate() {
   const card = root.querySelector('[data-roll-card="fate"]');
   const scope = card && new FormData(card).get("scope") === "party" ? "party" : "tokens";
   if (card) await persist(n => { n.last.fate = {scope}; });
-  const result = await rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
-  closeTray();
-  return result;
+  return rollOfFate({scope, actors: partyActorIds().map(id => game.actors.get(id)).filter(Boolean)});
 }
 function macroRunLabel(key) {
   const full = `morelord-game-master.macros.${key}`;
@@ -559,7 +594,11 @@ async function act(action, id, target) {
   if (action === "bulk-coins") return sendBulkCoins(root.querySelector('[name="bulkCoinAction"]')?.value);
   if (action === "bulk-xp") return sendBulkXp(root.querySelector('[name="bulkXpAction"]')?.value);
   if (action === "bulk-inspiration") return sendBulkInspiration(root.querySelector('[name="bulkInspirationAction"]')?.value === 'clear' ? 'clear' : 'grant');
-  if (action === "bulk-tokens") return sendBulkTokens();
+  if (action === "bulk-tokens") return sendBulkTokens(root.querySelector('[name="bulkTokenScope"]')?.value);
+  if (action === "bulk-disposition") return sendSceneTokens("disposition");
+  if (action === "bulk-vision") return sendSceneTokens("vision");
+  if (action === "bulk-bars") return sendSceneTokens("bars");
+  if (action === "bulk-name") return sendSceneTokens("name");
   if (action === "bulk-tokens-help") return form(bulkText('tokens.help'), `<p>${bulkHTML('tokens.copied', {fields: tokenFieldList()})}</p>`, [["close", "Close"]]);
   if (action === "bulk-undo") return sendBulkUndo();
   if (action === "bulk-coins-clear") {
@@ -598,7 +637,7 @@ async function act(action, id, target) {
   if (action === "stop-all-sound") return stopEverySound();
   if (action === "stop-music" || action === "stop-ambience") for (const p of game.playlists) if (Boolean(p.getFlag(ID,"ambience")) === (action === "stop-ambience")) await p.stopAll();
   if (action === "stop-sound") { const [p,s] = id.split(":"); await game.playlists.get(p)?.sounds.get(s)?.update({playing:false}); }
-  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); closeTray(); }
+  if (action === "macro") { const m = await fromUuid(id); if (!m?.canExecute) throw new Error("That macro is no longer available."); await m.execute(); notify(`Launched ${m.name}.`); }
   if (action === "trigger-toggle") await persist(n => { const t = n.triggers.find(x => x.id === id); if (t) t.enabled = !t.enabled; });
   render();
 }
@@ -607,6 +646,14 @@ async function onChange(event) {
   if (el.name === 'bulkCoinAction') { root.querySelector('[data-action=bulk-coins]').textContent = el.value.endsWith('-remove') ? 'Take' : bulkText('coins.apply'); await persist(n => { n.last.bulkCoinAction = el.value; }); return; }
   if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = bulkXpChoice(el.value); }); return; }
   if (el.name === 'bulkInspirationAction') { await persist(n => { n.last.bulkInspiration = el.value === 'clear' ? 'clear' : 'grant'; }); return; }
+  if (el.name === 'bulkTokenScope') { await persist(n => { n.last.bulkTokenScope = tokenScopeChoice(el.value); }); return; }
+  const sceneTokenField = {bulkDispositionScope: ['disposition', 'scope'], bulkDisposition: ['disposition', 'value'], bulkVisionScope: ['vision', 'scope'], bulkVision: ['vision', 'value'], bulkBarsScope: ['bars', 'scope'], bulkBars: ['bars', 'value'], bulkNameScope: ['name', 'scope'], bulkName: ['name', 'value']}[el.name];
+  if (sceneTokenField) {
+    const [action, part] = sceneTokenField;
+    const value = part === 'scope' ? sceneTokenScopeChoice(el.value) : el.value;
+    await persist(n => { n.last.sceneTokens = {...(n.last.sceneTokens ?? {}), [action]: {...(n.last.sceneTokens?.[action] ?? {}), [part]: value}}; });
+    return;
+  }
   const bulkForm = el.closest('[data-mlgm-bulk-coins]');
   if (bulkForm) {
     if (el.value !== '' && Number(el.value) < 0) el.value = '0';
@@ -652,7 +699,12 @@ async function onChange(event) {
     // The tray stays in place so a field save does not swallow the next click.
     // The second dropdown is the exception: its options belong to the new type.
     if (el.name === "checkType") refreshCheckSelect(card);
-    await persist(n => { n.last.check = readBuilder(); });
+    // Visibility follows the select immediately. The tray does not rebuild on
+    // this change, and the saved scope is only read again on the next render.
+    syncCharacterField(card);
+    const draft = readBuilder();
+    if (state?.last) state.last.check = draft;
+    await persist(n => { n.last.check = draft; });
     return;
   }
   if (card?.dataset.rollCard === "fate") { await persist(n => { n.last.fate = {scope: new FormData(card).get("scope") === "party" ? "party" : "tokens"}; }); return; }
@@ -877,7 +929,6 @@ async function setAmbienceVolumes() {
 async function run(type, config) {
   if (["group", "player", "death"].includes(type)) {
     await createRequest({...config,...(type === "group" ? {actorIds:partyActorIds()} : {}),kind:type === "death" ? "death" : "skill"});
-    closeTray();
   }
   if (type === "playlist") {
     const p = game.playlists.get(config.playlist);
@@ -947,7 +998,6 @@ async function encounter(die,name,selected) {
   await persist(n => {n.last.encounter = {actorIds};});
   await createRequest({kind:"encounter",die,name,actorIds});
   notify(`Requested blind 1d${die} encounter checks.`);
-  closeTray();
 }
 async function playlistForm() {
   const playlists = game.playlists.filter(p => !p.getFlag(ID,"ambience"));
@@ -1001,7 +1051,6 @@ export async function requestCheck(config) {
   if (!actorIds) return;
   const message = await createRequest({...config,actorIds});
   notify("Check requested. Core routes online players and offline GM fallbacks.");
-  closeTray();
   render();
   return message;
 }
@@ -1017,7 +1066,8 @@ Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
   if (setting.key === `${ID}.macros` || setting.key === `${ID}.${RUN_ON_LOAD_FOR_EVERYONE}`) refreshTray(["macros"]);
   if (setting.key === `${ID}.specialtyOrder` || setting.key === `${ID}.trayLayout`) refreshTray(["settings", "rolls", "bulk", "triggers", "cheat"]);
-  if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
+  if (setting.key === 'dnd5e.primaryParty') refreshTray(['bulk']);
+  if (setting.key === `${ID}.${BULK_UNDO}`) syncUndoButton();
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
     if (localBoardWrite || trayPointer || JSON.stringify(state) === ownBoardJSON) return;

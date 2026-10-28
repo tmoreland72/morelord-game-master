@@ -5,9 +5,10 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
 
-test('the tray stays above Foundry dialogs and below notifications', () => {
+test('the tray stays above Foundry windows and below the tooltip layer', () => {
   const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
-  assert.match(css, /z-index:\s*calc\(var\(--z-index-tooltip\) - 1\)/);
+  assert.match(css, /z-index:\s*calc\(var\(--z-index-window\)\s*\+\s*var\(--mlgm-window-gap\)\)/);
+  assert.doesNotMatch(css, /z-index:\s*calc\(var\(--z-index-tooltip\)/);
   assert.doesNotMatch(css, /z-index:\s*2147483647/);
 });
 

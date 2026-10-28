@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
-import {CHECK_TYPES, SPECIALTIES, buildCheckRequest, checkChoices, defaultCheckId, moveSpecialty, resolveRollActors, specialtyOrder, visibleSpecialties} from "../scripts/roll-requests.mjs";
+import {CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties} from "../scripts/roll-requests.mjs";
 
 const skills = {prc: {label: "Perception"}, ste: {label: "Stealth"}};
 const abilities = {str: {label: "Strength"}, wis: {label: "Wisdom"}};
@@ -70,13 +70,142 @@ test("changing the request type replaces the second dropdown with that type's SR
   assert.match(source, /if \(el\.name === "checkType"\) refreshCheckSelect\(card\);/);
 });
 
-test("who rolls uses the party, selected party tokens, or one player", () => {
+test("changing who rolls shows and hides the character field without a refresh", async () => {
+  assert.equal(characterFieldVisible("player"), true);
+  assert.equal(characterFieldVisible("party"), false);
+  assert.equal(characterFieldVisible("tokens"), false);
+  const source = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../styles/game-master.css", import.meta.url), "utf8");
+  assert.match(source, /data-mlgm-character-field\$\{characterFieldVisible\(scope\) \? "" : " hidden"\}/);
+  assert.doesNotMatch(source, /scope === "player" \? inlineField\("Character"/);
+  assert.match(source, /if \(card\?\.dataset\.rollCard === "check"\) syncCharacterField\(card\);/);
+  assert.match(css, /data-mlgm-character-field\]\[hidden\] \{ display:none!important; \}/);
+  const sync = source.slice(source.indexOf("function syncCharacterField"), source.indexOf("function specialtyGrid"));
+  const change = source.slice(source.indexOf("async function onChange"), source.indexOf("function volumeFromPercent"));
+  const character = {value: "ada"};
+  const scope = {name: "scope", value: "party"};
+  const field = {
+    hidden: true,
+    value: character.value,
+    style: {
+      display: "none",
+      setProperty(_name, value) { this.display = value; },
+      removeProperty() { this.display = ""; }
+    }
+  };
+  const card = {
+    dataset: {rollCard: "check"},
+    querySelector(selector) {
+      if (selector === "[data-mlgm-character-field]") return field;
+      if (selector.includes("scope")) return scope;
+      return null;
+    }
+  };
+  const saved = [];
+  let rendered = 0;
+  const context = vm.createContext({
+    characterFieldVisible,
+    tab: "rolls",
+    state: {last: {check: {scope: "party", actorId: "ada"}}},
+    card,
+    render() { rendered += 1; },
+    readBuilder: () => ({scope: scope.value, actorId: character.value}),
+    persist: async changeFn => {
+      const next = {last: {check: {}}};
+      changeFn(next);
+      saved.push(next.last.check.scope);
+    }
+  });
+  vm.runInContext(`${sync}\n${change}`, context);
+  const choose = async (value, target = scope) => {
+    scope.value = value;
+    context.event = {target};
+    await vm.runInContext("onChange(event)", context);
+  };
+  scope.closest = selector => selector === "[data-roll-card]" ? card : null;
+  await choose("player");
+  assert.equal(field.hidden, false);
+  assert.equal(field.style.display, "");
+  assert.equal(rendered, 0);
+  assert.deepEqual(saved, ["player"]);
+  assert.equal(context.state.last.check.scope, "player");
+  assert.equal(character.value, "ada");
+  const option = {name: "", closest: selector => selector === "[data-roll-card]" ? card : null};
+  await choose("party", option);
+  assert.equal(field.hidden, true);
+  assert.equal(field.style.display, "none");
+  assert.equal(rendered, 0);
+  assert.deepEqual(saved, ["player", "party"]);
+  assert.equal(character.value, "ada");
+  await choose("tokens", option);
+  assert.equal(field.hidden, true);
+  assert.equal(rendered, 0);
+  await choose("player", option);
+  assert.equal(field.hidden, false);
+  assert.equal(rendered, 0);
+  assert.equal(character.value, "ada");
+});
+
+test("who rolls uses the party, selected party tokens, or one player character", () => {
+  assert.deepEqual(playerCharacterChoices([
+    {id: "npc", type: "npc", name: "Wolf"},
+    {id: "b", type: "character", name: "Bran"},
+    {id: "a", type: "character", name: "Ada"},
+    {type: "character", name: "Nameless"}
+  ]), [{id: "a", name: "Ada"}, {id: "b", name: "Bran"}]);
   assert.deepEqual(resolveRollActors({scope: "party", partyIds: ["a", "b", "a"], selectedActorIds: ["a"]}), ["a", "b"]);
   assert.deepEqual(resolveRollActors({scope: "tokens", partyIds: ["a", "b"], selectedActorIds: ["b", "c", "b"]}), ["b"]);
-  assert.deepEqual(resolveRollActors({scope: "player", actorId: "a", partyIds: ["a", "b"]}), ["a"]);
+  assert.deepEqual(resolveRollActors({scope: "player", actorId: "c", partyIds: [], characterIds: ["a", "c"]}), ["c"]);
   assert.throws(() => resolveRollActors({scope: "tokens", partyIds: ["a"], selectedActorIds: ["c"]}), /party character token/);
-  assert.throws(() => resolveRollActors({scope: "player", actorId: "c", partyIds: ["a"]}), /Player Settings/);
+  assert.equal(resolveRollActors({scope: "player", actorId: "", characterIds: ["a"]}), null);
+  assert.equal(resolveRollActors({scope: "player", actorId: "npc", partyIds: ["npc"], characterIds: ["a"]}), null);
   assert.throws(() => resolveRollActors({scope: "party", partyIds: []}), /Player Settings/);
+});
+
+test("sending one character with nobody chosen warns and leaves the form", async () => {
+  const source = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  const builder = source.slice(source.indexOf("function checkBuilder"), source.indexOf("function refreshCheckSelect"));
+  assert.match(builder, /playerCharacters\(\)/);
+  assert.match(builder, /option\("", "Choose a character", actorId\)/);
+  assert.match(builder, /<span>Character<\/span>/);
+  assert.match(builder, /disabled: scope === "party" && !partyIds\.length/);
+  assert.doesNotMatch(builder, /partyActorIds\(\)\.map/);
+  const send = source.slice(source.indexOf("async function sendCheck"), source.indexOf("async function sendBulkCoins"));
+  assert.match(send, /ui\.notifications\.warn\("Choose a character\."\)/);
+  assert.doesNotMatch(send, /notifications\.error/);
+  const requests = readFileSync(new URL("../scripts/requests.mjs", import.meta.url), "utf8");
+  assert.match(requests, /const singleCharacter = actorIds\.length === 1 && \["skill", "ability", "save"\]\.includes\(kind\)/);
+  assert.match(requests, /actor\?\.type === "character"/);
+  const warnings = [];
+  const persisted = [];
+  const created = [];
+  let rendered = 0;
+  const context = vm.createContext({
+    saving: Promise.resolve(),
+    readBuilder: () => ({scope: "player", checkType: "skill", checkId: "prc", dc: 12, actorId: "", blind: false}),
+    resolveRollActors,
+    partyActorIds: () => [],
+    selectedTokenActorIds: () => [],
+    playerCharacters: () => [{id: "ada", name: "Ada"}, {id: "bran", name: "Bran"}],
+    persist: async change => { persisted.push(change); },
+    createRequest: async config => { created.push(config); return {id: "message"}; },
+    buildCheckRequest,
+    ui: {notifications: {warn: message => warnings.push(message), error: message => warnings.push(`error:${message}`)}},
+    render() { rendered += 1; }
+  });
+  vm.runInContext(send, context);
+  await vm.runInContext("sendCheck()", context);
+  assert.deepEqual(warnings, ["Choose a character."]);
+  assert.deepEqual(persisted, []);
+  assert.deepEqual(created, []);
+  assert.equal(rendered, 0);
+  context.readBuilder = () => ({scope: "player", checkType: "skill", checkId: "prc", dc: 12, actorId: "bran", blind: true});
+  await vm.runInContext("sendCheck()", context);
+  assert.deepEqual(warnings, ["Choose a character."]);
+  assert.equal(created.length, 1);
+  assert.deepEqual(created[0].actorIds, ["bran"]);
+  assert.equal(created[0].blind, true);
+  assert.equal(rendered, 0);
 });
 
 test("specialty requests stay visible until this world hides them", () => {

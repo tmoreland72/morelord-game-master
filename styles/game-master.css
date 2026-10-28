@@ -1,7 +1,9 @@
 /* Domain layout only. Morelord Core owns the shell, controls, tokens and surfaces. */
-/* Above Foundry windows and dialogs; tooltips and notifications retain their native layers. */
+/* Above the Foundry window layer and the sidebar. Popups are raised above this in tray-stack.mjs. Tooltips and notifications keep their layers. */
+/* A body-level dnd5e roll dialog stays above the tray even if Foundry later writes a window-band z-index without !important. */
+body > dialog.roll-configuration { z-index: calc(var(--z-index-window) + 1001) !important; }
 .ml-window { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); }
-#mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-tooltip) - 1); pointer-events:auto; }
+#mlgm { --mlgm-button-height:var(--ml-control-height, 2rem); --mlgm-macro-button-height:calc(2rem + var(--ml-space-3, 0.75rem)); --ml-window-opacity:100%; --mlgm-window-gap:1000; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:65vw; z-index:calc(var(--z-index-window) + var(--mlgm-window-gap)); pointer-events:auto; }
 #mlgm button:not(.gm-handle):not(.ml-icon-button):not(.gm-cheat-chip):not(.gm-macro):not(.ml-stepper button),
 .ml-window .ml-dialog-shell button:not(.ml-icon-button),
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { box-sizing:border-box; height:var(--mlgm-button-height); min-height:var(--mlgm-button-height); max-height:var(--mlgm-button-height); flex:0 0 auto; }
@@ -11,7 +13,8 @@
 #mlgm .ml-stepper button { height:auto; min-height:0; max-height:none; width:auto; flex:1 1 0; align-self:stretch; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) { justify-content:flex-start; align-items:center; }
 .ml-window :is(.form-footer, .window-footer, .dialog-buttons, footer) > button { flex:0 0 auto !important; width:auto !important; max-width:max-content; align-self:center; padding-inline:0.85rem; }
-#mlgm [hidden] { display:none!important; }
+#mlgm [hidden],
+#mlgm .gm-request-row > .gm-inline[data-mlgm-character-field][hidden] { display:none!important; }
 #mlgm .gm-handle { display:flex; margin-inline:auto; }
 #mlgm .gm-tray { height:75vh; }
 #mlgm .gm-column { min-width:0; }
@@ -86,7 +89,9 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-trigger-rule dd { margin:0; }
 
-/* Coins and XP share row 1. Inspiration, token sync, and undo share row 2. Rows stay as tall as their content. */
+/* Undo sits above the bulk sections. Coins and XP share row 1. Rows stay as tall as their content. */
+#mlgm .gm-undo-bar { display:flex; justify-content:flex-end; align-self:stretch; width:100%; }
+#mlgm .gm-undo-bar > button { width:max-content; }
 #mlgm .gm-bulk { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:var(--ml-space-2); min-width:0; height:auto; align-content:start; align-items:stretch; justify-content:start; overflow:visible; }
 #mlgm .gm-bulk > .ml-card { grid-column:span 2; width:auto; max-width:100%; min-width:0; height:auto; align-self:stretch; align-items:flex-start; justify-content:flex-start; gap:var(--ml-space-2); overflow:visible; }
 #mlgm .gm-bulk > .ml-card > * { flex:0 1 auto; align-self:stretch; max-width:100%; min-width:0; }
@@ -101,6 +106,8 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk > .ml-card > button { align-self:flex-start; }
 #mlgm .gm-bulk .gm-specialty-row > button, #mlgm .gm-bulk-coin-fields > button { align-self:flex-end; }
 #mlgm .gm-bulk .ml-horizontal-scroll, #mlgm .gm-bulk form { overflow:visible; width:100%; max-width:100%; min-width:0; margin:0; align-self:stretch; }
+#mlgm .gm-xp-fields { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:var(--ml-space-2); width:100%; }
+#mlgm .gm-xp-fields > .gm-specialty-row { align-self:flex-start; width:auto; max-width:100%; }
 #mlgm .gm-bulk-coin-fields { display:flex; flex-wrap:wrap; gap:var(--ml-space-2); justify-content:flex-start; align-items:flex-end; width:100%; max-width:100%; min-width:0; margin-inline-start:0; }
 #mlgm .gm-bulk-coin-fields > label { align-items:flex-start; justify-content:flex-start; flex:0 0 auto; width:max-content; max-width:100%; margin-left:0; }
 #mlgm .gm-bulk-coin-action { width:max-content; max-width:100%; }
