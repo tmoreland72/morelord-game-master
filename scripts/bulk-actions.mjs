@@ -3,6 +3,7 @@ import {core, activeGM} from './requests.mjs';
 import {bulkCoinsContent, COIN_ACTIONS} from './bulk-coins.mjs';
 import {BULK_QUEUE, readBulkUndo, writeBulkUndo} from './bulk-undo.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
+import {collectSceneTokens, displayModeChoices, dispositionChoices, sceneTokenScopeChoice, sceneTokenSpec, sceneTokenUpdate, planSceneTokenChanges, tooltipHTML, visionChoices} from './scene-tokens.mjs';
 
 export const XP_ACTIONS = {split: 'xp.split', each: 'xp.each', set: 'xp.set'};
 export function bulkXpChoice(value) {
@@ -173,6 +174,7 @@ export function tokensForActor(actor, scene = globalThis.canvas?.scene) {
 export function undoLabel(snapshot) {
   if (!snapshot?.kind) return bulkText('undo.none');
   if (snapshot.kind === 'coins') return COIN_ACTIONS[snapshot.operation] ?? snapshot.operation ?? bulkText('undo.unknown');
+  if (snapshot.kind === 'sceneTokens') return bulkText(snapshot.labelKey ?? 'undo.unknown');
   if (snapshot.labelKey) return bulkText(snapshot.labelKey);
   return bulkText('undo.unknown');
 }
@@ -291,6 +293,33 @@ function tokenContent(busy, actorIds, scope) {
   return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="tokens"><strong class="gm-specialty-title">${bulkHTML('tokens.title')}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span class="gm-label-help">${bulkHTML('tokens.target')}<button type="button" class="ml-icon-button ml-help-button" data-action="bulk-tokens-help" data-tooltip="${hint}" aria-label="${help}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></span><select name="bulkTokenScope" ${busy ? 'disabled' : ''}>${options}</select></label><button type="button" data-action="bulk-tokens" ${disabled}>${bulkHTML('tokens.sync')}</button></div></section>`;
 }
 
+function sceneScopeOptions(scope) {
+  const selected = sceneTokenScopeChoice(scope);
+  return [['all', 'sceneTokens.all'], ['selected', 'sceneTokens.selected']].map(([value, key]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${bulkHTML(key)}</option>`).join('');
+}
+
+function choiceOptions(choices, selected) {
+  const current = choices.some(choice => choice.key === selected) ? selected : choices[0]?.key;
+  return choices.map(choice => `<option value="${escapeHTML(choice.key)}" ${choice.key === current ? 'selected' : ''}>${escapeHTML(choice.label)}</option>`).join('');
+}
+
+function sceneTokenTip(action) {
+  return tooltipHTML(bulkText(`sceneTokens.${action}`), [1, 2, 3, 4].map(index => bulkText(`sceneTokens.tip.${action}.${index}`)));
+}
+
+function sceneTokenContent({id, titleKey, fieldKey, scopeName, valueName, scope, value, choices, action, busy}) {
+  const tip = escapeHTML(sceneTokenTip(id));
+  const title = bulkHTML(titleKey);
+  const target = `<label class="gm-specialty-field"><span>${bulkHTML('sceneTokens.target')}</span><select name="${scopeName}" ${busy ? 'disabled' : ''}>${sceneScopeOptions(scope)}</select></label>`;
+  const field = `<label class="gm-specialty-field"><span class="gm-label-help">${bulkHTML(fieldKey)}<button type="button" class="ml-icon-button ml-help-button" data-tooltip="${title}" data-tooltip-html="${tip}" data-tooltip-class="mlgm-cheat-tip" aria-label="${title}"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></button></span><select name="${valueName}" ${busy ? 'disabled' : ''}>${choiceOptions(choices, value)}</select></label>`;
+  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="${id}"><strong class="gm-specialty-title">${title}</strong><div class="gm-specialty-row">${target}${field}<button type="button" data-action="${action}" ${busy ? 'disabled' : ''}>${bulkHTML('sceneTokens.apply')}</button></div></section>`;
+}
+
+function rememberedSceneToken(saved, key, fallback) {
+  const value = saved?.[key];
+  return {scope: sceneTokenScopeChoice(value?.scope), value: value?.value || fallback};
+}
+
 function undoContent(snapshot, busy) {
   const stored = Boolean(snapshot?.kind);
   const ready = stored && !busy;
@@ -299,14 +328,22 @@ function undoContent(snapshot, busy) {
   return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="undo"><strong class="gm-specialty-title">${bulkHTML('undo.title')}</strong>${detail}<button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${label}</button></section>`;
 }
 
-export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', tokenScope = 'party', busy = false, undo = null, cards} = {}) {
-  const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'undo'];
+export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', tokenScope = 'party', sceneTokens = {}, busy = false, undo = null, cards} = {}) {
+  const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'undo', 'disposition', 'vision', 'bars', 'name'];
+  const disposition = rememberedSceneToken(sceneTokens, 'disposition', 'FRIENDLY');
+  const vision = rememberedSceneToken(sceneTokens, 'vision', 'on');
+  const bars = rememberedSceneToken(sceneTokens, 'bars', 'NONE');
+  const name = rememberedSceneToken(sceneTokens, 'name', 'NONE');
   const html = {
     coins: bulkCoinsContent(actorIds, coins, busy, coinAction),
     xp: xpContent(xp, xpAction, busy, actorIds),
     inspiration: inspirationContent(inspiration, busy, actorIds),
     tokens: tokenContent(busy, actorIds, tokenScope),
-    undo: undoContent(undo, busy)
+    undo: undoContent(undo, busy),
+    disposition: sceneTokenContent({id: 'disposition', titleKey: 'sceneTokens.disposition', fieldKey: 'sceneTokens.disposition', scopeName: 'bulkDispositionScope', valueName: 'bulkDisposition', scope: disposition.scope, value: disposition.value, choices: dispositionChoices(), action: 'bulk-disposition', busy}),
+    vision: sceneTokenContent({id: 'vision', titleKey: 'sceneTokens.vision', fieldKey: 'sceneTokens.visionField', scopeName: 'bulkVisionScope', valueName: 'bulkVision', scope: vision.scope, value: vision.value, choices: visionChoices(), action: 'bulk-vision', busy}),
+    bars: sceneTokenContent({id: 'bars', titleKey: 'sceneTokens.bars', fieldKey: 'sceneTokens.bars', scopeName: 'bulkBarsScope', valueName: 'bulkBars', scope: bars.scope, value: bars.value, choices: displayModeChoices(), action: 'bulk-bars', busy}),
+    name: sceneTokenContent({id: 'name', titleKey: 'sceneTokens.name', fieldKey: 'sceneTokens.name', scopeName: 'bulkNameScope', valueName: 'bulkName', scope: name.scope, value: name.value, choices: displayModeChoices(), action: 'bulk-name', busy})
   };
   return `<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
 }
@@ -334,7 +371,16 @@ function tokenCard(rows) {
   return publicCard(bulkHTML('tokens.card'), lines + skipNote('tokens.already', already));
 }
 
+function sceneTokenCard(spec, rows) {
+  const lines = rows.map(row => `<div class="ml-card ml-stack"><p><strong>${escapeHTML(row.name)}</strong></p><p>${escapeHTML(spec.label)}</p></div>`).join('');
+  return publicCard(bulkHTML('sceneTokens.card', {action: bulkText(spec.labelKey)}), lines);
+}
+
 function undoCard(snapshot, actorIds) {
+  if (snapshot.kind === 'sceneTokens') {
+    const lines = (snapshot.tokens ?? []).map(row => `<div class="ml-card ml-stack"><p><strong>${escapeHTML(row.name || row.id)}</strong></p><p>${bulkHTML('undo.restored')}</p></div>`).join('');
+    return publicCard(bulkHTML('undo.card', {label: undoLabel(snapshot)}), lines);
+  }
   const purse = snapshot.purse ? `<p>${bulkHTML('undo.purse')}</p>` : '';
   return publicCard(bulkHTML('undo.card', {label: undoLabel(snapshot)}), actorIds.map(id => actorCard(id, bulkHTML('undo.restored'))).join('') + purse);
 }
@@ -463,6 +509,30 @@ export function initializeBulkActions(getActorIds) {
     });
     return updates.length ? result : {...result, unchanged: true, notice: bulkText('tokens.none')};
   }, queue);
+  channel.on('sceneTokens', async ({action, scope, value, operationId}, execution) => {
+    assertBulkGm(execution);
+    assertOperationId(operationId);
+    const spec = sceneTokenSpec(action, value);
+    if (!spec) throw Error(bulkText('sceneTokens.invalid'));
+    const controlled = (globalThis.canvas?.tokens?.controlled ?? []).map(token => token?.document ?? token);
+    const collected = collectSceneTokens(scope, {scene: globalThis.canvas?.scene, controlled});
+    if (collected.missingScene) throw Error(bulkText('tokens.scene'));
+    if (!collected.tokens.length) return {unchanged: true, warning: bulkText(sceneTokenScopeChoice(scope) === 'selected' ? 'tokens.noneSelected' : 'tokens.empty')};
+    const rows = planSceneTokenChanges(collected.tokens, spec.field, spec.value);
+    const changed = rows.filter(row => !row.skipped);
+    if (!changed.length) return {unchanged: true, notice: bulkText('sceneTokens.none')};
+    return runBulk({
+      flag: 'bulkSceneTokens',
+      receipt: {operationId, action, tokenIds: changed.map(row => row.id)},
+      title: bulkHTML('sceneTokens.card', {action: bulkText(spec.labelKey)}),
+      async mutate() {
+        const updates = changed.map(row => sceneTokenUpdate(row.id, spec.field, spec.value));
+        await collected.scene.updateEmbeddedDocuments('Token', updates);
+        await rememberUndo({kind: 'sceneTokens', labelKey: spec.labelKey, sceneId: collected.scene.id, field: spec.field, tokens: changed.map(row => ({id: row.id, name: row.name, before: row.before}))});
+      },
+      complete: () => sceneTokenCard(spec, changed)
+    });
+  }, queue);
   channel.on('undo', async ({operationId}, execution) => {
     assertBulkGm(execution);
     assertOperationId(operationId);
@@ -505,6 +575,13 @@ async function restoreBulkUndo(snapshot) {
     await updateActors((snapshot.actors ?? []).map(row => ({_id: row.id, prototypeToken: row.before})));
     return;
   }
+  if (snapshot.kind === 'sceneTokens') {
+    const scene = game.scenes?.get?.(snapshot.sceneId);
+    if (typeof scene?.updateEmbeddedDocuments !== 'function') throw Error(bulkText('sceneTokens.scene'));
+    const updates = (snapshot.tokens ?? []).map(row => sceneTokenUpdate(row.id, snapshot.field, row.before));
+    if (updates.length) await scene.updateEmbeddedDocuments('Token', updates);
+    return;
+  }
   throw Error(bulkText('undo.unknown'));
 }
 
@@ -525,6 +602,9 @@ export function applyBulkInspiration(action, operationId) {
 }
 export function applyBulkTokens(operationId, scope = 'party') {
   return executeBulk('tokens', {operationId: operation(operationId), scope: tokenScopeChoice(scope)});
+}
+export function applySceneTokens(action, scope, value, operationId) {
+  return executeBulk('sceneTokens', {action, scope: sceneTokenScopeChoice(scope), value, operationId: operation(operationId)});
 }
 export function applyBulkUndo(operationId) {
   return executeBulk('undo', {operationId: operation(operationId)});

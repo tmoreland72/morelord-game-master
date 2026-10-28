@@ -101,7 +101,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.game = {i18n: {localize: key => key}};
     globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(['pp', 'gp', 'ep', 'sp', 'cp'].map(key => [key, {label: key}]))}};
     const html = bulkPanel({actorIds: ['a'], coins: {gp: 2}, coinAction: 'split-add', xp: 4, xpAction: 'each', inspiration: 'clear', busy: false, undo: null});
-    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'undo']);
+    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'undo', 'disposition', 'vision', 'bars', 'name']);
     assert.ok(html.indexOf('data-mlgm-bulk="xp"') < html.indexOf('data-mlgm-bulk="inspiration"'));
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
@@ -508,7 +508,7 @@ describe('bulk actions', {concurrency: 1}, () => {
 
   test('unchanged party members are skipped and do not replace undo', async () => {
     const source = fs.readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
-    for (const action of ['applyBulkCoins', 'applyBulkXp', 'applyBulkInspiration', 'applyBulkTokens']) {
+    for (const action of ['applyBulkCoins', 'applyBulkXp', 'applyBulkInspiration', 'applyBulkTokens', 'applySceneTokens']) {
       const sender = source.slice(source.indexOf(`await ${action}`), source.indexOf(`await ${action}`) + 220);
       assert.match(sender, /result\?\.unchanged/);
     }

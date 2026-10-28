@@ -8,7 +8,8 @@ import { ID, escapeHTML as e } from "./core.mjs";
 import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
-import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
+import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
+import {sceneTokenScopeChoice} from './scene-tokens.mjs';
 import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
@@ -249,7 +250,7 @@ function render() {
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
-  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, tokenScope: last.bulkTokenScope, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
+  if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, tokenScope: last.bulkTokenScope, sceneTokens: last.sceneTokens, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
   if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
   if (tab === "settings") return `<div class="ml-stack gm-settings" data-gap="4">${gmSettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
@@ -435,6 +436,25 @@ async function sendBulkTokens(scope) {
     await persist(n => { n.last.bulkTokenScope = choice; });
   } finally { bulkBusy = false; render(); }
 }
+async function sendSceneTokens(action) {
+  if (bulkBusy) return;
+  const card = root.querySelector(`[data-mlgm-bulk="${action}"]`);
+  const scope = sceneTokenScopeChoice(card?.querySelector('[name$="Scope"]')?.value);
+  const value = card?.querySelector('select:not([name$="Scope"])')?.value ?? '';
+  await saving;
+  if (bulkBusy) return;
+  bulkBusy = true; render();
+  try {
+    const result = await applySceneTokens(action, scope, value);
+    if (result?.warning) ui.notifications.warn(result.warning);
+    else if (result?.unchanged) notify(result.notice);
+    else {
+      if (!result?.messageId) throw Error(bulkText('error.noGm'));
+      notify(bulkText('sceneTokens.updated'));
+    }
+    await persist(n => { n.last.sceneTokens = {...(n.last.sceneTokens ?? {}), [action]: {scope, value}}; });
+  } finally { bulkBusy = false; render(); }
+}
 async function sendBulkUndo() {
   if (bulkBusy || !readBulkUndo()) return;
   await saving;
@@ -569,6 +589,10 @@ async function act(action, id, target) {
   if (action === "bulk-xp") return sendBulkXp(root.querySelector('[name="bulkXpAction"]')?.value);
   if (action === "bulk-inspiration") return sendBulkInspiration(root.querySelector('[name="bulkInspirationAction"]')?.value === 'clear' ? 'clear' : 'grant');
   if (action === "bulk-tokens") return sendBulkTokens(root.querySelector('[name="bulkTokenScope"]')?.value);
+  if (action === "bulk-disposition") return sendSceneTokens("disposition");
+  if (action === "bulk-vision") return sendSceneTokens("vision");
+  if (action === "bulk-bars") return sendSceneTokens("bars");
+  if (action === "bulk-name") return sendSceneTokens("name");
   if (action === "bulk-tokens-help") return form(bulkText('tokens.help'), `<p>${bulkHTML('tokens.copied', {fields: tokenFieldList()})}</p>`, [["close", "Close"]]);
   if (action === "bulk-undo") return sendBulkUndo();
   if (action === "bulk-coins-clear") {
@@ -617,6 +641,13 @@ async function onChange(event) {
   if (el.name === 'bulkXpAction') { await persist(n => { n.last.bulkXpAction = bulkXpChoice(el.value); }); return; }
   if (el.name === 'bulkInspirationAction') { await persist(n => { n.last.bulkInspiration = el.value === 'clear' ? 'clear' : 'grant'; }); return; }
   if (el.name === 'bulkTokenScope') { await persist(n => { n.last.bulkTokenScope = tokenScopeChoice(el.value); }); return; }
+  const sceneTokenField = {bulkDispositionScope: ['disposition', 'scope'], bulkDisposition: ['disposition', 'value'], bulkVisionScope: ['vision', 'scope'], bulkVision: ['vision', 'value'], bulkBarsScope: ['bars', 'scope'], bulkBars: ['bars', 'value'], bulkNameScope: ['name', 'scope'], bulkName: ['name', 'value']}[el.name];
+  if (sceneTokenField) {
+    const [action, part] = sceneTokenField;
+    const value = part === 'scope' ? sceneTokenScopeChoice(el.value) : el.value;
+    await persist(n => { n.last.sceneTokens = {...(n.last.sceneTokens ?? {}), [action]: {...(n.last.sceneTokens?.[action] ?? {}), [part]: value}}; });
+    return;
+  }
   const bulkForm = el.closest('[data-mlgm-bulk-coins]');
   if (bulkForm) {
     if (el.value !== '' && Number(el.value) < 0) el.value = '0';

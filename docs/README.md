@@ -20,7 +20,7 @@ As a GM, click the **Game Master** handle at the bottom of the screen, or press 
 
 ## Player Settings
 
-Choose the characters in scope once. Party requests, selected-token requests, and Bulk Actions use that scope. The heading matches the other sections in the tray.
+Choose the characters in scope once. Party requests, selected-token requests, and the party bulk actions use that scope. The heading matches the other sections in the tray.
 
 ## Roll Requests
 
@@ -30,7 +30,7 @@ Turn on **Blind roll** to keep results and summaries visible only to GMs and Ass
 
 ## Bulk Actions
 
-Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action and Apply on one line and Amount on the next line, with the label above the field. Inspiration puts Action and Apply together the same way. Card titles stay on one line. Prototype Token Sync uses that same row: Target above its select, then Apply. Party, Selected Tokens, and All Tokens are the choices. All Tokens includes NPC tokens on the scene. Undo uses a normal-width button on the left.
+Coins and XP share the first row. Inspiration, Prototype Token Sync, and Undo Last Action share the second. Each row is only as tall as its tallest card. Every label sits above its control, lined up on the left. Selects are wide enough for their longest choice. Coins puts the coin amounts, Clear, and Apply on the line under Action. XP puts Action and Apply on one line and Amount on the next line, with the label above the field. Inspiration puts Action and Apply together the same way. Card titles stay on one line. Prototype Token Sync uses that same row: Target above its select, then Apply. Party, Selected Tokens, and All Tokens are the choices. All Tokens includes NPC tokens on the scene. Undo uses a normal-width button on the left. Disposition, Enable Vision, Display Bars, and Display Name follow that row. Each one has a title, then Target and the setting with labels above the selects, then Apply. Target is All Tokens on Current Scene or Selected Tokens. Apply updates those scene tokens in one batch. An empty target warns. Undo restores the previous token fields.
 
 Enter coins once, then split them amongst the party, give the amount to each member, or take coins back. Removal uses personal coins first, then the shared party purse, and reports any shortfall in chat. You can also grant or set XP, grant or clear Heroic Inspiration, and copy prototype tokens for the party, the selected tokens, or every token on the scene, including NPCs.
 

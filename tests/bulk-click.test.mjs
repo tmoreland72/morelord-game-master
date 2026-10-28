@@ -102,7 +102,7 @@ test('typing in a tray field and clicking once applies the control under the poi
   const ambienceRun = source.slice(source.indexOf('if (type === "ambience")'), source.indexOf('async function saveAndRun'));
   assert.doesNotMatch(playlistRun, /closeTray/);
   assert.doesNotMatch(ambienceRun, /closeTray/);
-  for (const name of ['sendBulkCoins', 'sendBulkXp', 'sendBulkInspiration', 'sendBulkTokens']) {
+  for (const name of ['sendBulkCoins', 'sendBulkXp', 'sendBulkInspiration', 'sendBulkTokens', 'sendSceneTokens']) {
     const start = source.indexOf(`async function ${name}`);
     const fn = source.slice(start, source.indexOf('async function', start + 20));
     assert.match(fn, /if \(result\?\.unchanged\)/);
