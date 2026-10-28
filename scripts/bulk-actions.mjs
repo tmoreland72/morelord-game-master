@@ -320,16 +320,13 @@ function rememberedSceneToken(saved, key, fallback) {
   return {scope: sceneTokenScopeChoice(value?.scope), value: value?.value || fallback};
 }
 
-function undoContent(snapshot, busy) {
-  const stored = Boolean(snapshot?.kind);
-  const ready = stored && !busy;
-  const detail = stored ? `<p>${bulkHTML('undo.last', {label: undoLabel(snapshot)})}</p>` : '';
-  const label = stored ? bulkHTML('undo.button') : bulkHTML('undo.none');
-  return `<section class="ml-card ml-stack" data-gap="4" data-mlgm-bulk="undo"><strong class="gm-specialty-title">${bulkHTML('undo.title')}</strong>${detail}<button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${label}</button></section>`;
+function undoButton(snapshot, busy) {
+  const ready = Boolean(snapshot?.kind) && !busy;
+  return `<div class="gm-undo-bar"><button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${bulkHTML('undo.button')}</button></div>`;
 }
 
 export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', tokenScope = 'party', sceneTokens = {}, busy = false, undo = null, cards} = {}) {
-  const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'undo', 'disposition', 'vision', 'bars', 'name'];
+  const order = Array.isArray(cards) ? cards : ['coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name'];
   const disposition = rememberedSceneToken(sceneTokens, 'disposition', 'FRIENDLY');
   const vision = rememberedSceneToken(sceneTokens, 'vision', 'on');
   const bars = rememberedSceneToken(sceneTokens, 'bars', 'NONE');
@@ -339,13 +336,12 @@ export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 
     xp: xpContent(xp, xpAction, busy, actorIds),
     inspiration: inspirationContent(inspiration, busy, actorIds),
     tokens: tokenContent(busy, actorIds, tokenScope),
-    undo: undoContent(undo, busy),
-    disposition: sceneTokenContent({id: 'disposition', titleKey: 'sceneTokens.disposition', fieldKey: 'sceneTokens.disposition', scopeName: 'bulkDispositionScope', valueName: 'bulkDisposition', scope: disposition.scope, value: disposition.value, choices: dispositionChoices(), action: 'bulk-disposition', busy}),
-    vision: sceneTokenContent({id: 'vision', titleKey: 'sceneTokens.vision', fieldKey: 'sceneTokens.visionField', scopeName: 'bulkVisionScope', valueName: 'bulkVision', scope: vision.scope, value: vision.value, choices: visionChoices(), action: 'bulk-vision', busy}),
-    bars: sceneTokenContent({id: 'bars', titleKey: 'sceneTokens.bars', fieldKey: 'sceneTokens.bars', scopeName: 'bulkBarsScope', valueName: 'bulkBars', scope: bars.scope, value: bars.value, choices: displayModeChoices(), action: 'bulk-bars', busy}),
-    name: sceneTokenContent({id: 'name', titleKey: 'sceneTokens.name', fieldKey: 'sceneTokens.name', scopeName: 'bulkNameScope', valueName: 'bulkName', scope: name.scope, value: name.value, choices: displayModeChoices(), action: 'bulk-name', busy})
+    disposition: sceneTokenContent({id: 'disposition', titleKey: 'sceneTokens.title.disposition', fieldKey: 'sceneTokens.disposition', scopeName: 'bulkDispositionScope', valueName: 'bulkDisposition', scope: disposition.scope, value: disposition.value, choices: dispositionChoices(), action: 'bulk-disposition', busy}),
+    vision: sceneTokenContent({id: 'vision', titleKey: 'sceneTokens.title.vision', fieldKey: 'sceneTokens.visionField', scopeName: 'bulkVisionScope', valueName: 'bulkVision', scope: vision.scope, value: vision.value, choices: visionChoices(), action: 'bulk-vision', busy}),
+    bars: sceneTokenContent({id: 'bars', titleKey: 'sceneTokens.title.bars', fieldKey: 'sceneTokens.bars', scopeName: 'bulkBarsScope', valueName: 'bulkBars', scope: bars.scope, value: bars.value, choices: displayModeChoices(), action: 'bulk-bars', busy}),
+    name: sceneTokenContent({id: 'name', titleKey: 'sceneTokens.title.name', fieldKey: 'sceneTokens.name', scopeName: 'bulkNameScope', valueName: 'bulkName', scope: name.scope, value: name.value, choices: displayModeChoices(), action: 'bulk-name', busy})
   };
-  return `<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
+  return `${undoButton(undo, busy)}<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
 }
 
 function skipNote(key, count) {

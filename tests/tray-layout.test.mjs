@@ -6,9 +6,9 @@ import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds
 const bulk = BULK_CARDS.map(item => item.id);
 
 test('tray order keeps unknown ids out and appends new catalog ids', () => {
-  assert.deepEqual(arrangedIds(bulk, ['undo', 'missing', 'coins', 'coins']), ['undo', 'coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
-  assert.deepEqual(visibleIds(bulk, ['tokens', 'xp'], ['xp', 'missing']), ['tokens', 'coins', 'inspiration', 'undo', 'disposition', 'vision', 'bars', 'name']);
-  assert.deepEqual(moveId(bulk, [], 'undo', 'coins'), ['undo', 'coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
+  assert.deepEqual(arrangedIds(bulk, ['undo', 'missing', 'coins', 'coins']), ['coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
+  assert.deepEqual(visibleIds(bulk, ['tokens', 'xp'], ['xp', 'missing']), ['tokens', 'coins', 'inspiration', 'disposition', 'vision', 'bars', 'name']);
+  assert.deepEqual(moveId(bulk, [], 'tokens', 'coins'), ['tokens', 'coins', 'xp', 'inspiration', 'disposition', 'vision', 'bars', 'name']);
   assert.deepEqual(toggledHidden(['xp'], 'xp', true), []);
   assert.deepEqual(toggledHidden(['xp'], 'coins', false).sort(), ['coins', 'xp']);
 });

@@ -101,7 +101,14 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.game = {i18n: {localize: key => key}};
     globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(['pp', 'gp', 'ep', 'sp', 'cp'].map(key => [key, {label: key}]))}};
     const html = bulkPanel({actorIds: ['a'], coins: {gp: 2}, coinAction: 'split-add', xp: 4, xpAction: 'each', inspiration: 'clear', busy: false, undo: null});
-    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'undo', 'disposition', 'vision', 'bars', 'name']);
+    assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
+    assert.match(html, /class="gm-undo-bar"><button type="button" data-action="bulk-undo" disabled>Undo Last Action<\/button>/);
+    assert.ok(html.indexOf('class="gm-undo-bar"') < html.indexOf('class="gm-bulk"'));
+    assert.doesNotMatch(html, /data-mlgm-bulk="undo"/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Disposition<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Vision<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Display Bars<\/strong>/);
+    assert.match(html, /<strong class="gm-specialty-title">Token Display Name<\/strong>/);
     assert.ok(html.indexOf('data-mlgm-bulk="xp"') < html.indexOf('data-mlgm-bulk="inspiration"'));
     assert.ok(html.indexOf('data-mlgm-bulk="inspiration"') < html.indexOf('data-mlgm-bulk="tokens"'));
     const css = fs.readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
@@ -141,7 +148,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.deepEqual([...xpSelect.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['split', 'each', 'set']);
     assert.match(html, /Clear Heroic Inspiration/);
     assert.match(html, /value="4"/);
-    const tokensCard = html.slice(html.indexOf('data-mlgm-bulk="tokens"'), html.indexOf('data-mlgm-bulk="undo"'));
+    const tokensCard = html.slice(html.indexOf('data-mlgm-bulk="tokens"'), html.indexOf('data-mlgm-bulk="disposition"'));
     assert.match(tokensCard, /data-action="bulk-tokens-help"/);
     assert.match(tokensCard, /fa-circle-question/);
     assert.match(tokensCard, /aria-label="Copied token settings"/);
@@ -169,16 +176,18 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tray, /bulk-tokens-help"\) return form\(bulkText\('tokens\.help'\), `<p>\$\{bulkHTML\('tokens\.copied', \{fields: tokenFieldList\(\)\}\)\}<\/p>`/);
     assert.match(tray, /bulkTokenScope = tokenScopeChoice\(el\.value\)/);
     assert.match(tray, /sendBulkTokens\(root\.querySelector\('\[name="bulkTokenScope"\]'\)\?\.value\)/);
-    const undo = html.slice(html.indexOf('data-mlgm-bulk="undo"'));
+    const undo = html.slice(html.indexOf('class="gm-undo-bar"'), html.indexOf('class="gm-bulk"'));
     assert.match(undo, /disabled/);
-    assert.match(undo, />Nothing to undo</);
+    assert.match(undo, />Undo Last Action</);
+    assert.doesNotMatch(undo, />Nothing to undo</);
     assert.doesNotMatch(undo, /<p>/);
+    assert.doesNotMatch(undo, /ml-card/);
     const ready = bulkPanel({actorIds: ['a'], undo: {kind: 'xp', labelKey: 'xp.split'}});
-    assert.doesNotMatch(ready.slice(ready.indexOf('data-mlgm-bulk="undo"')), /disabled/);
-    assert.match(ready, /Last action: Split amount amongst party members/);
+    const readyUndo = ready.slice(ready.indexOf('class="gm-undo-bar"'), ready.indexOf('class="gm-bulk"'));
+    assert.doesNotMatch(readyUndo, /disabled/);
+    assert.match(readyUndo, />Undo Last Action</);
     const paused = bulkPanel({actorIds: ['a'], undo: {kind: 'coins', operation: 'each-add'}, busy: true});
-    assert.match(paused.slice(paused.indexOf('data-mlgm-bulk="undo"')), /disabled/);
-    assert.match(paused, /Last action: Give amount to all party members/);
+    assert.match(paused.slice(paused.indexOf('class="gm-undo-bar"'), paused.indexOf('class="gm-bulk"')), /disabled/);
     assert.match(bulkPanel({actorIds: [], undo: {kind: 'xp', labelKey: 'xp.each'}}), /data-action="bulk-xp"[^>]*disabled/);
   });
 
@@ -407,19 +416,22 @@ describe('bulk actions', {concurrency: 1}, () => {
     }};
     const undoSection = () => {
       const html = bulkPanel({actorIds: ['a', 'b', 'c'], undo: readBulkUndo(), busy: false});
-      return html.slice(html.indexOf('data-mlgm-bulk="undo"'));
+      return html.slice(html.indexOf('class="gm-undo-bar"'), html.indexOf('class="gm-bulk"'));
     };
     const assertUndoReady = label => {
       for (const section of [undoSection(), undoSection()]) {
         assert.equal(section.includes('Nothing to undo'), false, label);
         assert.equal(section.includes('disabled'), false, label);
-        assert.equal(section.includes(`Last action: ${label}`), true, label);
+        assert.equal(section.includes('Undo Last Action'), true, label);
+        assert.equal(section.includes('ml-card'), false, label);
       }
     };
     const assertUndoEmpty = () => {
       const section = undoSection();
-      assert.equal(section.includes('>Nothing to undo<'), true);
+      assert.equal(section.includes('>Undo Last Action<'), true);
+      assert.equal(section.includes('>Nothing to undo<'), false);
       assert.equal(section.includes('<p>'), false);
+      assert.equal(section.includes('ml-card'), false);
       assert.equal(section.includes('disabled'), true);
     };
     const savedSnapshot = () => {

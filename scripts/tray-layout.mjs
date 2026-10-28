@@ -6,11 +6,10 @@ export const BULK_CARDS = Object.freeze([
   {id: "xp", label: "XP"},
   {id: "inspiration", label: "Inspiration"},
   {id: "tokens", label: "Prototype Token Sync"},
-  {id: "undo", label: "Undo Last Action"},
-  {id: "disposition", label: "Disposition"},
-  {id: "vision", label: "Enable Vision"},
-  {id: "bars", label: "Display Bars"},
-  {id: "name", label: "Display Name"}
+  {id: "disposition", label: "Token Disposition"},
+  {id: "vision", label: "Token Vision"},
+  {id: "bars", label: "Token Display Bars"},
+  {id: "name", label: "Token Display Name"}
 ]);
 
 export const CHEAT_LAYOUT = Object.freeze([

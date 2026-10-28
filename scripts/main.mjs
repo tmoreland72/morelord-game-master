@@ -246,7 +246,13 @@ function render() {
     <section id="mlgm-panel" class="${tab === "sound" ? "ml-surface " : ""}ml-grid ml-compact gm-columns" data-columns="${["triggers","macros","bulk","party","rolls","settings","cheat"].includes(tab) ? "1" : "3"}" role="tabpanel" aria-labelledby="mlgm-tab-${tab}">${content()}</section></div></section>`;
   restoreControls(root, controls);
   syncCharacterField(root.querySelector('[data-roll-card="check"]'));
+  syncUndoButton();
   core().ui.applyPageLayout({element:root});
+}
+function syncUndoButton() {
+  const button = root?.querySelector?.('[data-action="bulk-undo"]');
+  if (!button) return;
+  button.disabled = bulkBusy || !readBulkUndo();
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
@@ -1060,7 +1066,8 @@ Hooks.on("updateSetting", setting => {
   if (!game.user.isGM) return;
   if (setting.key === `${ID}.macros` || setting.key === `${ID}.${RUN_ON_LOAD_FOR_EVERYONE}`) refreshTray(["macros"]);
   if (setting.key === `${ID}.specialtyOrder` || setting.key === `${ID}.trayLayout`) refreshTray(["settings", "rolls", "bulk", "triggers", "cheat"]);
-  if (setting.key === 'dnd5e.primaryParty' || setting.key === `${ID}.${BULK_UNDO}`) refreshTray(['bulk']);
+  if (setting.key === 'dnd5e.primaryParty') refreshTray(['bulk']);
+  if (setting.key === `${ID}.${BULK_UNDO}`) syncUndoButton();
   if (setting.key === `${ID}.board`) {
     state = foundry.utils.deepClone(get("board"));
     if (localBoardWrite || trayPointer || JSON.stringify(state) === ownBoardJSON) return;

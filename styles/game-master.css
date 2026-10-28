@@ -89,7 +89,9 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-trigger-rule dt { margin:0; color:var(--ml-color-muted); font-size:var(--ml-font-size-xs); font-weight:var(--ml-font-weight-bold); letter-spacing:.04em; text-transform:uppercase; }
 #mlgm .gm-trigger-rule dd { margin:0; }
 
-/* Coins and XP share row 1. Inspiration, token sync, and undo share row 2. Rows stay as tall as their content. */
+/* Undo sits above the bulk sections. Coins and XP share row 1. Rows stay as tall as their content. */
+#mlgm .gm-undo-bar { display:flex; justify-content:flex-end; align-self:stretch; width:100%; }
+#mlgm .gm-undo-bar > button { width:max-content; }
 #mlgm .gm-bulk { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:var(--ml-space-2); min-width:0; height:auto; align-content:start; align-items:stretch; justify-content:start; overflow:visible; }
 #mlgm .gm-bulk > .ml-card { grid-column:span 2; width:auto; max-width:100%; min-width:0; height:auto; align-self:stretch; align-items:flex-start; justify-content:flex-start; gap:var(--ml-space-2); overflow:visible; }
 #mlgm .gm-bulk > .ml-card > * { flex:0 1 auto; align-self:stretch; max-width:100%; min-width:0; }
