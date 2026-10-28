@@ -144,3 +144,27 @@ test('ready runs pinned macros before the tray returns for non-GM users, and the
     assert.equal(english[`morelord-game-master.macros.${key}`], value);
   }
 });
+
+test('every Game Master setting registration is world-scoped and GM-restricted, except run on load for me', () => {
+  const main = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
+  const runner = readFileSync(new URL('../scripts/run-macros-on-load.mjs', import.meta.url), 'utf8');
+  const calls = [
+    ...main.matchAll(/game\.settings\.register\((?:(?!game\.settings\.register)[\s\S])*?\);/g),
+    ...runner.matchAll(/settings\.register\((?:(?!settings\.register)[\s\S])*?\);/g)
+  ].map(match => match[0]);
+  assert.equal(calls.length, 11);
+  const client = calls.filter(call => /scope:\s*"client"/.test(call));
+  assert.equal(client.length, 1);
+  assert.match(client[0], /RUN_ON_LOAD_FOR_ME/);
+  assert.match(client[0], /restricted:\s*true/);
+  assert.match(runner, /RUN_ON_LOAD_FOR_ME = "runOnLoadForMe"/);
+  assert.match(runner, /RUN_ON_LOAD_FOR_EVERYONE = "runOnLoadForEveryone"/);
+  for (const call of calls) {
+    if (call === client[0]) continue;
+    assert.match(call, /scope:\s*"world"/);
+    assert.match(call, /restricted:\s*true/);
+  }
+  assert.match(main, /game\.keybindings\.register\(ID, "toggle", \{ name: "Toggle Game Master tray", restricted: true,/);
+  assert.doesNotMatch(main, /getHotbarContextOptions|renderHotbar|getMacroContextOptions/);
+  assert.doesNotMatch(runner, /hotbar|data-slot/);
+});

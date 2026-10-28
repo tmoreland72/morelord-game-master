@@ -1,5 +1,11 @@
 # Morelord Game Master Changelog
 
+## 0.3.1
+
+### What Changed
+
+- Removed Game Master's Token Distance Indicator override. The indicator stays a Morelord Core feature. Game Master no longer promotes Core's setting, copies a previous client value, or changes its hint.
+
 ## 0.3.0
 
 ### What Changed

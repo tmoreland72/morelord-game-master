@@ -14,7 +14,6 @@ import {bulkHTML, bulkText} from './bulk-text.mjs';
 import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, moveId, toggledHidden, visibleIds} from './tray-layout.mjs';
-import {applyTokenDistanceWorldSetting, promoteTokenDistanceSetting} from './token-distance-setting.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
 import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
@@ -79,7 +78,6 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true, v
 }
 
 Hooks.once("init", () => {
-  promoteTokenDistanceSetting(game.settings);
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { settings().catch(fail); return this; }
   }
@@ -100,9 +98,6 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
-  try {
-    await applyTokenDistanceWorldSetting(game.settings, {storage: globalThis.localStorage, isGM: game.user?.isGM === true});
-  } catch (error) { console.error(`${ID} | Token Distance Indicator`, error); }
   try {
     await runMacrosOnLoad({
       forMe: game.settings.get(ID, RUN_ON_LOAD_FOR_ME),
