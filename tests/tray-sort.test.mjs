@@ -65,4 +65,6 @@ test('the tray uses Core sortable and no longer starts its own reorder drag', ()
   assert.match(main, /class="ml-actor-choice"/);
   assert.doesNotMatch(css, /gm-settings-list[^}]*flex-direction:\s*column/);
   assert.doesNotMatch(css, /gm-settings-list[^}]*auto-fill/);
+  assert.match(css, /#mlgm \.gm-settings-row > \.gm-drag-handle,\n#mlgm \.gm-settings-row > \.ml-check \{ min-width:0; \}/);
+  assert.match(css, /#mlgm \.gm-settings-row \.ml-check > span \{ min-width:0; white-space:normal; overflow-wrap:anywhere; \}/);
 });
