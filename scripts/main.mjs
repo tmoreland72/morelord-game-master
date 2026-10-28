@@ -530,8 +530,8 @@ function settingsRow(group, id, text, checked) {
   const name = group === "rolls" ? "specialty" : "tray-visible";
   return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
 }
-function settingsSection(title, detail, group, rows) {
-  return `<section class="ml-surface ml-section ml-stack" data-gap="3" data-tray-section="${e(group)}"><div class="ml-section-heading"><div><h2>${e(title)}</h2><p>${e(detail)}</p></div></div><div class="gm-settings-list ml-stack" data-gap="1">${rows}</div></section>`;
+function settingsSection(title, group, rows) {
+  return `<section class="ml-surface ml-section ml-stack" data-gap="3" data-tray-section="${e(group)}"><strong class="gm-specialty-title">${e(title)}</strong><div class="gm-settings-list ml-stack" data-gap="1">${rows}</div></section>`;
 }
 function gmSettings() {
   const layout = trayLayout();
@@ -542,7 +542,7 @@ function gmSettings() {
   const bulk = layoutRows("bulk", BULK_CARDS, layout.bulkOrder, layout.bulkHidden);
   const triggers = layoutRows("triggers", (state?.triggers ?? []).map(trigger => ({id: trigger.id, label: trigger.name || "Trigger"})), layout.triggerOrder, layout.triggerHidden);
   const cheat = layoutRows("cheat", CHEAT_LAYOUT, layout.cheatOrder, layout.cheatHidden);
-  return `<div class="ml-grid" data-columns="auto">${settingsSection("Roll Requests", "Specialty requests for this world.", "rolls", rolls)}${settingsSection("Bulk Actions", "Party and scene actions for this world.", "bulk", bulk)}${settingsSection("Triggers", "Trigger cards for this world.", "triggers", triggers)}${settingsSection("Cheat Sheet", "Reference sections for this world.", "cheat", cheat)}</div>`;
+  return `<div class="ml-grid" data-columns="auto">${settingsSection("Roll Requests", "rolls", rolls)}${settingsSection("Bulk Actions", "bulk", bulk)}${settingsSection("Triggers", "triggers", triggers)}${settingsSection("Cheat Sheet", "cheat", cheat)}</div>`;
 }
 function layoutRows(group, catalog, order, hidden) {
   const off = new Set(hidden ?? []);
