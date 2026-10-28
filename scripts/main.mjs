@@ -261,7 +261,7 @@ function syncUndoButton() {
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
   if (tab === "bulk") { const last = state?.last ?? {}; return bulkPanel({actorIds: partyActorIds(), coins: last.bulkCoins, coinAction: last.bulkCoinAction, xp: last.bulkXp, xpAction: last.bulkXpAction, inspiration: last.bulkInspiration, tokenScope: last.bulkTokenScope, sceneTokens: last.sceneTokens, busy: bulkBusy, undo: readBulkUndo(), cards: readLayout("bulk")}); }
-  if (tab === "party") return `<div class="ml-stack"><p>Characters included in party roll requests and bulk operations.</p>${characterChoices(partyActorIds())}</div>`;
+  if (tab === "party") return partySettings();
   if (tab === "settings") return `<div class="ml-stack gm-settings" data-gap="4">${gmSettings()}</div>`;
   if (tab === "triggers") return `<div class="ml-grid gm-triggers" data-columns="3">${triggerCards()}</div>`;
   if (tab === "cheat") return renderCheatSheet({order: trayLayout().cheatOrder, hidden: trayLayout().cheatHidden});
@@ -531,7 +531,7 @@ function settingsRow(group, id, text, checked) {
   return `<div class="gm-settings-row" data-tray-group="${e(group)}" data-tray-item="${e(id)}"><span class="gm-drag-handle" role="img" aria-label="${e(`Reorder ${text}`)}"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span><label class="ml-check"><input type="checkbox" name="${name}" data-tray-group="${e(group)}" value="${e(id)}" ${checked ? "checked" : ""}><span>${e(text)}</span></label></div>`;
 }
 function settingsSection(title, group, rows) {
-  return `<section class="gm-settings-section" data-tray-section="${e(group)}"><strong class="gm-section-heading">${e(title)}</strong><div class="gm-settings-list">${rows}</div></section>`;
+  return `<section class="gm-settings-section" data-tray-section="${e(group)}"><strong class="gm-section-heading">${e(title)}</strong><div class="gm-settings-list ml-grid" data-columns="auto">${rows}</div></section>`;
 }
 function gmSettings() {
   const layout = trayLayout();
@@ -997,14 +997,20 @@ Hooks.on("renderDialogV2", (_app, html) => {
   bindAmbienceFolderEditor(dialog);
 });
 function parseDC(value) { if (value === null || String(value).trim() === "") return null; const dc = Number(value); if (!Number.isInteger(dc) || dc < 0) throw new Error("DC must be a non-negative whole number or blank."); return dc; }
-function characterChoices(actorIds, single = false) {
+function actorChoiceGrid(actorIds, single = false) {
   const selectedUuids = actorIds ? actorIds.map(id => game.actors.get(id)?.uuid).filter(Boolean) : null;
   const choices = core().ui.participation.listCharacterChoices({selectedUuids});
   const singleUuid = choices.find(c => c.checked)?.uuid ?? choices[0]?.uuid;
-  return `<section class="ml-stack" data-gap="3"><strong class="gm-section-heading">Verify characters</strong><div class="ml-actor-choice-grid">${choices.map(c => {
+  return `<div class="ml-actor-choice-grid">${choices.map(c => {
     const actor = game.actors.get(c.uuid.split(".").at(-1)), target = recipient(actor);
     return `<label class="ml-actor-choice"><input type="${single ? "radio" : "checkbox"}" name="actorUuids" value="${e(c.uuid)}" ${(single ? c.uuid === singleUuid : c.checked) ? "checked" : ""}><img src="${e(c.img)}" alt=""><span>${e(c.name)}<br><small>${e(target?.isGM ? `GM · ${target.name} (no active player)` : target?.name ?? "No active GM")}</small></span></label>`;
-  }).join("")}</div></section>`;
+  }).join("")}</div>`;
+}
+function partySettings() {
+  return `<section class="ml-section gm-party"><p>Characters included in party roll requests and bulk operations.</p><strong class="gm-section-heading">Verify characters</strong>${actorChoiceGrid(partyActorIds())}</section>`;
+}
+function characterChoices(actorIds, single = false) {
+  return `<section class="ml-stack" data-gap="3"><strong class="gm-section-heading">Verify characters</strong>${actorChoiceGrid(actorIds, single)}</section>`;
 }
 function selectedActors(data) { return core().ui.participation.selectedCharacterUuids(data).map(uuid => uuid.split(".").at(-1)); }
 async function verifyCharacters(actorIds,{single=false,title="Verify characters"}={}) {

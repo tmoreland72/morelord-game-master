@@ -4,6 +4,7 @@
 
 - Removed Game Master's Token Distance Indicator override. The indicator stays a Morelord Core feature. Game Master no longer promotes Core's setting, copies a previous client value, or changes its hint.
 - Macro pins and GM Settings rows reorder with Morelord Core's sortable helper. Dragging shows the whole card under the pointer and a landing line where it will drop. The new order is saved for the world. Dragging a macro pin does not run it. Dropping a new macro still pins it. Requires Morelord Core 0.8.0.
+- GM Settings reorder lists use Core's auto-fit grid, so columns fill the tray width and empty tracks collapse. Player Settings uses Core's horizontal character choice grid.
 
 ## Verification
 
