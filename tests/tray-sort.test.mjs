@@ -56,7 +56,10 @@ test('the tray uses Core sortable and no longer starts its own reorder drag', ()
   assert.doesNotMatch(main, /type:"TrayItem"|type:'Macro'/);
   assert.doesNotMatch(css, /cursor:\s*grab/);
   assert.match(css, /#mlgm \.gm-drag-handle \{/);
-  assert.match(main, /class="gm-settings-list ml-grid" data-columns="auto"/);
+  assert.match(main, /class="ml-grid" data-columns="auto"/);
+  assert.match(main, /class="ml-surface ml-section ml-stack" data-gap="3" data-tray-section/);
+  assert.match(main, /class="gm-settings-list ml-stack"/);
+  assert.doesNotMatch(main, /gm-settings-list ml-grid/);
   assert.match(main, /class="ml-section gm-party"/);
   assert.match(main, /class="ml-actor-choice-grid"/);
   assert.match(main, /class="ml-actor-choice"/);
