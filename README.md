@@ -129,9 +129,18 @@ Core (66), Craftworks (67), and Game Master (19) automated tests pass, together 
 
 ## GitHub installation and releases
 
-Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. This module is distributed only through GitHub, without a Foundry package-directory or Morelord website listing. Morelord Core 0.8.0 or newer is required for shared UI controls, sortable reordering, and combat services.
+Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. That manifest URL stays on `master` and keeps resolving to the latest `module.json`. Morelord Core 0.8.0 or newer is required for shared UI controls, sortable reordering, and combat services.
 
-Use the existing 0.1.1 version for the first release, then increment module.json and package.json for later updates. Stop Foundry before committing pack databases. Run npm test, node --test tests/release-sync.test.cjs, node scripts/changelog.cjs --check, and relevant Dev1 checks. Commit the complete LevelDB packs, including numbered .log files and their CURRENT/MANIFEST files, then push master. Sync manifest release creates a matching tag and GitHub release; wait for it to pass and verify the public manifest and archive. Never move an existing version tag. No release.ps1 or release.config.json is used for this GitHub branch-archive workflow.
+Releases use the shared `release.ps1` workflow. Project values live in `release.config.json`. Copy `.env.example` to `.env` and set `RELEASE_PUBLISH_TOKEN` and `FOUNDRY_RELEASE_TOKEN`. From a clean `master` that matches origin, validate and then publish:
+
+```powershell
+.\release.ps1 -Version x.y.z -DryRun
+.\release.ps1 -Version x.y.z
+```
+
+The script checks `release-notes/RELEASE-NOTES-x.y.z.md`, rebuilds root `CHANGELOG.md`, writes the versioned download URL into `module.json`, builds `morelord-game-master.zip` with `module.json` at the zip root, commits `module.json` and `CHANGELOG.md`, pushes annotated tag `vX.Y.Z`, and publishes the GitHub Release, the Foundry package version, and the morelordgaming.com record. Release-note bullets that should appear on the website sit under `## What Changed` and a category heading such as `### Added`, `### Improvements`, or `### Fixed`. `-WebsiteOnly` and `-FoundryOnly` publish an existing `vX.Y.Z` tag and do not commit, tag, or create a GitHub Release. Stop Foundry before committing pack databases. Run `npm test` and `node scripts/changelog.cjs --check`. Never move an existing version tag.
+
+The download field stays on the master branch archive until a release zip is published. `release.ps1` switches it to `https://github.com/tmoreland72/morelord-game-master/releases/download/vX.Y.Z/morelord-game-master.zip` in the same commit that uploads that zip.
 
 Fresh installations seed nine managed triggers globally: Wild Magic Surge, Volatile Magic, Sneak Attack, Hunter's Mark, Ammunition Recovery, Lucky Finds, World Clock, Critical Hit, and Critical Fumble. Every new rule starts stopped. The 0.1.2 migration adds missing built-ins to existing installations without changing existing rule IDs, enabled states, or table overrides. Explicit deletions after this migration remain deleted. The Item Use macro remains a compendium template and only becomes a control-panel trigger when configured through the API; 0.1.4 removes the accidentally seeded unconfigured entry while preserving configured item rules. Lucky Finds needs its world table. Roll of Fate is a one-shot macro, not a background trigger. The catalog and saved start/stop choices are shared across worlds on the same installation.
 
@@ -159,7 +168,7 @@ Ammunition Recovery verification: all 35 Node tests and the Core design-system b
 
 Panel regression: run `node tools/verify-panel.mjs` in Dev1. It uses Core's shared runner to check the 65% width, 75% height, foreground stacking above opened and refocused Foundry windows, dialogs above the tray, and opaque body/handle at three viewport sizes without changing world documents.
 
-The cumulative changelog is `CHANGELOG.md` at the module root, newest version first, so an installed copy and GitHub readers open the same file. Per-version notes stay in `release-notes/`. That directory is omitted from the release archive, so it is not what in-Foundry viewers read. The manifest changelog URL points at `CHANGELOG.md`. Regenerate it with `node scripts/changelog.cjs`. Use the module-local `/tmp/` directory for working files; it is ignored by Git and excluded from release packages.
+The cumulative changelog is `CHANGELOG.md` at the module root, newest version first, so an installed copy and GitHub readers open the same file. Per-version notes stay in `release-notes/`. That directory is omitted from the release archive, so it is not what in-Foundry viewers read. The manifest changelog field points at the GitHub Releases page. Regenerate `CHANGELOG.md` with `node scripts/changelog.cjs`. `release.ps1` rebuilds that file from `release-notes/RELEASE-NOTES-*.md` when it publishes. Use the module-local `/tmp/` directory for working files; it is ignored by Git and excluded from release packages.
 
 ## Critical Hit and Critical Fumble
 
