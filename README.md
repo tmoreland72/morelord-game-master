@@ -4,7 +4,7 @@
 
 Smithy at the Scar has optional [native wave-control macros](macros/smithy-at-the-scar/README.md) for perimeter spawning, ten rounds of reinforcements, and the ratling safe word.
 
-Version 0.4.1.
+Version 0.4.2.
 
 ## Start in Foundry
 
