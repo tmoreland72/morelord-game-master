@@ -1,5 +1,12 @@
 # Morelord Game Master Changelog
 
+## 0.4.1
+
+### What Changed
+
+- Hotfix. CSS files use LF line endings, including on Windows, so the tray stylesheet test matches a literal newline.
+- The README states version 0.4.1. The missing-Core error message now says Morelord Core 0.8.0+.
+
 ## 0.4.0
 
 ### What Changed
