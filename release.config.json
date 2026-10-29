@@ -1,4 +1,26 @@
 {
+  "moduleId": "morelord-game-master",
+  "moduleTitle": "Morelord Game Master",
   "productSlug": "morelord-game-master",
-  "websiteUrl": "https://morelordgaming.com"
+  "githubOwner": "tmoreland72",
+  "githubRepo": "morelord-game-master",
+  "releaseBranch": "master",
+  "archiveName": "morelord-game-master.zip",
+  "websiteUrl": "https://morelordgaming.com",
+  "productDocumentationPath": "docs/README.md",
+  "requiredPaths": [
+    "module.json",
+    "CHANGELOG.md",
+    "README.md",
+    "docs",
+    "scripts",
+    "styles",
+    "lang",
+    "packs"
+  ],
+  "optionalPaths": [
+    "macros",
+    "LICENSE",
+    "LICENSE.md"
+  ]
 }
