@@ -11,7 +11,7 @@ function read(relativePath) {
 
 test('the manifest URL players already use stays on master', () => {
   const manifest = JSON.parse(read('module.json'));
-  assert.equal(manifest.version, '0.4.1');
+  assert.equal(manifest.version, '0.4.3');
   assert.equal(
     manifest.manifest,
     'https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json'
@@ -40,7 +40,7 @@ test('release config matches the shared Morelord release.ps1 contract', () => {
   }
   const docs = read('docs/README.md');
   assert.match(docs, /^product:\s*morelord-game-master\s*$/m);
-  assert.match(docs, /^version:\s*0\.4\.1\s*$/m);
+  assert.match(docs, /^version:\s*0\.4\.3\s*$/m);
 });
 
 test('release.ps1 is the shared GitHub, Foundry, and website publisher', () => {

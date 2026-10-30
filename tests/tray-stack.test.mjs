@@ -1,12 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {installTrayStack, isTrayPopup} from '../scripts/tray-stack.mjs';
+import {installTrayStack, isTrayPopup, resolveStackElement} from '../scripts/tray-stack.mjs';
 
 const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
 
 function element(tag, z = '100') {
   return {
+    nodeType: 1,
     tagName: tag,
     style: {zIndex: String(z)},
     modal: false,
@@ -285,4 +286,92 @@ test('a roll dialog inserted into a sheet after render is moved above the tray',
   roll.element.style.zIndex = '25';
   await roll.render();
   assert.ok(Number(roll.element.style.zIndex) > 1100, 'a z-index written when render resolves is raised again');
+});
+
+test('a third-party window without a real element still finishes rendering', () => {
+  const node = element('SECTION', '40');
+  const listed = element('SECTION', '40');
+  assert.equal(resolveStackElement(null), null);
+  assert.equal(resolveStackElement(undefined), null);
+  assert.equal(resolveStackElement({jquery: '3.7.1', length: 1, 0: node, get(index) { return this[index]; }}), node);
+  assert.equal(resolveStackElement([listed]), listed);
+  assert.equal(resolveStackElement({tagName: 'SECTION', style: {zIndex: '8000'}}), null);
+  assert.equal(resolveStackElement({nodeType: 3, data: 'text'}), null);
+
+  const vars = {'--z-index-window': '100', '--z-index-tooltip': '9999'};
+  const documentElement = {};
+  const root = element('ASIDE', '1100');
+  const inspected = [];
+  const view = {
+    getComputedStyle(candidate) {
+      inspected.push(candidate);
+      if (candidate === documentElement) return {zIndex: 'auto', getPropertyValue: name => vars[name] ?? ''};
+      if (!candidate || candidate.nodeType !== 1) {
+        throw new TypeError("Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.");
+      }
+      return {zIndex: candidate.style?.zIndex ?? 'auto', position: candidate.style?.position || 'absolute', getPropertyValue: () => ''};
+    }
+  };
+  class ApplicationV2 {
+    static _maxZ = 100;
+    constructor() {
+      this.element = element('SECTION', '150');
+      this.position = {zIndex: 100};
+      this.options = {tag: 'section'};
+    }
+    bringToFront() {}
+    setPosition() {}
+    render() {
+      if ('pending' in this) this.element = this.pending;
+      return this.renderResult ?? 'rendered';
+    }
+  }
+  const env = {
+    _maxZ: 100,
+    document: {documentElement, defaultView: view},
+    Hooks: {on() {}},
+    ui: {windows: {}},
+    foundry: {applications: {api: {ApplicationV2}, instances: new Map()}}
+  };
+  const jqueryNode = element('SECTION', '5000');
+  const jquery = {jquery: '3.7.1', length: 1, 0: jqueryNode, get(index) { return this[index]; }};
+  const jqueryWindow = new ApplicationV2();
+  jqueryWindow.element = jquery;
+  const arrayNode = element('SECTION', '4800');
+  const arrayWindow = new ApplicationV2();
+  arrayWindow.element = [arrayNode];
+  const pendingWindow = new ApplicationV2();
+  pendingWindow.element = null;
+  const foreign = {tagName: 'SECTION', style: {zIndex: '8000'}};
+  const foreignWindow = new ApplicationV2();
+  foreignWindow.element = foreign;
+  const sheet = new ApplicationV2();
+  sheet.element = element('SECTION', '5000');
+  env.foundry.applications.instances.set('jquery', jqueryWindow);
+  env.foundry.applications.instances.set('array', arrayWindow);
+  env.foundry.applications.instances.set('pending', pendingWindow);
+  env.foundry.applications.instances.set('foreign', foreignWindow);
+  env.foundry.applications.instances.set('sheet', sheet);
+  assert.equal(installTrayStack(root, env), true);
+  assert.ok(Number(jqueryNode.style.zIndex) < 1100, 'a jQuery-wrapped window is stacked from its element');
+  assert.ok(Number(arrayNode.style.zIndex) < 1100, 'a window whose element is a list is stacked from that element');
+  assert.equal(foreign.style.zIndex, '8000', 'a non-element is left untouched');
+  assert.ok(Number(sheet.element.style.zIndex) < 1100, 'a real window still stacks when another window has no element');
+  assert.equal(inspected.includes(jquery), false);
+  assert.equal(inspected.includes(foreign), false);
+  assert.equal(inspected.includes(null), false);
+
+  const battlemap = new ApplicationV2();
+  battlemap.pending = null;
+  battlemap.renderResult = 'battlemap';
+  assert.equal(battlemap.render(), 'battlemap');
+  battlemap.pending = jquery;
+  battlemap.renderResult = 'wrapped';
+  assert.equal(battlemap.render(), 'wrapped');
+  assert.ok(Number(jqueryNode.style.zIndex) < 1100);
+  battlemap.pending = foreign;
+  battlemap.renderResult = 'foreign';
+  assert.equal(battlemap.render(), 'foreign');
+  assert.equal(foreign.style.zIndex, '8000');
+  assert.equal(inspected.includes(foreign), false);
 });
