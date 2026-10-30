@@ -78,12 +78,55 @@ export function isTrayPopup(app, {DialogV2, Dialog, ChatPopout, FilePicker} = {}
   const classes = app.options?.classes;
   if (Array.isArray(classes) && classes.includes("roll-configuration")) return true;
   if (app.options?.tag === "dialog") return true;
-  return isPopupElement(app.element);
+  return isPopupElement(appElement(app));
 }
 
 function numeric(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
+}
+
+function isDomElement(value) {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) return false;
+  if (value.nodeType === 1) return true;
+  try {
+    const ctor = globalThis.Element;
+    return typeof ctor === "function" && value instanceof ctor;
+  } catch {
+    return false;
+  }
+}
+
+function nestedNode(value) {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) return null;
+  if (typeof value.get === "function") {
+    try {
+      const got = value.get(0);
+      if (got != null && got !== value) return got;
+    } catch { /* A jQuery-like collection can refuse get(). */ }
+  }
+  try {
+    if (typeof value.length === "number" && value.length > 0) {
+      const first = value[0];
+      if (first != null && first !== value) return first;
+    }
+  } catch { /* An exotic collection can refuse index access. */ }
+  return null;
+}
+
+// Application elements are an HTMLElement, a jQuery collection, or a list of
+// nodes. A window that has not rendered yet has none of those.
+export function resolveStackElement(value, seen = new Set()) {
+  if (isDomElement(value)) return value;
+  if (!value || (typeof value !== "object" && typeof value !== "function")) return null;
+  if (seen.has(value)) return null;
+  seen.add(value);
+  return resolveStackElement(nestedNode(value), seen);
+}
+
+function appElement(app) {
+  try { return resolveStackElement(app?.element); }
+  catch { return null; }
 }
 
 export function createStackController({root, windowLayer = 100, tooltipLayer = 9999, readZ, writeZ, readMaxZ, writeMaxZ, kinds = {}}) {
@@ -104,7 +147,7 @@ export function createStackController({root, windowLayer = 100, tooltipLayer = 9
   }
 
   function place(app) {
-    const element = app?.element;
+    const element = appElement(app);
     if (!element || element === root) return;
     if (element.matches?.(":modal")) { capMax(); return; }
     const tray = trayZ();
@@ -146,7 +189,10 @@ function wrap(object, name, after) {
   if (typeof original !== "function" || original[WRAPPED]) return;
   function stacked(...args) {
     const result = original.apply(this, args);
-    after(this, args, result);
+    // Stacking runs after the module's own render. A bad window is skipped
+    // there; this guard keeps that window's return value if stacking still fails.
+    try { after(this, args, result); }
+    catch { /* A third-party window keeps the result of its own render. */ }
     return result;
   }
   stacked[WRAPPED] = true;
@@ -160,8 +206,8 @@ function legacyDialog(foundry) {
 }
 
 function hookTarget(app, html) {
-  if (app?.element) return app;
-  const element = html?.nodeType ? html : app?.nodeType ? app : null;
+  if (appElement(app)) return app;
+  const element = resolveStackElement(html) ?? resolveStackElement(app);
   if (!element) return app;
   return {element, options: {tag: element.tagName === "DIALOG" ? "dialog" : undefined, classes: classNames(element)}, position: {}};
 }
@@ -173,12 +219,19 @@ export function installTrayStack(root, env = globalThis) {
   const view = doc?.defaultView ?? env;
   if (!root || !ApplicationV2?.prototype || typeof view?.getComputedStyle !== "function") return false;
 
-  const readZ = element => numeric(view.getComputedStyle(element).zIndex);
+  const readZ = element => {
+    const node = resolveStackElement(element);
+    if (!node) return 0;
+    const styleView = node.ownerDocument?.defaultView;
+    const reader = typeof styleView?.getComputedStyle === "function" ? styleView : view;
+    try { return numeric(reader.getComputedStyle(node).zIndex); }
+    catch { return 0; }
+  };
   const writeZ = (app, z) => {
-    const element = app.element;
+    const element = appElement(app);
     if (typeof element?.style?.setProperty === "function") element.style.setProperty("z-index", String(z), "important");
     else if (element?.style) element.style.zIndex = String(z);
-    if (app.position && typeof app.position === "object") app.position.zIndex = z;
+    if (app?.position && typeof app.position === "object") app.position.zIndex = z;
   };
   const holders = [ApplicationV2, env];
   const kinds = {
@@ -188,23 +241,27 @@ export function installTrayStack(root, env = globalThis) {
     FilePicker: foundry.applications?.apps?.FilePicker
   };
   const liftPopup = app => {
-    if (!isTrayPopup(app, kinds)) return;
-    const element = app.element;
-    const body = element?.ownerDocument?.body;
-    if (!element || !body || element === root || element.matches?.(":modal")) return;
-    const position = element.ownerDocument.defaultView?.getComputedStyle(element)?.position;
-    if (!element.parentElement || element.parentElement === body) {
-      if (position && position !== "fixed" && element.style) element.style.position = "fixed";
-      return;
-    }
-    const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
-    body.append(element);
-    if (!element.style) return;
-    element.style.position = "fixed";
-    if (rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && (rect.width || rect.height)) {
-      element.style.left = `${rect.left}px`;
-      element.style.top = `${rect.top}px`;
-    }
+    try {
+      if (!isTrayPopup(app, kinds)) return;
+      const element = appElement(app);
+      const body = element?.ownerDocument?.body;
+      if (!element || !body || element === root || element.matches?.(":modal")) return;
+      let position = "";
+      try { position = element.ownerDocument.defaultView?.getComputedStyle(element)?.position ?? ""; }
+      catch { position = ""; }
+      if (!element.parentElement || element.parentElement === body) {
+        if (position && position !== "fixed" && element.style) element.style.position = "fixed";
+        return;
+      }
+      const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+      body.append(element);
+      if (!element.style) return;
+      element.style.position = "fixed";
+      if (rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && (rect.width || rect.height)) {
+        element.style.left = `${rect.left}px`;
+        element.style.top = `${rect.top}px`;
+      }
+    } catch { /* A third-party popup stays where its module rendered it. */ }
   };
   const controller = createStackController({
     root,
@@ -228,19 +285,31 @@ export function installTrayStack(root, env = globalThis) {
     if (placing || !app) return;
     placing = true;
     try { liftPopup(app); controller.place(app); }
+    catch { /* One window cannot stop the tray from placing the others. */ }
     finally { placing = false; }
   };
   const settle = app => {
-    place(app);
-    Promise.resolve().then(() => place(app));
-    const ownerView = app?.element?.ownerDocument?.defaultView;
-    if (typeof ownerView?.requestAnimationFrame === "function") ownerView.requestAnimationFrame(() => place(app));
-    if (typeof ownerView?.setTimeout === "function") ownerView.setTimeout(() => place(app), 0);
+    const run = () => { try { place(app); } catch { /* The window is skipped. */ } };
+    run();
+    Promise.resolve().then(run).catch(() => {});
+    let ownerView;
+    try { ownerView = appElement(app)?.ownerDocument?.defaultView; }
+    catch { ownerView = undefined; }
+    try {
+      if (typeof ownerView?.requestAnimationFrame === "function") ownerView.requestAnimationFrame(run);
+      if (typeof ownerView?.setTimeout === "function") ownerView.setTimeout(run, 0);
+    } catch { /* This window has no timer. */ }
+  };
+  const passedElement = value => {
+    try { return value?.element; }
+    catch { return null; }
   };
   const afterStack = (app, args, result) => {
-    const target = args.length && args[0]?.element ? args[0] : app;
-    settle(target?.element ? target : app);
-    Promise.resolve(result).then(() => settle(target?.element ? target : app), () => {});
+    const passed = args.length ? args[0] : null;
+    const target = passed && passedElement(passed) ? passed : app;
+    const subject = target && passedElement(target) ? target : app;
+    settle(subject);
+    Promise.resolve(result).then(() => settle(subject), () => {});
   };
   wrap(ApplicationV2.prototype, "bringToFront", app => settle(app));
   wrap(ApplicationV2.prototype, "setPosition", app => settle(app));
@@ -262,7 +331,9 @@ export function installTrayStack(root, env = globalThis) {
     for (const name of RENDER_HOOKS) hooks.on(name, onRender);
   }
   const appFor = element => {
-    for (const app of foundry.applications.instances?.values?.() ?? []) if (app?.element === element) return app;
+    try {
+      for (const app of foundry.applications.instances?.values?.() ?? []) if (appElement(app) === element) return app;
+    } catch { /* Foundry owns the instance list. */ }
     return hookTarget(element);
   };
   if (typeof doc.body?.querySelectorAll === "function") {
@@ -282,7 +353,11 @@ export function installTrayStack(root, env = globalThis) {
     });
     observer.observe(doc.body, {childList: true, subtree: true});
   }
-  for (const app of foundry.applications.instances?.values?.() ?? []) settle(app);
-  for (const app of Object.values(env.ui?.windows ?? {})) settle(app);
+  try {
+    for (const app of foundry.applications.instances?.values?.() ?? []) settle(app);
+  } catch { /* A window already on screen is skipped. */ }
+  try {
+    for (const app of Object.values(env.ui?.windows ?? {})) settle(app);
+  } catch { /* A legacy window is skipped. */ }
   return true;
 }

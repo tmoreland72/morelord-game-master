@@ -3,7 +3,7 @@ title: Morelord Game Master Documentation
 description: Your in-game Dungeon Master Screen for roll requests, party rewards, macros, sound, triggers, and a rules cheat sheet.
 slug: morelord-game-master
 product: morelord-game-master
-version: 0.4.2
+version: 0.4.3
 foundry: 14
 order: 0
 ---
