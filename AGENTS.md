@@ -4,6 +4,8 @@ HARD RULE: Use D&D 5e 2024 rules (SRD 5.2) only. Never use or add 2014 rules, ne
 
 All module settings are world-scoped and GM-only unless Troy says otherwise.
 
+HARD RULE: Always use morelord-core's shared features (CSS, UI components, helpers, settings, APIs) instead of building our own. Ask Core for anything that belongs in Core.
+
 Follow `../morelord-core/AGENTS.md`, `../morelord-core/MORELORD-BRAND-GUIDE.md`,
 and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 
@@ -63,5 +65,5 @@ All roll-request cards are public, including Wild Magic d20 requests; assigned-p
 
 - Every release maintains the cumulative root `CHANGELOG.md` (newest version first, `#`/`##`/`###` headings with spaces after `#`, `- ` bullets, no `---` horizontal rules) alongside `release-notes/RELEASE-NOTES-<version>.md`.
 - `release-notes/` is export-ignored, so the installed module gets the changelog from `./CHANGELOG.md`. Keep that file at the repository root. A legacy `release-notes/<version>.md` note is included when `RELEASE-NOTES-<version>.md` is absent.
-- Regenerate `CHANGELOG.md` with `node scripts/changelog.cjs` after editing release notes. `node scripts/changelog.cjs --check` verifies it. `release.ps1` rebuilds the same file from `release-notes/RELEASE-NOTES-*.md` when publishing and refuses notes that lack publishable `## What Changed` category bullets. Omit `## Verification` and other internal test sections from the cumulative file.
-- Publish with `release.ps1` from a clean `master`. Tags are `vX.Y.Z`. The manifest URL stays `https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json`. The release commit points `download` at `releases/download/vX.Y.Z/morelord-game-master.zip` and `changelog` at the GitHub Releases page. `RELEASE_PUBLISH_TOKEN` posts the morelordgaming.com record. `FOUNDRY_RELEASE_TOKEN` posts the Foundry package version. Do not add a manifest-sync workflow that tags `master` on push.
+- Regenerate `CHANGELOG.md` with `node scripts/changelog.cjs` after editing release notes. `node scripts/changelog.cjs --check` verifies it. The Release workflow rebuilds the same file from `release-notes/RELEASE-NOTES-*.md` when publishing and refuses notes that lack publishable `## What Changed` category bullets. Omit `## Verification` and other internal test sections from the cumulative file.
+- Releases run only through the GitHub Actions Release workflow (`.github/workflows/release.yml` on `master`). Tags are `vX.Y.Z`. The manifest URL stays `https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json`. The release commit points `download` at `releases/download/vX.Y.Z/morelord-game-master.zip` and `changelog` at the GitHub Releases page. That workflow uses the repo secrets `RELEASE_PUBLISH_TOKEN` (morelordgaming.com) and `FOUNDRY_RELEASE_TOKEN` (Foundry package version). Do not run `release.ps1` directly, and do not add a manifest-sync workflow that tags `master` on push.
