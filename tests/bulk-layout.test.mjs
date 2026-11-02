@@ -47,31 +47,48 @@ test('Undo Last Action is one right-aligned button and its enabled state updates
   assert.match(button, /class="gm-undo-bar"/);
   assert.match(button, /data-action="bulk-undo"/);
   assert.match(button, /undo\.button/);
-  assert.doesNotMatch(button, /ml-card|gm-specialty-title|Nothing to undo|undo\.none/);
+  assert.match(button, /undo\.none/);
+  assert.match(button, /data-tooltip/);
+  assert.doesNotMatch(button, /ml-card|gm-specialty-title/);
   assert.match(bulk, /\$\{undoButton\(undo, busy\)\}<div class="gm-bulk">/);
   assert.match(css, /#mlgm \.gm-undo-bar \{ display:flex; justify-content:flex-end; align-self:stretch; width:100%; \}/);
   assert.match(tray, /syncUndoButton\(\)/);
   assert.match(tray, /setting\.key === `\$\{ID\}\.\$\{BULK_UNDO\}`\) syncUndoButton\(\)/);
   const sync = tray.slice(tray.indexOf('function syncUndoButton'), tray.indexOf('function content'));
-  const control = {disabled: true};
+  const control = {
+    disabled: true,
+    textContent: '',
+    setAttribute(name, value) { this[name] = value; },
+    removeAttribute(name) { delete this[name]; }
+  };
   const context = vm.createContext({
     root: {querySelector: selector => selector === '[data-action="bulk-undo"]' ? control : null},
     bulkBusy: false,
-    readBulkUndo: () => null
+    readBulkUndo: () => null,
+    bulkText: key => key === 'undo.none' ? 'Nothing to undo' : 'Undo Last Action'
   });
   vm.runInContext(sync, context);
   vm.runInContext('syncUndoButton()', context);
   assert.equal(control.disabled, true);
+  assert.equal(control.textContent, 'Nothing to undo');
+  assert.equal(control.title, 'Nothing to undo');
+  assert.equal(control['data-tooltip'], 'Nothing to undo');
   context.readBulkUndo = () => ({kind: 'xp'});
   vm.runInContext('syncUndoButton()', context);
   assert.equal(control.disabled, false);
+  assert.equal(control.textContent, 'Undo Last Action');
+  assert.equal(control.title, undefined);
+  assert.equal(control['data-tooltip'], undefined);
   context.bulkBusy = true;
   vm.runInContext('syncUndoButton()', context);
   assert.equal(control.disabled, true);
+  assert.equal(control.textContent, 'Undo Last Action');
   context.bulkBusy = false;
   context.readBulkUndo = () => null;
   vm.runInContext('syncUndoButton()', context);
   assert.equal(control.disabled, true);
+  assert.equal(control.textContent, 'Nothing to undo');
+  assert.equal(control.title, 'Nothing to undo');
   assert.match(bulk, /Token Disposition|sceneTokens\.title\.disposition/);
   assert.match(bulk, /sceneTokens\.title\.vision/);
   assert.match(bulk, /sceneTokens\.title\.bars/);

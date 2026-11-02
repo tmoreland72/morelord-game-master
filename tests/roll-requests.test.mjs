@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
+import {ID, escapeHTML as e} from "../scripts/core.mjs";
 import {CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, moveSpecialty, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties} from "../scripts/roll-requests.mjs";
+import {drakkenheimContentActive} from "../scripts/cheat-sheet-drakkenheim.mjs";
+import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds} from "../scripts/tray-layout.mjs";
 
 const skills = {prc: {label: "Perception"}, ste: {label: "Stealth"}};
 const abilities = {str: {label: "Strength"}, wis: {label: "Wisdom"}};
@@ -209,14 +212,116 @@ test("sending one character with nobody chosen warns and leaves the form", async
 });
 
 test("specialty requests stay visible until this world hides them", () => {
-  assert.deepEqual(visibleSpecialties({}), SPECIALTIES.map(specialty => specialty.id));
-  assert.deepEqual(visibleSpecialties({showFate: false, showEncounter: true}), ["encounter", "search", "foraging", "death"]);
-  assert.deepEqual(specialtyOrder(["fate", "death", "missing", "fate"]), ["fate", "death", "encounter", "search", "foraging"]);
-  const order = moveSpecialty(["fate", "death", "encounter", "search", "foraging"], "death", "fate");
-  assert.deepEqual(order, ["death", "fate", "encounter", "search", "foraging"]);
-  assert.deepEqual(moveSpecialty(order, "death", "death"), order);
-  assert.deepEqual(visibleSpecialties({showDeathSave: false}, order), ["fate", "encounter", "search", "foraging"]);
-  assert.equal(order[0], "death");
-  assert.deepEqual(buildCheckRequest({type: "save", checkId: "dex", dc: 12, blind: false, actorIds: ["a"]}), {kind: "save", ability: "dex", dc: 12, blind: false, actorIds: ["a"]});
-  assert.equal(buildCheckRequest({type: "skill", checkId: "prc", dc: null, blind: true, actorIds: ["a"]}).skill, "prc");
+  globalThis.game = {modules: {get: id => ({active: id === "drakkenheim-core"})}};
+  try {
+    assert.equal(drakkenheimContentActive(), true);
+    assert.deepEqual(visibleSpecialties({}), SPECIALTIES.map(specialty => specialty.id));
+    assert.deepEqual(visibleSpecialties({showFate: false, showEncounter: true}), ["encounter", "search", "foraging", "death"]);
+    assert.deepEqual(specialtyOrder(["fate", "death", "missing", "fate"]), ["fate", "death", "encounter", "search", "foraging"]);
+    const order = moveSpecialty(["fate", "death", "encounter", "search", "foraging"], "death", "fate");
+    assert.deepEqual(order, ["death", "fate", "encounter", "search", "foraging"]);
+    assert.deepEqual(moveSpecialty(order, "death", "death"), order);
+    assert.deepEqual(visibleSpecialties({showDeathSave: false}, order), ["fate", "encounter", "search", "foraging"]);
+    assert.equal(order[0], "death");
+    assert.deepEqual(visibleSpecialties({showDeleriumSearch: false}), ["encounter", "foraging", "death", "fate"]);
+    assert.deepEqual(buildCheckRequest({type: "save", checkId: "dex", dc: 12, blind: false, actorIds: ["a"]}), {kind: "save", ability: "dex", dc: 12, blind: false, actorIds: ["a"]});
+    assert.equal(buildCheckRequest({type: "skill", checkId: "prc", dc: null, blind: true, actorIds: ["a"]}).skill, "prc");
+  } finally {
+    delete globalThis.game;
+  }
+});
+
+test("Delerium Search stays off Roll Requests and GM Settings unless a Drakkenheim module is active", async () => {
+  const requests = readFileSync(new URL("../scripts/roll-requests.mjs", import.meta.url), "utf8");
+  const tray = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  assert.match(requests, /drakkenheimContentActive/);
+  assert.doesNotMatch(requests, /drakkenheim-(?:core|monsters|scgd)/);
+  assert.match(tray, /drakkenheimContentActive\(\)/);
+  assert.doesNotMatch(tray.slice(tray.indexOf("function gmSettings"), tray.indexOf("function layoutRows")), /drakkenheim-(?:core|monsters|scgd)/);
+  const modules = ids => ({get: id => ({active: ids.includes(id)})});
+  globalThis.game = {modules: modules([])};
+  try {
+    assert.deepEqual(visibleSpecialties({}), ["encounter", "foraging", "death", "fate"]);
+    assert.deepEqual(visibleSpecialties({showForaging: false}), ["encounter", "death", "fate"]);
+    for (const id of ["drakkenheim-core", "drakkenheim-monsters", "drakkenheim-scgd"]) {
+      globalThis.game = {modules: modules([id])};
+      assert.equal(visibleSpecialties({}).includes("search"), true, id);
+    }
+    globalThis.game = {modules: modules(["morelord-craftworks"])};
+    assert.equal(visibleSpecialties({showDeleriumSearch: true}).includes("search"), false);
+  } finally {
+    delete globalThis.game;
+  }
+
+  const grid = tray.slice(tray.indexOf("function specialtyGrid"), tray.indexOf("function specialtyCard"));
+  const settingsSource = tray.slice(tray.indexOf("function settingsRow"), tray.indexOf("function bindTraySorting"));
+  const save = tray.slice(tray.indexOf("async function saveSettingsOrder"), tray.indexOf("async function dropMacro"));
+  const cardsFor = active => {
+    globalThis.game = {modules: modules(active)};
+    const context = vm.createContext({
+      SPECIALTIES, visibleSpecialties, ID,
+      game: {settings: {get: () => true}},
+      get: () => ["fate", "search", "encounter"],
+      specialtyCard: id => `<form data-roll-card="${id}"></form>`
+    });
+    vm.runInContext(grid, context);
+    return vm.runInContext("specialtyGrid()", context);
+  };
+  let hidden;
+  let shown;
+  try {
+    hidden = cardsFor([]);
+    shown = cardsFor(["drakkenheim-monsters"]);
+  } finally {
+    delete globalThis.game;
+  }
+  assert.doesNotMatch(hidden, /data-roll-card="search"/);
+  assert.match(hidden, /data-roll-card="fate"/);
+  assert.match(hidden, /data-roll-card="encounter"/);
+  assert.match(hidden, /data-roll-card="foraging"/);
+  assert.match(hidden, /data-roll-card="death"/);
+  assert.match(shown, /data-roll-card="search"/);
+  assert.ok(shown.indexOf('data-roll-card="fate"') < shown.indexOf('data-roll-card="search"'));
+
+  const settingsFor = active => {
+    globalThis.game = {modules: modules(active)};
+    const context = vm.createContext({
+      specialtyOrder, drakkenheimContentActive, SPECIALTIES, BULK_CARDS, CHEAT_LAYOUT, arrangedIds, e, ID,
+      state: {triggers: []},
+      get: key => key === "specialtyOrder" ? ["death", "search", "encounter"] : true,
+      trayLayout: () => ({}),
+      game: {settings: {get: () => true}}
+    });
+    vm.runInContext(settingsSource, context);
+    return vm.runInContext("gmSettings()", context);
+  };
+  const settingsOff = settingsFor([]);
+  const rollsOff = settingsOff.slice(settingsOff.indexOf('data-tray-section="rolls"'), settingsOff.indexOf('data-tray-section="bulk"'));
+  assert.doesNotMatch(rollsOff, /value="search"/);
+  assert.doesNotMatch(rollsOff, /Delerium Search/);
+  assert.match(rollsOff, /Death Save/);
+  assert.match(rollsOff, /Encounter Check/);
+  const settingsOn = settingsFor(["drakkenheim-scgd"]);
+  const rollsOn = settingsOn.slice(settingsOn.indexOf('data-tray-section="rolls"'), settingsOn.indexOf('data-tray-section="bulk"'));
+  assert.match(rollsOn, /value="search"/);
+  assert.match(rollsOn, /Delerium Search/);
+  assert.ok(rollsOn.indexOf('value="death"') < rollsOn.indexOf('value="search"'));
+
+  let stored = ["encounter", "search", "foraging", "death", "fate"];
+  const saved = [];
+  const orderContext = vm.createContext({
+    specialtyOrder, ID,
+    get: () => stored,
+    gm() {},
+    render() {},
+    game: {settings: {set: async (_namespace, key, value) => { assert.equal(key, "specialtyOrder"); saved.push(value); stored = value; }}}
+  });
+  vm.runInContext(save, orderContext);
+  orderContext.ids = ["fate", "encounter", "foraging", "death"];
+  await vm.runInContext("saveSettingsOrder('rolls', ids)", orderContext);
+  assert.deepEqual([...saved.at(-1)], ["fate", "encounter", "search", "foraging", "death"]);
+  orderContext.ids = ["encounter", "search", "death", "foraging", "fate"];
+  await vm.runInContext("saveSettingsOrder('rolls', ids)", orderContext);
+  assert.deepEqual([...saved.at(-1)], ["encounter", "search", "death", "foraging", "fate"]);
+  delete globalThis.game;
 });

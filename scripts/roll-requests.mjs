@@ -1,3 +1,5 @@
+import {drakkenheimContentActive} from "./cheat-sheet-drakkenheim.mjs";
+
 export const CHECK_TYPES = [
   {id: "skill", label: "Skill check"},
   {id: "ability", label: "Ability check"},
@@ -29,7 +31,11 @@ export function moveSpecialty(order, id, before) {
 }
 
 export function visibleSpecialties(settings = {}, order = []) {
-  return specialtyOrder(order).filter(id => settings[SPECIALTIES.find(specialty => specialty.id === id).setting] !== false);
+  const drakkenheim = drakkenheimContentActive();
+  return specialtyOrder(order).filter(id => {
+    if (id === "search" && !drakkenheim) return false;
+    return settings[SPECIALTIES.find(specialty => specialty.id === id).setting] !== false;
+  });
 }
 
 // D&D 2024 / SRD 5.2. Optional scores such as Honor and Sanity, and any other
