@@ -5,7 +5,7 @@ import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
-import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
+import { core, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
@@ -356,7 +356,7 @@ function specialtyCard(id) {
   return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label>${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
 }
 function searchZones() {
-  try { return craftworks().deleriumSearch.getZones(); } catch { return []; }
+  try { return core().deleriumSearch.getZones(); } catch { return []; }
 }
 function readBuilder() {
   const data = new FormData(root.querySelector('[data-roll-card="check"]'));

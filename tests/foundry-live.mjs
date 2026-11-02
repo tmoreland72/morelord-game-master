@@ -21,7 +21,7 @@ try {
     console.log(JSON.stringify(await browser.evaluate('({world:game.world.id,core:game.modules.get("morelord-core")?.version,module:game.modules.get("morelord-game-master")?.active,api:!!game.modules.get("morelord-game-master")?.api})')));
     if(process.env.MLGM_RUN_LIVE==='1'){
       console.log(JSON.stringify({startupErrors:browser.errors}));
-      await browser.wait('!!game.modules.get("morelord-craftworks")?.api?.deleriumSearch',60000);
+      await browser.wait('!!globalThis.MorelordCore?.deleriumSearch?.available',60000);
       await browser.evaluate('[...document.querySelectorAll(".window-title")].find(el=>el.textContent.includes("Welcome to Hero Mancer"))?.closest(".application")?.querySelector("[data-action=close]")?.click()');
       const report=await browser.evaluate('var {gameMasterChecks}=await import("./modules/morelord-game-master/scripts/testing/in-game.mjs");var {runInGameTests}=await import("./modules/morelord-core/scripts/testing/in-game.js");await runInGameTests({checks:gameMasterChecks})');
       await mkdir('test-results',{recursive:true});await writeFile('test-results/live-foundry.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

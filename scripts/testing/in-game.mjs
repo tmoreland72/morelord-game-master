@@ -1,4 +1,5 @@
 import {ID} from "../core.mjs";
+import {drakkenheimContentActive} from "../cheat-sheet-drakkenheim.mjs";
 import {core,createRequest,rollRequest,foragingTerrains} from "../requests.mjs";
 import {executeTrigger} from "../triggers.mjs";
 import {assert} from "../../../morelord-core/scripts/testing/in-game.js";
@@ -23,7 +24,8 @@ export const gameMasterChecks=[{
       assert(document.querySelector('[data-roll-card="encounter"] select[name="die"]'),"Encounter die uses a dropdown.");
       const builder=document.querySelector('.gm-request-row');
       assert(document.querySelectorAll('.gm-request-row').length===1 && getComputedStyle(builder).flexWrap==="nowrap","The check builder stays on one row.");
-      assert(document.querySelector('[data-roll-card="search"] .gm-specialty-title')?.textContent==="Delerium Search","Delerium Search is a specialty card.");
+      if (drakkenheimContentActive()) assert(document.querySelector('[data-roll-card="search"] .gm-specialty-title')?.textContent==="Delerium Search","Delerium Search is a specialty card while a Drakkenheim module is active.");
+      else assert(!document.querySelector('[data-roll-card="search"]'),"Delerium Search stays hidden without a Drakkenheim module.");
       assert(document.querySelector('[data-roll-card="fate"] .gm-specialty-title')?.textContent==="Roll of Fate","Roll of Fate is a labeled specialty card.");
       assert([...document.querySelectorAll('[data-roll-card="fate"] select[name="scope"] option')].map(option=>option.textContent).join('|')==="Party|Selected tokens","Roll of Fate chooses party or selected tokens.");
       assert([...document.querySelectorAll('.gm-specialty-card:not([data-roll-card="fate"])')].every(card=>card.querySelector('input[name="blind"]')),"Private specialty cards include a blind toggle.");
@@ -75,11 +77,13 @@ export const gameMasterChecks=[{
       const deathBefore=foundry.utils.deepClone(actor.system.attributes.death);
       const death=await createRequest({kind:'death',actorIds:[actor.id]});requests.push(death.id);await rollRequest(death.id,actor.id);
       assert(actor.system.attributes.death.success===deathBefore.success && actor.system.attributes.death.failure===deathBefore.failure && actor.system.attributes.hp.value===0,"Blind death saves do not disclose outcome through actor updates.");
-      if (specialties) {
+      if (specialties && drakkenheimContentActive()) {
       const search=await createRequest({kind:'delerium',zoneId:'outer',actorIds:[actor.id]});requests.push(search.id);
       await rollRequest(search.id,actor.id,'inv');
       await wait(()=>game.messages.some(m=>m.getFlag(ID,'search')?.requestId===search.id),"Delerium summary after dice animation");
       assert(game.messages.some(m=>m.getFlag(ID,'search')?.requestId===search.id),"Delerium search creates its private summary.");
+      }
+      if (specialties) {
       const terrains=await foragingTerrains();
       const forage=await createRequest({kind:'foraging',skill:'sur',terrainIndex:2,actorIds:[actor.id]});requests.push(forage.id);
       assert(forage.getFlag(ID,'request').dc===terrains[2].value,"Foraging uses Journeys configured terrain DC.");

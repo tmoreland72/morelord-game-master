@@ -214,12 +214,8 @@ export async function executeLuckyFindTrigger(combat) {
   if (!table) return false;
   completedLuckyFinds.add(combat.id);
   try {
-    const craftworks = game.modules.get('morelord-craftworks')?.api;
-    if (craftworks?.luckyFinds?.hasAccess) await craftworks.openLuckyFinds({table});
-    else {
-      const {roll, results} = await table.roll();
-      await table.toMessage(results, {roll, messageData: {whisper: core().users.list().filter(u => u.isGM).map(u => u.id), flags: {[ID]: {triggerResult: {kind: 'lucky-find', combatId: combat.id}}}}, messageOptions: {messageMode: 'gm'}});
-    }
+    const {roll, results} = await table.roll();
+    await table.toMessage(results, {roll, messageData: {whisper: core().users.list().filter(u => u.isGM).map(u => u.id), flags: {[ID]: {triggerResult: {kind: 'lucky-find', combatId: combat.id}}}}, messageOptions: {messageMode: 'gm'}});
     return true;
   } catch (error) { completedLuckyFinds.delete(combat.id); throw error; }
 }

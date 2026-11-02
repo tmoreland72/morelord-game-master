@@ -11,7 +11,7 @@ try {
  await browser.evaluate(`(()=>{const name=${JSON.stringify(process.env.FOUNDRY_TEST_GM||'Chuck')},select=document.querySelector('select[name=userId]');if(select)select.value=[...select.options].find(o=>o.textContent.trim()===name).value;else document.querySelector('input[name=username]').value=name;document.querySelector('input[name=password]').value=${JSON.stringify(process.env.FOUNDRY_TEST_PASSWORD||'')};document.querySelector('button[name=join]').click();})()`);
  await browser.wait('globalThis.game?.ready && globalThis.canvas?.ready && !!game.modules.get("morelord-game-master")?.api',60000);
  if(await browser.evaluate('game.world.id')!=='dev1')throw Error('Not Dev1.');
- await browser.wait('!!game.modules.get("morelord-craftworks")?.api?.deleriumSearch',60000);
+ await browser.wait('!!globalThis.MorelordCore?.deleriumSearch?.available',60000);
  await browser.evaluate('globalThis.mlgmReleaseChecks='+JSON.stringify(selected));
  const report=await browser.evaluate(`await (async()=>{
   const {runInGameTests}=await import('./modules/morelord-core/scripts/testing/in-game.js');

@@ -4,17 +4,16 @@ import { ID, escapeHTML as e, summarize } from "./core.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
-  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.8.0+ and its Socketlib connection.");
+  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ and its Socketlib connection.");
   return api;
 };
 export const activeGM = () => core().users.list().find(user => user.active && user.isGM);
 const authority = message => core().users.list().find(user => user.id === message?.author?.id && user.active && user.isGM) ?? activeGM();
 export const recipient = actor => core().users.activePlayerForActor(actor) ?? activeGM();
-export const craftworks = () => {
-  const module = game.modules.get("morelord-craftworks"), api = module?.active && module.api;
-  if (!module?.active) throw new Error("Enable Morelord Craftworks to use Delerium Search.");
-  if (!api?.deleriumSearch) throw new Error("Craftworks is still initializing. Try Delerium Search again once it is ready.");
-  if (!api.deleriumSearch.hasAccess) throw new Error("Enable the Monsters of Drakkenheim content pack in Craftworks to search for delerium.");
+export const deleriumSearch = () => {
+  const api = core().deleriumSearch;
+  if (typeof api?.start !== "function" || typeof api?.available !== "function") throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ for Delerium Search.");
+  if (!api.available()) throw new Error("Enable a Drakkenheim content module to search for delerium.");
   return api;
 };
 export const surgeDie = req => req.surgeName === 'Volatile Magic' ? 4 : 20;
@@ -118,11 +117,11 @@ export async function createRequest(config) {
   }
   const req = {...config,version:2,kind:config.kind ?? "skill",actorIds,blind:config.kind === "surge" ? true : config.blind !== false,completed:[]};
   if (req.kind === "delerium") {
-    const api = craftworks();
-    req.searchSession = api.deleriumSearch.start(config.zoneId);
+    const search = deleriumSearch();
+    req.searchSession = search.start(config.zoneId);
     req.searchSession.selectedCharacterUuids = actorIds.map(id => game.actors.get(id).uuid);
     req.searchSession.messageMode = req.blind ? "blind" : "public";
-    req.searchSkills = api.deleriumSearch.getSkillOptions().map(skill => ({...skill}));
+    req.searchSkills = search.getSkillOptions().map(skill => ({...skill}));
     req.dc = req.searchSession.zone.dc;
   }
   const message = await ChatMessage.create({content:requestHTML(req),whisper:[],blind:false,flags:{[ID]:{request:req}}},{messageMode:"public"});
@@ -217,10 +216,9 @@ async function resolveRequest({requestId,actorId,skillId,roll:prepared}, executi
     try { [roll] = await actor.rollDeathSave({}, {configure:false}, {create:false}) ?? []; }
     finally { if (preventUpdate) Hooks.off("dnd5e.rollDeathSave",preventUpdate); }
   } else if (req.kind === "delerium") {
-    const api = craftworks();
     if (skillId === "decline") declined = true;
     else {
-      if (!api.deleriumSearch.getSkillOptions().some(s => s.id === skillId)) return {accepted:false,reason:"Choose a Craftworks search skill."};
+      if (!deleriumSearch().getSkillOptions().some(s => s.id === skillId)) return {accepted:false,reason:"Choose Arcana, Investigation, or Survival."};
       roll = await rollNative(actor, req, skillId, {configure:false});
     }
   } else roll = await rollNative(actor, req, skillId, {configure:false});
@@ -245,15 +243,15 @@ async function finalizeSearch(requestId) {
   const message = game.messages.get(requestId), req = validRequest(message);
   if (req?.kind !== "delerium" || !req.actorIds.every(id => isComplete(message,id))) throw new Error("Each character must roll or decline before finalizing.");
   if (requestResults(message).some(result => result._dice3danimating)) throw new Error("Wait for the search dice to finish before opening results.");
-  const api = craftworks(), session = api.sessions.import(req.searchSession);
+  const search = deleriumSearch(), session = foundry.utils.deepClone(req.searchSession);
   for (const id of req.actorIds) {
     const result = resultMessage(requestId,id), data = result?.getFlag(ID,"result");
     if (!data) throw new Error("A search result card is missing. Keep the private cards until the search is finalized.");
-    const values = {sessionId:session.id,userId:`actor:${id}`,actorUuid:game.actors.get(id)?.uuid ?? `Actor.${id}`};
-    if (data.declined) api.deleriumSearch.decline(values);
-    else api.deleriumSearch.attempt({...values,skillId:data.skillId,total:result.rolls[0].total,naturalD20:core().rolls.naturalD20(result.rolls[0])});
+    const values = {userId:`actor:${id}`,actorUuid:game.actors.get(id)?.uuid ?? `Actor.${id}`};
+    if (data.declined) search.decline(session, values);
+    else search.attempt(session, {...values,skillId:data.skillId,total:result.rolls[0].total,naturalD20:core().rolls.naturalD20(result.rolls[0])});
   }
-  await api.deleriumSearch.finalize(session.id);
+  await search.finalize(session);
   const summary = await ChatMessage.create({content:searchSummary(session),blind:req.blind !== false,whisper:req.blind === false ? [] : game.users.filter(u => u.isGM).map(u => u.id),flags:{[ID]:{search:{requestId,session:foundry.utils.deepClone(session)}}}}, {messageMode:req.blind === false ? "public" : "blind"});
   return summary.id;
 }
@@ -261,13 +259,12 @@ async function openSearchResults(summaryId) {
   if (!game.user.isGM) return;
   const message = game.messages.get(summaryId), data = message?.getFlag(ID,"search");
   if (!data || !message.author?.isGM) throw new Error("Search result no longer exists.");
-  const api = craftworks(), session = foundry.utils.deepClone(data.session);
-  const {DeleriumSearchResultsApp} = await import("../../morelord-craftworks/scripts/ui/delerium-search-results-app.mjs");
-  const facade = {...api,deleriumSearch:{rollAndAward:async (_id,recipientUuid) => {
+  const session = foundry.utils.deepClone(data.session);
+  return deleriumSearch().openResults(session, {award: async recipientUuid => {
     const updated = await channel.executeAsUser("awardSearch",{summaryId,recipientUuid},authority(message)?.id);
-    Object.assign(session,updated); return session.result;
-  }}};
-  return new DeleriumSearchResultsApp(facade,session).render({force:true});
+    Object.assign(session, updated);
+    return session;
+  }});
 }
 
 function refreshRequests() {
@@ -299,8 +296,8 @@ export function initializeRequests() {
     if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can award search results.");
     const message = game.messages.get(summaryId), data = message?.getFlag(ID,"search");
     if (!message?.author?.isGM || !data?.session) throw new Error("Search summary not found.");
-    const api = craftworks(), session = api.sessions.import(data.session);
-    try { await api.deleriumSearch.rollAndAward(session.id,recipientUuid); }
+    const session = foundry.utils.deepClone(data.session);
+    try { await deleriumSearch().rollAndAward(session, recipientUuid); }
     finally { await message.update({content:searchSummary(session),[`flags.${ID}.search`]:{...data,session:foundry.utils.deepClone(session)}}); }
     return foundry.utils.deepClone(session);
   },{serialize:`${ID}.rolls`});
