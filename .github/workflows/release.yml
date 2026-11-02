@@ -87,6 +87,28 @@ jobs:
             throw "morelord-core is missing $identity. Tests import that sibling path."
           }
 
+      # Public repo. Omitting ref checks out the default branch. The job
+      # GITHUB_TOKEN can read the public repository.
+      - name: Checkout Morelord Journeys
+        if: ${{ inputs.publish_only == false }}
+        uses: actions/checkout@v4
+        with:
+          repository: tmoreland72/morelord-journeys
+          path: morelord-journeys-checkout
+          token: ${{ github.token }}
+
+      - name: Place Journeys beside this repository
+        if: ${{ inputs.publish_only == false }}
+        run: |
+          $dest = Join-Path (Split-Path -Parent $env:GITHUB_WORKSPACE) 'morelord-journeys'
+          $source = Join-Path $env:GITHUB_WORKSPACE 'morelord-journeys-checkout'
+          if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
+          Move-Item -LiteralPath $source -Destination $dest
+          $identity = Join-Path $dest 'scripts/domain/route-options.mjs'
+          if (-not (Test-Path -LiteralPath $identity)) {
+            throw "morelord-journeys is missing $identity. Tests import that sibling path."
+          }
+
       - name: Setup Node
         if: ${{ inputs.publish_only == false }}
         uses: actions/setup-node@v4
