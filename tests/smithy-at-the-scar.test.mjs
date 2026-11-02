@@ -83,7 +83,9 @@ test('partial token creation retries saved IDs, without duplicate waves or chang
   try {
     globalThis.game={user:{id:'gm',isGM:true},modules:new Map([['morelord-core',{active:true}]]),users:new Map([['gm',{id:'gm',active:true}]]),combats:new Collection([['combat',combat]])};
     globalThis.canvas={scene,ready:true};
-    globalThis.foundry={utils:{deepClone:clone,randomID:()=>`token${serial++}`},applications:{api:{DialogV2:{wait:async()=>({action:'deploy'})}}}};
+    // openDialog subclasses DialogV2 and calls its static wait. A plain object cannot be extended, so the deploy dialog never opens.
+    class DialogV2 { static async wait(){ return {action:'deploy'}; } }
+    globalThis.foundry={utils:{deepClone:clone,randomID:()=>`token${serial++}`},applications:{api:{DialogV2}}};
     globalThis.MorelordCore={users:{list:()=>[{id:'gm'}]},socket:{runSerialized:(_key,fn)=>fn()}};
     globalThis.ui={notifications:{info:m=>notifications.push(m),error:m=>notifications.push(m)}};
     globalThis.fromUuid=async()=>({type:'npc',getTokenDocument:async(data)=>({toObject:()=>({...data,actorId:'husk',width:1,height:1})})});
