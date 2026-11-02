@@ -5,7 +5,6 @@
 Smithy at the Scar has optional [native wave-control macros](macros/smithy-at-the-scar/README.md) for perimeter spawning, ten rounds of reinforcements, and the ratling safe word.
 
 Version 0.4.4.
-
 ## Start in Foundry
 
 The module is already in the development installation's `Data/modules/morelord-game-master` directory. Restart Foundry if it was running when these files were created, then enable **Morelord Game Master** in **Manage Modules** for your world.
