@@ -176,6 +176,5 @@ function partyPurse() {
 
 export function coinCard(operation, coins, rows) {
   const remove = operation.endsWith('-remove');
-  const skipped = rows.filter(row => !row.purse && !coinChanged(row)).length;
-  return `<section class="ml-chat-card ml-stack"><h3>Party Coins: ${e(COIN_ACTIONS[operation])}</h3>${rows.filter(row => !row.purse).map(row => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(row.actorId)?.uuid})}<p>${remove ? 'Removed' : 'Added'}: ${e(formatCoins(row.applied))}</p>${remove && COINS.some(key => row.deficit[key] > 0) ? `<p class="ml-text" data-tone="warning">Deficit: ${e(formatCoins(row.deficit))}</p>` : remove && COINS.some(key => row.partyPaid[key] > 0) ? `<p class="ml-text" data-tone="warning">Paid by Party: ${e(formatCoins(row.partyPaid))}</p>` : ''}</div>`).join('')}${skipped ? `<p>Skipped ${skipped} whose coins did not change.</p>` : ''}</section>`;
+  return `<section class="ml-chat-card ml-stack"><h3>Party Coins: ${e(COIN_ACTIONS[operation])}</h3>${rows.filter(row => !row.purse).map(row => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(row.actorId)?.uuid})}<p>${remove ? 'Removed' : 'Added'}: ${e(formatCoins(row.applied))}</p>${remove && COINS.some(key => row.deficit[key] > 0) ? `<p class="ml-text" data-tone="warning">Deficit: ${e(formatCoins(row.deficit))}</p>` : remove && COINS.some(key => row.partyPaid[key] > 0) ? `<p class="ml-text" data-tone="warning">Paid by Party: ${e(formatCoins(row.partyPaid))}</p>` : ''}</div>`).join('')}</section>`;
 }

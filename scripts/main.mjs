@@ -15,7 +15,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, toggledHidden, visibleIds} from './tray-layout.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
-import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {debugDrakkenheimCheat, drakkenheimContentActive} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 import {openDialog, percentIssue} from './dialog.mjs';
 import {installTrayStack} from './tray-stack.mjs';
@@ -256,7 +256,17 @@ function render() {
 function syncUndoButton() {
   const button = root?.querySelector?.('[data-action="bulk-undo"]');
   if (!button) return;
-  button.disabled = bulkBusy || !readBulkUndo();
+  const empty = !readBulkUndo()?.kind;
+  button.disabled = bulkBusy || empty;
+  const label = bulkText(empty ? 'undo.none' : 'undo.button');
+  button.textContent = label;
+  if (empty) {
+    button.setAttribute('title', label);
+    button.setAttribute('data-tooltip', label);
+  } else {
+    button.removeAttribute('title');
+    button.removeAttribute('data-tooltip');
+  }
 }
 function content() {
   if (tab === "rolls") return `<div class="ml-stack gm-request-rows" data-gap="4">${checkBuilder()}${specialtyGrid()}</div>`;
@@ -535,7 +545,8 @@ function settingsSection(title, group, rows) {
 }
 function gmSettings() {
   const layout = trayLayout();
-  const rolls = specialtyOrder(get("specialtyOrder")).map(id => {
+  const drakkenheim = drakkenheimContentActive();
+  const rolls = specialtyOrder(get("specialtyOrder")).filter(id => id !== "search" || drakkenheim).map(id => {
     const specialty = SPECIALTIES.find(item => item.id === id);
     return settingsRow("rolls", specialty.id, specialty.label, game.settings.get(ID, specialty.setting) !== false);
   }).join("");
@@ -584,8 +595,15 @@ async function saveSettingsOrder(group, ids) {
   gm();
   if (!Array.isArray(ids)) return;
   if (group === "rolls") {
-    if (JSON.stringify(ids) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
-    await game.settings.set(ID, "specialtyOrder", ids);
+    const next = [...ids];
+    if (!next.includes("search")) {
+      const previous = specialtyOrder(get("specialtyOrder"));
+      const followers = previous.slice(previous.indexOf("search") + 1);
+      const anchor = followers.find(id => next.includes(id));
+      next.splice(anchor ? next.indexOf(anchor) : next.length, 0, "search");
+    }
+    if (JSON.stringify(next) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
+    await game.settings.set(ID, "specialtyOrder", next);
     render();
     return;
   }

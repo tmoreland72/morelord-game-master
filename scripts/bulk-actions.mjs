@@ -321,8 +321,11 @@ function rememberedSceneToken(saved, key, fallback) {
 }
 
 function undoButton(snapshot, busy) {
-  const ready = Boolean(snapshot?.kind) && !busy;
-  return `<div class="gm-undo-bar"><button type="button" data-action="bulk-undo" ${ready ? '' : 'disabled'}>${bulkHTML('undo.button')}</button></div>`;
+  const empty = !snapshot?.kind;
+  const ready = !empty && !busy;
+  const label = bulkHTML(empty ? 'undo.none' : 'undo.button');
+  const why = empty ? ` title="${label}" data-tooltip="${label}"` : '';
+  return `<div class="gm-undo-bar"><button type="button" data-action="bulk-undo"${why} ${ready ? '' : 'disabled'}>${label}</button></div>`;
 }
 
 export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 'split', inspiration = 'grant', tokenScope = 'party', sceneTokens = {}, busy = false, undo = null, cards} = {}) {
@@ -344,27 +347,21 @@ export function bulkPanel({actorIds = [], coins, coinAction, xp = 0, xpAction = 
   return `${undoButton(undo, busy)}<div class="gm-bulk">${order.filter(id => html[id]).map(id => html[id]).join('')}</div>`;
 }
 
-function skipNote(key, count) {
-  return count ? `<p>${bulkHTML(key, {count})}</p>` : '';
-}
-
-function xpCard(operation, rows, skipped = 0) {
+function xpCard(operation, rows) {
   const title = bulkHTML('xp.card', {action: bulkText(XP_ACTIONS[operation])});
   const line = operation === 'set' ? 'xp.setTo' : 'xp.added';
-  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML(line, {amount: row.added.toLocaleString()}))).join('') + skipNote('xp.skipped', skipped));
+  return publicCard(title, rows.map(row => actorCard(row.actorId, bulkHTML(line, {amount: row.added.toLocaleString()}))).join(''));
 }
 
-function inspirationCard(action, rows, skipped = 0) {
+function inspirationCard(action, rows) {
   const title = bulkHTML(action === 'grant' ? 'inspiration.cardGrant' : 'inspiration.cardClear');
   const line = bulkHTML(action === 'grant' ? 'inspiration.granted' : 'inspiration.cleared');
-  const skippedKey = action === 'grant' ? 'inspiration.skippedGrant' : 'inspiration.skippedClear';
-  return publicCard(title, rows.map(row => actorCard(row.actorId, line)).join('') + skipNote(skippedKey, skipped));
+  return publicCard(title, rows.map(row => actorCard(row.actorId, line)).join(''));
 }
 
 function tokenCard(rows) {
-  const already = rows.filter(row => row.unchanged).length;
   const lines = rows.filter(row => !row.unchanged).map(row => actorCard(row.actorId, bulkHTML(row.skipped ? 'tokens.skipped' : 'tokens.updated'))).join('');
-  return publicCard(bulkHTML('tokens.card'), lines + skipNote('tokens.already', already));
+  return publicCard(bulkHTML('tokens.card'), lines);
 }
 
 function sceneTokenCard(spec, rows) {
@@ -445,7 +442,7 @@ export function initializeBulkActions(getActorIds) {
         await updateActors(changed.map(row => ({_id: row.actorId, 'system.details.xp.value': row.after})));
         await rememberUndo({kind: 'xp', labelKey: XP_ACTIONS[operation], operation, actors: changed.map(row => ({id: row.actorId, before: row.before}))});
       },
-      complete: () => xpCard(operation, changed, rows.length - changed.length)
+      complete: () => xpCard(operation, changed)
     });
   }, queue);
   channel.on('inspiration', async ({action, operationId}, execution) => {
@@ -472,7 +469,7 @@ export function initializeBulkActions(getActorIds) {
         }
         await rememberUndo({kind: 'inspiration', labelKey: action === 'grant' ? 'inspiration.grant' : 'inspiration.clear', action, actors: changed.map(row => ({id: row.actorId, before: row.before}))});
       },
-      complete: () => inspirationCard(action, changed, rows.length - changed.length)
+      complete: () => inspirationCard(action, changed)
     });
   }, queue);
   channel.on('tokens', async ({operationId, scope}, execution) => {

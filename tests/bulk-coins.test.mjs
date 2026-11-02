@@ -116,7 +116,8 @@ test('Core-routed GM actions update only configured characters, post public card
   assert.equal(none.notice, 'No coin balances changed.');
   assert.equal(readBulkUndo().kind, 'xp');
   assert.equal(writes.length, 1);
-  assert.match(messages.at(-1).content, /Skipped 2 whose coins did not change/);
+  assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+  assert.match(messages.at(-1).content, /Deficit/);
   actors.get('b').system.currency = coins({gp: 4});
   const mixed = await applyBulkCoins('each-remove', {gp: 1}, 'coin-skip-operation01');
   assert.equal(mixed.unchanged, undefined);
@@ -124,7 +125,8 @@ test('Core-routed GM actions update only configured characters, post public card
   assert.equal(actors.get('a').system.currency.gp, 0);
   assert.equal(actors.get('b').system.currency.gp, 3);
   assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b']);
-  assert.match(messages.at(-1).content, /Skipped 1 whose coins did not change/);
+  assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+  assert.match(messages.at(-1).content, /Actor\.b/);
   await assert.rejects(registrations.get('apply').handler({operation:'each-add', coins:{gp:99}, operationId:'test-forgery-0001'}, {senderUserId:player.id}), /eligible GM/);
   assert.equal(writes.length, 2);
   game.user = player; await assert.rejects(applyBulkCoins('each-add', {gp:1}), /Only GMs/); game.user = gm;

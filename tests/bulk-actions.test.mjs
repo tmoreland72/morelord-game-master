@@ -102,7 +102,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     globalThis.CONFIG = {DND5E: {currencies: Object.fromEntries(['pp', 'gp', 'ep', 'sp', 'cp'].map(key => [key, {label: key}]))}};
     const html = bulkPanel({actorIds: ['a'], coins: {gp: 2}, coinAction: 'split-add', xp: 4, xpAction: 'each', inspiration: 'clear', busy: false, undo: null});
     assert.deepEqual([...html.matchAll(/data-mlgm-bulk="([^"]+)"/g)].map(match => match[1]), ['coins', 'xp', 'inspiration', 'tokens', 'disposition', 'vision', 'bars', 'name']);
-    assert.match(html, /class="gm-undo-bar"><button type="button" data-action="bulk-undo" disabled>Undo Last Action<\/button>/);
+    assert.match(html, /class="gm-undo-bar"><button type="button" data-action="bulk-undo" title="Nothing to undo" data-tooltip="Nothing to undo" disabled>Nothing to undo<\/button>/);
     assert.ok(html.indexOf('class="gm-undo-bar"') < html.indexOf('class="gm-bulk"'));
     assert.doesNotMatch(html, /data-mlgm-bulk="undo"/);
     assert.match(html, /<strong class="gm-specialty-title">Token Disposition<\/strong>/);
@@ -167,7 +167,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /data-action="bulk-inspiration"[^>]*>Apply</);
     assert.match(html, /data-action="bulk-tokens"[^>]*>Apply</);
     assert.match(html, /Prototype Token Sync/);
-    assert.match(html, /Undo Last Action/);
+    assert.match(html, /Nothing to undo/);
     assert.doesNotMatch(html, />Send</);
     const removal = bulkPanel({actorIds: ['a'], coinAction: 'each-remove', undo: null});
     assert.match(removal, /data-action="bulk-coins"[^>]*>Take</);
@@ -178,16 +178,22 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tray, /sendBulkTokens\(root\.querySelector\('\[name="bulkTokenScope"\]'\)\?\.value\)/);
     const undo = html.slice(html.indexOf('class="gm-undo-bar"'), html.indexOf('class="gm-bulk"'));
     assert.match(undo, /disabled/);
-    assert.match(undo, />Undo Last Action</);
-    assert.doesNotMatch(undo, />Nothing to undo</);
+    assert.match(undo, />Nothing to undo</);
+    assert.match(undo, /title="Nothing to undo"/);
+    assert.match(undo, /data-tooltip="Nothing to undo"/);
+    assert.doesNotMatch(undo, />Undo Last Action</);
     assert.doesNotMatch(undo, /<p>/);
     assert.doesNotMatch(undo, /ml-card/);
     const ready = bulkPanel({actorIds: ['a'], undo: {kind: 'xp', labelKey: 'xp.split'}});
     const readyUndo = ready.slice(ready.indexOf('class="gm-undo-bar"'), ready.indexOf('class="gm-bulk"'));
     assert.doesNotMatch(readyUndo, /disabled/);
     assert.match(readyUndo, />Undo Last Action</);
+    assert.doesNotMatch(readyUndo, /Nothing to undo/);
     const paused = bulkPanel({actorIds: ['a'], undo: {kind: 'coins', operation: 'each-add'}, busy: true});
-    assert.match(paused.slice(paused.indexOf('class="gm-undo-bar"'), paused.indexOf('class="gm-bulk"')), /disabled/);
+    const pausedUndo = paused.slice(paused.indexOf('class="gm-undo-bar"'), paused.indexOf('class="gm-bulk"'));
+    assert.match(pausedUndo, /disabled/);
+    assert.match(pausedUndo, />Undo Last Action</);
+    assert.doesNotMatch(pausedUndo, /Nothing to undo/);
     assert.match(bulkPanel({actorIds: [], undo: {kind: 'xp', labelKey: 'xp.each'}}), /data-action="bulk-xp"[^>]*disabled/);
   });
 
@@ -428,8 +434,10 @@ describe('bulk actions', {concurrency: 1}, () => {
     };
     const assertUndoEmpty = () => {
       const section = undoSection();
-      assert.equal(section.includes('>Undo Last Action<'), true);
-      assert.equal(section.includes('>Nothing to undo<'), false);
+      assert.equal(section.includes('>Nothing to undo<'), true);
+      assert.equal(section.includes('title="Nothing to undo"'), true);
+      assert.equal(section.includes('data-tooltip="Nothing to undo"'), true);
+      assert.equal(section.includes('>Undo Last Action<'), false);
       assert.equal(section.includes('<p>'), false);
       assert.equal(section.includes('ml-card'), false);
       assert.equal(section.includes('disabled'), true);
@@ -597,7 +605,8 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.deepEqual(writes.at(-1).map(update => update._id), ['b', 'c']);
       assert.equal(actors.get('a').system.attributes.inspiration, true);
       assert.equal(actors.get('b').system.attributes.inspiration, true);
-      assert.match(messages.at(-1).content, /Skipped 1 who already had inspiration/);
+      assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+      assert.match(messages.at(-1).content, /Actor\.b/);
       assert.equal(messages.at(-1).content.includes('Actor.a'), false);
       assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b', 'c']);
       const again = await applyBulkInspiration('grant', 'inspiration-grant-0003');
@@ -619,7 +628,9 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.deepEqual(writes.at(-1).map(update => update._id), ['b', 'c']);
       assert.equal(actors.get('a').system.details.xp.value, 10);
       assert.equal(actors.get('b').system.details.xp.value, 10);
-      assert.match(messages.at(-1).content, /Skipped 1 whose experience did not change/);
+      assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+      assert.match(messages.at(-1).content, /Actor\.b/);
+      assert.equal(messages.at(-1).content.includes('Actor.a'), false);
       assert.deepEqual(readBulkUndo().actors.map(row => [row.id, row.before]), [['b', 20], ['c', 30]]);
       const same = await applyBulkXp('set', 10, 'xp-set-skip-0000002');
       assert.equal(same.unchanged, true);
@@ -631,7 +642,9 @@ describe('bulk actions', {concurrency: 1}, () => {
       assert.deepEqual(writes.at(-1).map(update => update._id), ['a']);
       assert.equal(actors.get('a').system.details.xp.value, 12);
       assert.equal(actors.get('b').system.details.xp.value, 10);
-      assert.match(messages.at(-1).content, /Skipped 2 whose experience did not change/);
+      assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+      assert.match(messages.at(-1).content, /Actor\.a/);
+      assert.equal(messages.at(-1).content.includes('Actor.b'), false);
       assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['a']);
 
       const kept = readBulkUndo();
@@ -640,7 +653,7 @@ describe('bulk actions', {concurrency: 1}, () => {
       const synced = await applyBulkTokens('token-same-00000001');
       assert.equal(synced.unchanged, true);
       assert.match(synced.notice, /No prototype tokens needed updating/);
-      assert.match(messages.at(-1).content, /Skipped 1 whose prototype already matched/);
+      assert.doesNotMatch(messages.at(-1).content, /Skipped/);
       assert.match(messages.at(-1).content, /No token on the current scene/);
       assert.equal(messages.at(-1).content.includes('Prototype token updated'), false);
       assert.deepEqual(readBulkUndo(), kept);
@@ -724,7 +737,8 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.equal(actors.get('b').prototypeToken.name, 'Placed');
     assert.equal(actors.get('a').prototypeToken.sight.angle, 360);
     assert.match(messages.at(-1).content, /Prototype token updated/);
-    assert.match(messages.at(-1).content, /Skipped 1 whose prototype already matched/);
+    assert.doesNotMatch(messages.at(-1).content, /Skipped/);
+    assert.equal(messages.at(-1).content.includes('Actor.a'), false);
     assert.equal(messages.at(-1).content.includes('A character update was cancelled'), false);
     assert.deepEqual(readBulkUndo().actors.map(row => row.id), ['b']);
   });
