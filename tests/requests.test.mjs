@@ -5,14 +5,13 @@ import * as users from "../../morelord-core/scripts/services/user-service.js";
 import * as participation from "../../morelord-core/scripts/ui/actor-participation.js";
 import * as rolls from "../../morelord-core/scripts/services/skill-roll-service.js";
 import { actorIdentity } from "../../morelord-core/scripts/ui/actor-identity.js";
-import { DeleriumSearchService } from "../../morelord-craftworks/scripts/acquisition/delerium-search-service.mjs";
-import { AcquisitionSessionManager } from "../../morelord-craftworks/scripts/acquisition/session-manager.mjs";
+import { deleriumSearch } from "../../morelord-core/scripts/services/delerium-search.js";
 import { initializeRequests,createRequest,requestHTML,recipient,prepareRequestRoll } from "../scripts/requests.mjs";
 const ID="morelord-game-master";
 class Collection extends Map {get contents(){return [...this.values()];} [Symbol.iterator](){return this.values();} filter(f){return this.contents.filter(f);} find(f){return this.contents.find(f);} some(f){return this.contents.some(f);} }
 const collection=a=>new Collection(a.map(x=>[x.id,x]));
 
-test("Core routes chat requests; all results are GM-only; racing clicks resolve once; death saves stay private; Craftworks rules are reused",async()=>{
+test("Core routes chat requests; all results are GM-only; racing clicks resolve once; death saves stay private; Delerium Search uses Core",async()=>{
   const events=new Map();globalThis.Hooks={on(k,f){events.set(k,[...(events.get(k)??[]),f]);return f;},off(k,f){events.set(k,(events.get(k)??[]).filter(x=>x!==f));},call(k,...args){return !(events.get(k)??[]).some(f=>f(...args)===false);}};
   const gm={id:"gm",isGM:true,active:true},assistant={id:"assistant",isGM:true,active:true},player={id:"player",isGM:false,active:true},other={id:"other",isGM:false,active:true};
   let dieTotal=4;
@@ -34,7 +33,7 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   globalThis.ChatMessage={getSpeaker:({actor})=>({actor:actor.id}),async create(data){const m={id:crypto.randomUUID(),author:gm,timestamp:Date.now(),...data,getFlag(ns,key){return this.flags?.[ns]?.[key];},async setFlag(ns,key,value){this.flags[ns][key]=structuredClone(value);},async update(data){for(const [path,value] of Object.entries(data)){const parts=path.split('.');let target=this;for(const part of parts.slice(0,-1))target=target[part]??={};target[parts.at(-1)]=value;}}};if(holdAnimations && data.flags?.[ID]?.result)m._dice3danimating=true;game.messages.set(m.id,m);return m;}};
   globalThis.socketlib={registerModule:()=>({register(_name,fn){dispatch=fn;}})};
   const transport=new ContextualSocketService();transport.start();
-  globalThis.MorelordCore={users:{...users,list:users.listUsers},ui:{participation,actorIdentity},rolls:{skill:rolls.rollSkill,naturalD20:rolls.extractNaturalD20},socket:transport};
+  globalThis.MorelordCore={users:{...users,list:users.listUsers},ui:{participation,actorIdentity},rolls:{skill:rolls.rollSkill,naturalD20:rolls.extractNaturalD20},socket:transport,deleriumSearch};
   initializeRequests();
   const settle=async()=>{await new Promise(resolve=>setImmediate(resolve));await transport.runSerialized(`${ID}.rolls`,()=>{});};
   const resolve=async(m,who=player,skillId)=>{const ack=await dispatch({namespace:ID,type:"roll",data:{requestId:m.id,actorId:actor.id,skillId},context:{},senderUserId:who.id,messageId:crypto.randomUUID(),targetUserId:gm.id});await settle();return ack;};
@@ -57,13 +56,14 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   assert.equal((await resolve(encounter,assistant)).accepted,true);assert.equal(dieCalls,1);
   const death=await createRequest({actorIds:[actor.id],kind:"death"});await resolve(death,gm);assert.equal(deathUpdates,0);
   assert.equal((events.get("dnd5e.rollDeathSave")??[]).length,0);
-  const sessions=new AcquisitionSessionManager(),service=new DeleriumSearchService({sessions,contentPacks:{enabled:()=>[{id:"monsters-of-drakkenheim"}]}});
-  game.modules.set("morelord-craftworks",{active:true,api:{sessions,deleriumSearch:service}});
+  game.modules.set("drakkenheim-monsters",{id:"drakkenheim-monsters",active:true});
   const search=await createRequest({kind:"delerium",actorIds:[actor.id],zoneId:"outer"});assert.match(search.content,/Arcana/);assert.match(search.content,/Investigation/);assert.match(search.content,/Survival/);assert.match(search.content,/Decline search/);assert.doesNotMatch(search.content,/data-mlgm-mode|ml-roll-controls/);
+  assert.equal(search.getFlag(ID,"request").searchSession.messageMode,"blind");
   assert.equal(Object.isFrozen(search.getFlag(ID,"request").searchSkills),false);
   await resolve(search,gm,"inv");
   const summary=game.messages.find(m=>m.getFlag(ID,"search")?.requestId===search.id);
   assert.equal(summary.getFlag(ID,"search").session.successes,1);assert.equal(summary.getFlag(ID,"search").session.status,"complete");
+  assert.equal(summary.getFlag(ID,"search").session.messageMode,"blind");
   assert.deepEqual(summary.whisper,["gm","assistant"]);
   assert.doesNotMatch(summary.content,/Average/);
   const second={...actor,id:'second',uuid:'Actor.second',name:'Bram'};game.actors.set(second.id,second);
@@ -131,7 +131,9 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   dieTotal=4;
 
   for (const config of [{kind:'skill',skill:'prc'},{kind:'death'},{kind:'foraging',terrainIndex:0},{kind:'delerium',zoneId:'outer'}]) {
-    const request=await createRequest({...config,blind:false,actorIds:[actor.id]});await resolve(request,gm,config.kind==='delerium'?'inv':undefined);
+    const request=await createRequest({...config,blind:false,actorIds:[actor.id]});
+    if(config.kind==='delerium') assert.equal(request.getFlag(ID,'request').searchSession.messageMode,'public');
+    await resolve(request,gm,config.kind==='delerium'?'inv':undefined);
     const result=game.messages.find(m=>m.getFlag(ID,'result')?.requestId===request.id);
     assert.equal(result.blind,false);assert.deepEqual(result.whisper,[]);
     const summary=game.messages.find(m=>m.getFlag(ID,'summary')?.requestId===request.id||m.getFlag(ID,'search')?.requestId===request.id);

@@ -14,7 +14,7 @@ Morelord Game Master is free. Every DM needs a screen. This one lives inside Fou
 
 ## Setup
 
-Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.8.0 or newer. Enable Core and Game Master in your world.
+Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.9.0 or newer. Enable Core and Game Master in your world. Delerium Search also needs one of `drakkenheim-core`, `drakkenheim-monsters`, or `drakkenheim-scgd` active.
 
 As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. You can change the shortcut in Foundry's keybinding settings. The screen opens as a tray above the canvas and below Foundry windows and dialogs, so you can keep working while it is open.
 

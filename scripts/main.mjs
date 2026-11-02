@@ -5,7 +5,7 @@ import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
-import { core, craftworks, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
+import { core, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
@@ -15,7 +15,7 @@ import {BULK_UNDO, readBulkUndo} from './bulk-undo.mjs';
 import {AMBIENCE_FOLDERS, AMBIENCE_MIGRATED, LEGACY_AMBIENCE_DEFAULT, ambienceGroupName, ambiencePickerOptions, ambienceShownName, collectAmbienceFiles, ensureAmbienceFolders, folderFromFilePicker, normalizeAmbienceFolders, presentAmbienceScan} from './ambience-folders.mjs';
 import {BULK_CARDS, CHEAT_LAYOUT, arrangedIds, toggledHidden, visibleIds} from './tray-layout.mjs';
 import {activateCheatTooltip, cheatText, deactivateCheatTooltip, rememberCheatSheet, renderCheatSheet} from './cheat-sheet.mjs';
-import {debugDrakkenheimCheat} from './cheat-sheet-drakkenheim.mjs';
+import {debugDrakkenheimCheat, drakkenheimContentActive} from './cheat-sheet-drakkenheim.mjs';
 import {RUN_ON_LOAD_COPY, RUN_ON_LOAD_FOR_EVERYONE, RUN_ON_LOAD_FOR_ME, macroContextEntries, macroRunMarks, registerRunOnLoadSettings, runMacrosOnLoad, toggledUuidList, uuidList} from './run-macros-on-load.mjs';
 import {openDialog, percentIssue} from './dialog.mjs';
 import {installTrayStack} from './tray-stack.mjs';
@@ -346,7 +346,7 @@ function specialtyCard(id) {
   return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label>${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
 }
 function searchZones() {
-  try { return craftworks().deleriumSearch.getZones(); } catch { return []; }
+  try { return core().deleriumSearch.getZones(); } catch { return []; }
 }
 function readBuilder() {
   const data = new FormData(root.querySelector('[data-roll-card="check"]'));
@@ -535,7 +535,8 @@ function settingsSection(title, group, rows) {
 }
 function gmSettings() {
   const layout = trayLayout();
-  const rolls = specialtyOrder(get("specialtyOrder")).map(id => {
+  const drakkenheim = drakkenheimContentActive();
+  const rolls = specialtyOrder(get("specialtyOrder")).filter(id => id !== "search" || drakkenheim).map(id => {
     const specialty = SPECIALTIES.find(item => item.id === id);
     return settingsRow("rolls", specialty.id, specialty.label, game.settings.get(ID, specialty.setting) !== false);
   }).join("");
@@ -584,8 +585,15 @@ async function saveSettingsOrder(group, ids) {
   gm();
   if (!Array.isArray(ids)) return;
   if (group === "rolls") {
-    if (JSON.stringify(ids) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
-    await game.settings.set(ID, "specialtyOrder", ids);
+    const next = [...ids];
+    if (!next.includes("search")) {
+      const previous = specialtyOrder(get("specialtyOrder"));
+      const followers = previous.slice(previous.indexOf("search") + 1);
+      const anchor = followers.find(id => next.includes(id));
+      next.splice(anchor ? next.indexOf(anchor) : next.length, 0, "search");
+    }
+    if (JSON.stringify(next) === JSON.stringify(specialtyOrder(get("specialtyOrder")))) return;
+    await game.settings.set(ID, "specialtyOrder", next);
     render();
     return;
   }
