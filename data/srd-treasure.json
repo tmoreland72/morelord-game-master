@@ -1,0 +1,1733 @@
+{
+  "srd": "5.2.1",
+  "hoards": [
+    {
+      "id": "cr-0-4",
+      "label": "CR 0-4",
+      "die": 100,
+      "source": "Original arrangement of SRD 5.2.1 coin denominations and magic item names. SRD 5.2.1 publishes no treasure hoard roll table.",
+      "coins": [
+        {
+          "denomination": "cp",
+          "dice": 4,
+          "sides": 6,
+          "multiplier": 50
+        },
+        {
+          "denomination": "sp",
+          "dice": 4,
+          "sides": 6,
+          "multiplier": 20
+        },
+        {
+          "denomination": "ep",
+          "dice": 1,
+          "sides": 6,
+          "multiplier": 1
+        },
+        {
+          "denomination": "gp",
+          "dice": 2,
+          "sides": 6,
+          "multiplier": 10
+        }
+      ],
+      "rows": [
+        {
+          "min": 1,
+          "max": 25,
+          "valuables": [],
+          "magic": []
+        },
+        {
+          "min": 26,
+          "max": 45,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 20
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 46,
+          "max": 60,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 1,
+              "sides": 4,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 61,
+          "max": 80,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 1,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 81,
+          "max": 92,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 1,
+              "sides": 4,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 93,
+          "max": 98,
+          "valuables": [],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 99,
+          "max": 100,
+          "valuables": [],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cr-5-10",
+      "label": "CR 5-10",
+      "die": 100,
+      "source": "Original arrangement of SRD 5.2.1 coin denominations and magic item names. SRD 5.2.1 publishes no treasure hoard roll table.",
+      "coins": [
+        {
+          "denomination": "sp",
+          "dice": 2,
+          "sides": 6,
+          "multiplier": 100
+        },
+        {
+          "denomination": "gp",
+          "dice": 4,
+          "sides": 6,
+          "multiplier": 25
+        },
+        {
+          "denomination": "pp",
+          "dice": 1,
+          "sides": 6,
+          "multiplier": 2
+        }
+      ],
+      "rows": [
+        {
+          "min": 1,
+          "max": 15,
+          "valuables": [],
+          "magic": []
+        },
+        {
+          "min": 16,
+          "max": 30,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 31,
+          "max": 45,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 1,
+              "sides": 4,
+              "each": {
+                "gp": 200
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 46,
+          "max": 60,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 61,
+          "max": 75,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 1,
+              "sides": 4,
+              "each": {
+                "gp": 200
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 76,
+          "max": 88,
+          "valuables": [],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 89,
+          "max": 96,
+          "valuables": [],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "count": 1
+            },
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 97,
+          "max": 100,
+          "valuables": [],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "id": "common",
+      "name": "Common Magic Items",
+      "rarity": "Common",
+      "die": 100,
+      "source": "SRD 5.2.1, Magic Items A–Z",
+      "rows": [
+        {
+          "min": 1,
+          "max": 20,
+          "name": "Bead of Nourishment"
+        },
+        {
+          "min": 21,
+          "max": 40,
+          "name": "Potion of Climbing"
+        },
+        {
+          "min": 41,
+          "max": 60,
+          "name": "Potion of Healing"
+        },
+        {
+          "min": 61,
+          "max": 80,
+          "name": "Spell Scroll (cantrip)"
+        },
+        {
+          "min": 81,
+          "max": 100,
+          "name": "Spell Scroll (level 1)"
+        }
+      ]
+    },
+    {
+      "id": "uncommon",
+      "name": "Uncommon Magic Items",
+      "rarity": "Uncommon",
+      "die": 100,
+      "source": "SRD 5.2.1, Magic Items A–Z",
+      "rows": [
+        {
+          "min": 1,
+          "max": 1,
+          "name": "Adamantine Armor"
+        },
+        {
+          "min": 2,
+          "max": 2,
+          "name": "Ammunition +1"
+        },
+        {
+          "min": 3,
+          "max": 3,
+          "name": "Amulet of Proof against Detection and Location"
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "name": "Armor +1"
+        },
+        {
+          "min": 5,
+          "max": 5,
+          "name": "Bag of Holding"
+        },
+        {
+          "min": 6,
+          "max": 6,
+          "name": "Bag of Tricks"
+        },
+        {
+          "min": 7,
+          "max": 8,
+          "name": "Boots of Elvenkind"
+        },
+        {
+          "min": 9,
+          "max": 9,
+          "name": "Boots of Striding and Springing"
+        },
+        {
+          "min": 10,
+          "max": 10,
+          "name": "Boots of the Winterlands"
+        },
+        {
+          "min": 11,
+          "max": 11,
+          "name": "Bracers of Archery"
+        },
+        {
+          "min": 12,
+          "max": 12,
+          "name": "Brooch of Shielding"
+        },
+        {
+          "min": 13,
+          "max": 13,
+          "name": "Broom of Flying"
+        },
+        {
+          "min": 14,
+          "max": 15,
+          "name": "Circlet of Blasting"
+        },
+        {
+          "min": 16,
+          "max": 16,
+          "name": "Cloak of Elvenkind"
+        },
+        {
+          "min": 17,
+          "max": 17,
+          "name": "Cloak of Protection"
+        },
+        {
+          "min": 18,
+          "max": 18,
+          "name": "Cloak of the Manta Ray"
+        },
+        {
+          "min": 19,
+          "max": 19,
+          "name": "Decanter of Endless Water"
+        },
+        {
+          "min": 20,
+          "max": 20,
+          "name": "Deck of Illusions"
+        },
+        {
+          "min": 21,
+          "max": 22,
+          "name": "Dust of Disappearance"
+        },
+        {
+          "min": 23,
+          "max": 23,
+          "name": "Dust of Dryness"
+        },
+        {
+          "min": 24,
+          "max": 24,
+          "name": "Dust of Sneezing and Choking"
+        },
+        {
+          "min": 25,
+          "max": 25,
+          "name": "Efficient Quiver"
+        },
+        {
+          "min": 26,
+          "max": 26,
+          "name": "Elemental Gem"
+        },
+        {
+          "min": 27,
+          "max": 27,
+          "name": "Eversmoking Bottle"
+        },
+        {
+          "min": 28,
+          "max": 29,
+          "name": "Eyes of Charming"
+        },
+        {
+          "min": 30,
+          "max": 30,
+          "name": "Eyes of Minute Seeing"
+        },
+        {
+          "min": 31,
+          "max": 31,
+          "name": "Eyes of the Eagle"
+        },
+        {
+          "min": 32,
+          "max": 32,
+          "name": "Feather Token (Anchor)"
+        },
+        {
+          "min": 33,
+          "max": 33,
+          "name": "Feather Token (Fan)"
+        },
+        {
+          "min": 34,
+          "max": 34,
+          "name": "Feather Token (Tree)"
+        },
+        {
+          "min": 35,
+          "max": 36,
+          "name": "Figurine of Wondrous Power (Silver Raven)"
+        },
+        {
+          "min": 37,
+          "max": 37,
+          "name": "Gauntlets of Ogre Power"
+        },
+        {
+          "min": 38,
+          "max": 38,
+          "name": "Gem of Brightness"
+        },
+        {
+          "min": 39,
+          "max": 39,
+          "name": "Gloves of Missile Snaring"
+        },
+        {
+          "min": 40,
+          "max": 40,
+          "name": "Gloves of Swimming and Climbing"
+        },
+        {
+          "min": 41,
+          "max": 41,
+          "name": "Gloves of Thievery"
+        },
+        {
+          "min": 42,
+          "max": 43,
+          "name": "Goggles of Night"
+        },
+        {
+          "min": 44,
+          "max": 44,
+          "name": "Hat of Disguise"
+        },
+        {
+          "min": 45,
+          "max": 45,
+          "name": "Headband of Intellect"
+        },
+        {
+          "min": 46,
+          "max": 46,
+          "name": "Helm of Comprehending Languages"
+        },
+        {
+          "min": 47,
+          "max": 47,
+          "name": "Helm of Telepathy"
+        },
+        {
+          "min": 48,
+          "max": 48,
+          "name": "Immovable Rod"
+        },
+        {
+          "min": 49,
+          "max": 50,
+          "name": "Javelin of Lightning"
+        },
+        {
+          "min": 51,
+          "max": 51,
+          "name": "Lantern of Revealing"
+        },
+        {
+          "min": 52,
+          "max": 52,
+          "name": "Medallion of Thoughts"
+        },
+        {
+          "min": 53,
+          "max": 53,
+          "name": "Mithral Armor"
+        },
+        {
+          "min": 54,
+          "max": 54,
+          "name": "Necklace of Adaptation"
+        },
+        {
+          "min": 55,
+          "max": 55,
+          "name": "Oil of Slipperiness"
+        },
+        {
+          "min": 56,
+          "max": 56,
+          "name": "Pearl of Power"
+        },
+        {
+          "min": 57,
+          "max": 58,
+          "name": "Periapt of Health"
+        },
+        {
+          "min": 59,
+          "max": 59,
+          "name": "Periapt of Wound Closure"
+        },
+        {
+          "min": 60,
+          "max": 60,
+          "name": "Philter of Love"
+        },
+        {
+          "min": 61,
+          "max": 61,
+          "name": "Pipes of Haunting"
+        },
+        {
+          "min": 62,
+          "max": 62,
+          "name": "Pipes of the Sewers"
+        },
+        {
+          "min": 63,
+          "max": 63,
+          "name": "Potion of Animal Friendship"
+        },
+        {
+          "min": 64,
+          "max": 65,
+          "name": "Potion of Giant Strength (hill)"
+        },
+        {
+          "min": 66,
+          "max": 66,
+          "name": "Potion of Growth"
+        },
+        {
+          "min": 67,
+          "max": 67,
+          "name": "Potion of Healing (greater)"
+        },
+        {
+          "min": 68,
+          "max": 68,
+          "name": "Potion of Poison"
+        },
+        {
+          "min": 69,
+          "max": 69,
+          "name": "Potion of Resistance"
+        },
+        {
+          "min": 70,
+          "max": 70,
+          "name": "Potion of Water Breathing"
+        },
+        {
+          "min": 71,
+          "max": 72,
+          "name": "Ring of Jumping"
+        },
+        {
+          "min": 73,
+          "max": 73,
+          "name": "Ring of Mind Shielding"
+        },
+        {
+          "min": 74,
+          "max": 74,
+          "name": "Ring of Swimming"
+        },
+        {
+          "min": 75,
+          "max": 75,
+          "name": "Ring of Warmth"
+        },
+        {
+          "min": 76,
+          "max": 76,
+          "name": "Ring of Water Walking"
+        },
+        {
+          "min": 77,
+          "max": 77,
+          "name": "Robe of Useful Items"
+        },
+        {
+          "min": 78,
+          "max": 79,
+          "name": "Rope of Climbing"
+        },
+        {
+          "min": 80,
+          "max": 80,
+          "name": "Sending Stones"
+        },
+        {
+          "min": 81,
+          "max": 81,
+          "name": "Sentinel Shield"
+        },
+        {
+          "min": 82,
+          "max": 82,
+          "name": "Shield +1"
+        },
+        {
+          "min": 83,
+          "max": 83,
+          "name": "Slippers of Spider Climbing"
+        },
+        {
+          "min": 84,
+          "max": 84,
+          "name": "Spell Scroll (level 2)"
+        },
+        {
+          "min": 85,
+          "max": 86,
+          "name": "Spell Scroll (level 3)"
+        },
+        {
+          "min": 87,
+          "max": 87,
+          "name": "Staff of the Python"
+        },
+        {
+          "min": 88,
+          "max": 88,
+          "name": "Stone of Good Luck (Luckstone)"
+        },
+        {
+          "min": 89,
+          "max": 89,
+          "name": "Trident of Fish Command"
+        },
+        {
+          "min": 90,
+          "max": 90,
+          "name": "Wand of Magic Detection"
+        },
+        {
+          "min": 91,
+          "max": 91,
+          "name": "Wand of Magic Missiles"
+        },
+        {
+          "min": 92,
+          "max": 93,
+          "name": "Wand of Secrets"
+        },
+        {
+          "min": 94,
+          "max": 94,
+          "name": "Wand of the War Mage +1"
+        },
+        {
+          "min": 95,
+          "max": 95,
+          "name": "Wand of Web"
+        },
+        {
+          "min": 96,
+          "max": 96,
+          "name": "Weapon +1"
+        },
+        {
+          "min": 97,
+          "max": 97,
+          "name": "Weapon of Warning"
+        },
+        {
+          "min": 98,
+          "max": 98,
+          "name": "Wind Fan"
+        },
+        {
+          "min": 99,
+          "max": 100,
+          "name": "Winged Boots"
+        }
+      ]
+    },
+    {
+      "id": "rare-1",
+      "name": "Rare Magic Items",
+      "rarity": "Rare",
+      "die": 100,
+      "source": "SRD 5.2.1, Magic Items A–Z",
+      "rows": [
+        {
+          "min": 1,
+          "max": 1,
+          "name": "Ammunition +2"
+        },
+        {
+          "min": 2,
+          "max": 3,
+          "name": "Amulet of Health"
+        },
+        {
+          "min": 4,
+          "max": 5,
+          "name": "Armor +2"
+        },
+        {
+          "min": 6,
+          "max": 7,
+          "name": "Armor of Resistance"
+        },
+        {
+          "min": 8,
+          "max": 9,
+          "name": "Armor of Vulnerability"
+        },
+        {
+          "min": 10,
+          "max": 10,
+          "name": "Arrow-Catching Shield"
+        },
+        {
+          "min": 11,
+          "max": 12,
+          "name": "Bag of Beans"
+        },
+        {
+          "min": 13,
+          "max": 14,
+          "name": "Bead of Force"
+        },
+        {
+          "min": 15,
+          "max": 16,
+          "name": "Belt of Dwarvenkind"
+        },
+        {
+          "min": 17,
+          "max": 18,
+          "name": "Belt of Giant Strength (hill)"
+        },
+        {
+          "min": 19,
+          "max": 20,
+          "name": "Berserker Axe"
+        },
+        {
+          "min": 21,
+          "max": 21,
+          "name": "Boots of Levitation"
+        },
+        {
+          "min": 22,
+          "max": 23,
+          "name": "Boots of Speed"
+        },
+        {
+          "min": 24,
+          "max": 25,
+          "name": "Bowl of Commanding Water Elementals"
+        },
+        {
+          "min": 26,
+          "max": 27,
+          "name": "Bracers of Defense"
+        },
+        {
+          "min": 28,
+          "max": 29,
+          "name": "Brazier of Commanding Fire Elementals"
+        },
+        {
+          "min": 30,
+          "max": 30,
+          "name": "Cape of the Mountebank"
+        },
+        {
+          "min": 31,
+          "max": 32,
+          "name": "Censer of Controlling Air Elementals"
+        },
+        {
+          "min": 33,
+          "max": 34,
+          "name": "Chime of Opening"
+        },
+        {
+          "min": 35,
+          "max": 36,
+          "name": "Cloak of Displacement"
+        },
+        {
+          "min": 37,
+          "max": 38,
+          "name": "Cloak of the Bat"
+        },
+        {
+          "min": 39,
+          "max": 40,
+          "name": "Cube of Force"
+        },
+        {
+          "min": 41,
+          "max": 41,
+          "name": "Dagger of Venom"
+        },
+        {
+          "min": 42,
+          "max": 43,
+          "name": "Dimensional Shackles"
+        },
+        {
+          "min": 44,
+          "max": 45,
+          "name": "Dragon Slayer"
+        },
+        {
+          "min": 46,
+          "max": 47,
+          "name": "Elixir of Health"
+        },
+        {
+          "min": 48,
+          "max": 49,
+          "name": "Elven Chain"
+        },
+        {
+          "min": 50,
+          "max": 50,
+          "name": "Feather Token (Bird)"
+        },
+        {
+          "min": 51,
+          "max": 52,
+          "name": "Feather Token (Swan Boat)"
+        },
+        {
+          "min": 53,
+          "max": 54,
+          "name": "Feather Token (Whip)"
+        },
+        {
+          "min": 55,
+          "max": 56,
+          "name": "Figurine of Wondrous Power (Bronze Griffon)"
+        },
+        {
+          "min": 57,
+          "max": 58,
+          "name": "Figurine of Wondrous Power (Ebony Fly)"
+        },
+        {
+          "min": 59,
+          "max": 60,
+          "name": "Figurine of Wondrous Power (Golden Lions)"
+        },
+        {
+          "min": 61,
+          "max": 61,
+          "name": "Figurine of Wondrous Power (Ivory Goats)"
+        },
+        {
+          "min": 62,
+          "max": 63,
+          "name": "Figurine of Wondrous Power (Marble Elephant)"
+        },
+        {
+          "min": 64,
+          "max": 65,
+          "name": "Figurine of Wondrous Power (Onyx Dog)"
+        },
+        {
+          "min": 66,
+          "max": 67,
+          "name": "Figurine of Wondrous Power (Serpentine Owl)"
+        },
+        {
+          "min": 68,
+          "max": 69,
+          "name": "Flame Tongue"
+        },
+        {
+          "min": 70,
+          "max": 70,
+          "name": "Folding Boat"
+        },
+        {
+          "min": 71,
+          "max": 72,
+          "name": "Gem of Seeing"
+        },
+        {
+          "min": 73,
+          "max": 74,
+          "name": "Giant Slayer"
+        },
+        {
+          "min": 75,
+          "max": 76,
+          "name": "Glamoured Studded Leather"
+        },
+        {
+          "min": 77,
+          "max": 78,
+          "name": "Handy Haversack"
+        },
+        {
+          "min": 79,
+          "max": 80,
+          "name": "Helm of Teleportation"
+        },
+        {
+          "min": 81,
+          "max": 81,
+          "name": "Horn of Blasting"
+        },
+        {
+          "min": 82,
+          "max": 83,
+          "name": "Horn of Valhalla (brass)"
+        },
+        {
+          "min": 84,
+          "max": 85,
+          "name": "Horn of Valhalla (silver)"
+        },
+        {
+          "min": 86,
+          "max": 87,
+          "name": "Horseshoes of Speed"
+        },
+        {
+          "min": 88,
+          "max": 89,
+          "name": "Instant Fortress"
+        },
+        {
+          "min": 90,
+          "max": 90,
+          "name": "Ioun Stone (Awareness)"
+        },
+        {
+          "min": 91,
+          "max": 92,
+          "name": "Ioun Stone (Protection)"
+        },
+        {
+          "min": 93,
+          "max": 94,
+          "name": "Ioun Stone (Reserve)"
+        },
+        {
+          "min": 95,
+          "max": 96,
+          "name": "Ioun Stone (Sustenance)"
+        },
+        {
+          "min": 97,
+          "max": 98,
+          "name": "Iron Bands"
+        },
+        {
+          "min": 99,
+          "max": 100,
+          "name": "Mace of Disruption"
+        }
+      ]
+    },
+    {
+      "id": "rare-2",
+      "name": "Rare Magic Items II",
+      "rarity": "Rare",
+      "die": 100,
+      "source": "SRD 5.2.1, Magic Items A–Z",
+      "rows": [
+        {
+          "min": 1,
+          "max": 1,
+          "name": "Mace of Smiting"
+        },
+        {
+          "min": 2,
+          "max": 3,
+          "name": "Mace of Terror"
+        },
+        {
+          "min": 4,
+          "max": 5,
+          "name": "Mantle of Spell Resistance"
+        },
+        {
+          "min": 6,
+          "max": 7,
+          "name": "Necklace of Fireballs"
+        },
+        {
+          "min": 8,
+          "max": 9,
+          "name": "Necklace of Prayer Beads"
+        },
+        {
+          "min": 10,
+          "max": 11,
+          "name": "Oil of Etherealness"
+        },
+        {
+          "min": 12,
+          "max": 12,
+          "name": "Periapt of Proof against Poison"
+        },
+        {
+          "min": 13,
+          "max": 14,
+          "name": "Portable Hole"
+        },
+        {
+          "min": 15,
+          "max": 16,
+          "name": "Potion of Clairvoyance"
+        },
+        {
+          "min": 17,
+          "max": 18,
+          "name": "Potion of Diminution"
+        },
+        {
+          "min": 19,
+          "max": 20,
+          "name": "Potion of Gaseous Form"
+        },
+        {
+          "min": 21,
+          "max": 22,
+          "name": "Potion of Giant Strength (fire)"
+        },
+        {
+          "min": 23,
+          "max": 24,
+          "name": "Potion of Giant Strength (frost or stone)"
+        },
+        {
+          "min": 25,
+          "max": 25,
+          "name": "Potion of Healing (superior)"
+        },
+        {
+          "min": 26,
+          "max": 27,
+          "name": "Potion of Heroism"
+        },
+        {
+          "min": 28,
+          "max": 29,
+          "name": "Potion of Invisibility"
+        },
+        {
+          "min": 30,
+          "max": 31,
+          "name": "Potion of Invulnerability"
+        },
+        {
+          "min": 32,
+          "max": 33,
+          "name": "Potion of Mind Reading"
+        },
+        {
+          "min": 34,
+          "max": 35,
+          "name": "Ring of Animal Influence"
+        },
+        {
+          "min": 36,
+          "max": 37,
+          "name": "Ring of Evasion"
+        },
+        {
+          "min": 38,
+          "max": 38,
+          "name": "Ring of Feather Falling"
+        },
+        {
+          "min": 39,
+          "max": 40,
+          "name": "Ring of Free Action"
+        },
+        {
+          "min": 41,
+          "max": 42,
+          "name": "Ring of Protection"
+        },
+        {
+          "min": 43,
+          "max": 44,
+          "name": "Ring of Resistance"
+        },
+        {
+          "min": 45,
+          "max": 46,
+          "name": "Ring of Spell Storing"
+        },
+        {
+          "min": 47,
+          "max": 48,
+          "name": "Ring of the Ram"
+        },
+        {
+          "min": 49,
+          "max": 50,
+          "name": "Ring of X-ray Vision"
+        },
+        {
+          "min": 51,
+          "max": 51,
+          "name": "Robe of Eyes"
+        },
+        {
+          "min": 52,
+          "max": 53,
+          "name": "Rod of Rulership"
+        },
+        {
+          "min": 54,
+          "max": 55,
+          "name": "Rope of Entanglement"
+        },
+        {
+          "min": 56,
+          "max": 57,
+          "name": "Shield +2"
+        },
+        {
+          "min": 58,
+          "max": 59,
+          "name": "Shield of Missile Attraction"
+        },
+        {
+          "min": 60,
+          "max": 61,
+          "name": "Spell Scroll (level 4)"
+        },
+        {
+          "min": 62,
+          "max": 62,
+          "name": "Spell Scroll (level 5)"
+        },
+        {
+          "min": 63,
+          "max": 64,
+          "name": "Staff of Charming"
+        },
+        {
+          "min": 65,
+          "max": 66,
+          "name": "Staff of Healing"
+        },
+        {
+          "min": 67,
+          "max": 68,
+          "name": "Staff of Swarming Insects"
+        },
+        {
+          "min": 69,
+          "max": 70,
+          "name": "Staff of the Woodlands"
+        },
+        {
+          "min": 71,
+          "max": 72,
+          "name": "Staff of Withering"
+        },
+        {
+          "min": 73,
+          "max": 74,
+          "name": "Stone of Controlling Earth Elementals"
+        },
+        {
+          "min": 75,
+          "max": 75,
+          "name": "Sun Blade"
+        },
+        {
+          "min": 76,
+          "max": 77,
+          "name": "Sword of Life Stealing"
+        },
+        {
+          "min": 78,
+          "max": 79,
+          "name": "Sword of Wounding"
+        },
+        {
+          "min": 80,
+          "max": 81,
+          "name": "Vicious Weapon"
+        },
+        {
+          "min": 82,
+          "max": 83,
+          "name": "Wand of Binding"
+        },
+        {
+          "min": 84,
+          "max": 85,
+          "name": "Wand of Enemy Detection"
+        },
+        {
+          "min": 86,
+          "max": 87,
+          "name": "Wand of Fear"
+        },
+        {
+          "min": 88,
+          "max": 88,
+          "name": "Wand of Fireballs"
+        },
+        {
+          "min": 89,
+          "max": 90,
+          "name": "Wand of Lightning Bolts"
+        },
+        {
+          "min": 91,
+          "max": 92,
+          "name": "Wand of Paralysis"
+        },
+        {
+          "min": 93,
+          "max": 94,
+          "name": "Wand of the War Mage +2"
+        },
+        {
+          "min": 95,
+          "max": 96,
+          "name": "Wand of Wonder"
+        },
+        {
+          "min": 97,
+          "max": 98,
+          "name": "Weapon +2"
+        },
+        {
+          "min": 99,
+          "max": 100,
+          "name": "Wings of Flying"
+        }
+      ]
+    },
+    {
+      "id": "very-rare",
+      "name": "Very Rare Magic Items",
+      "rarity": "Very Rare",
+      "die": 100,
+      "source": "SRD 5.2.1, Magic Items A–Z",
+      "rows": [
+        {
+          "min": 1,
+          "max": 1,
+          "name": "Ammunition +3"
+        },
+        {
+          "min": 2,
+          "max": 2,
+          "name": "Ammunition of Slaying"
+        },
+        {
+          "min": 3,
+          "max": 3,
+          "name": "Amulet of the Planes"
+        },
+        {
+          "min": 4,
+          "max": 5,
+          "name": "Animated Shield"
+        },
+        {
+          "min": 6,
+          "max": 6,
+          "name": "Armor +3"
+        },
+        {
+          "min": 7,
+          "max": 7,
+          "name": "Bag of Devouring"
+        },
+        {
+          "min": 8,
+          "max": 9,
+          "name": "Belt of Giant Strength (fire)"
+        },
+        {
+          "min": 10,
+          "max": 10,
+          "name": "Belt of Giant Strength (frost or stone)"
+        },
+        {
+          "min": 11,
+          "max": 11,
+          "name": "Candle of Invocation"
+        },
+        {
+          "min": 12,
+          "max": 13,
+          "name": "Carpet of Flying"
+        },
+        {
+          "min": 14,
+          "max": 14,
+          "name": "Cloak of Arachnida"
+        },
+        {
+          "min": 15,
+          "max": 15,
+          "name": "Crystal Ball"
+        },
+        {
+          "min": 16,
+          "max": 17,
+          "name": "Dancing Sword"
+        },
+        {
+          "min": 18,
+          "max": 18,
+          "name": "Demon Armor"
+        },
+        {
+          "min": 19,
+          "max": 19,
+          "name": "Dragon Scale Mail"
+        },
+        {
+          "min": 20,
+          "max": 21,
+          "name": "Dwarven Plate"
+        },
+        {
+          "min": 22,
+          "max": 22,
+          "name": "Dwarven Thrower"
+        },
+        {
+          "min": 23,
+          "max": 23,
+          "name": "Efreeti Bottle"
+        },
+        {
+          "min": 24,
+          "max": 25,
+          "name": "Energy Bow"
+        },
+        {
+          "min": 26,
+          "max": 26,
+          "name": "Figurine of Wondrous Power (Obsidian Steed)"
+        },
+        {
+          "min": 27,
+          "max": 27,
+          "name": "Frost Brand"
+        },
+        {
+          "min": 28,
+          "max": 28,
+          "name": "Hat of Many Spells"
+        },
+        {
+          "min": 29,
+          "max": 30,
+          "name": "Helm of Brilliance"
+        },
+        {
+          "min": 31,
+          "max": 31,
+          "name": "Horn of Valhalla (bronze)"
+        },
+        {
+          "min": 32,
+          "max": 32,
+          "name": "Horseshoes of a Zephyr"
+        },
+        {
+          "min": 33,
+          "max": 34,
+          "name": "Ioun Stone (Absorption)"
+        },
+        {
+          "min": 35,
+          "max": 35,
+          "name": "Ioun Stone (Agility)"
+        },
+        {
+          "min": 36,
+          "max": 36,
+          "name": "Ioun Stone (Fortitude)"
+        },
+        {
+          "min": 37,
+          "max": 38,
+          "name": "Ioun Stone (Insight)"
+        },
+        {
+          "min": 39,
+          "max": 39,
+          "name": "Ioun Stone (Intellect)"
+        },
+        {
+          "min": 40,
+          "max": 40,
+          "name": "Ioun Stone (Leadership)"
+        },
+        {
+          "min": 41,
+          "max": 42,
+          "name": "Ioun Stone (Strength)"
+        },
+        {
+          "min": 43,
+          "max": 43,
+          "name": "Manual of Bodily Health"
+        },
+        {
+          "min": 44,
+          "max": 44,
+          "name": "Manual of Gainful Exercise"
+        },
+        {
+          "min": 45,
+          "max": 46,
+          "name": "Manual of Golems"
+        },
+        {
+          "min": 47,
+          "max": 47,
+          "name": "Manual of Quickness of Action"
+        },
+        {
+          "min": 48,
+          "max": 48,
+          "name": "Marvelous Pigments"
+        },
+        {
+          "min": 49,
+          "max": 50,
+          "name": "Mirror of Life Trapping"
+        },
+        {
+          "min": 51,
+          "max": 51,
+          "name": "Nine Lives Stealer"
+        },
+        {
+          "min": 52,
+          "max": 52,
+          "name": "Oathbow"
+        },
+        {
+          "min": 53,
+          "max": 53,
+          "name": "Oil of Sharpness"
+        },
+        {
+          "min": 54,
+          "max": 55,
+          "name": "Potion of Flying"
+        },
+        {
+          "min": 56,
+          "max": 56,
+          "name": "Potion of Giant Strength (cloud)"
+        },
+        {
+          "min": 57,
+          "max": 57,
+          "name": "Potion of Healing (supreme)"
+        },
+        {
+          "min": 58,
+          "max": 59,
+          "name": "Potion of Longevity"
+        },
+        {
+          "min": 60,
+          "max": 60,
+          "name": "Potion of Speed"
+        },
+        {
+          "min": 61,
+          "max": 61,
+          "name": "Potion of Vitality"
+        },
+        {
+          "min": 62,
+          "max": 63,
+          "name": "Quarterstaff of the Acrobat"
+        },
+        {
+          "min": 64,
+          "max": 64,
+          "name": "Ring of Regeneration"
+        },
+        {
+          "min": 65,
+          "max": 65,
+          "name": "Ring of Shooting Stars"
+        },
+        {
+          "min": 66,
+          "max": 67,
+          "name": "Ring of Telekinesis"
+        },
+        {
+          "min": 68,
+          "max": 68,
+          "name": "Robe of Scintillating Colors"
+        },
+        {
+          "min": 69,
+          "max": 69,
+          "name": "Robe of Stars"
+        },
+        {
+          "min": 70,
+          "max": 71,
+          "name": "Rod of Absorption"
+        },
+        {
+          "min": 72,
+          "max": 72,
+          "name": "Rod of Alertness"
+        },
+        {
+          "min": 73,
+          "max": 73,
+          "name": "Rod of Security"
+        },
+        {
+          "min": 74,
+          "max": 75,
+          "name": "Scimitar of Speed"
+        },
+        {
+          "min": 76,
+          "max": 76,
+          "name": "Shield +3"
+        },
+        {
+          "min": 77,
+          "max": 77,
+          "name": "Shield of the Cavalier"
+        },
+        {
+          "min": 78,
+          "max": 78,
+          "name": "Spell Scroll (level 6)"
+        },
+        {
+          "min": 79,
+          "max": 80,
+          "name": "Spell Scroll (level 7)"
+        },
+        {
+          "min": 81,
+          "max": 81,
+          "name": "Spell Scroll (level 8)"
+        },
+        {
+          "min": 82,
+          "max": 82,
+          "name": "Spellguard Shield"
+        },
+        {
+          "min": 83,
+          "max": 84,
+          "name": "Staff of Fire"
+        },
+        {
+          "min": 85,
+          "max": 85,
+          "name": "Staff of Frost"
+        },
+        {
+          "min": 86,
+          "max": 86,
+          "name": "Staff of Power"
+        },
+        {
+          "min": 87,
+          "max": 88,
+          "name": "Staff of Striking"
+        },
+        {
+          "min": 89,
+          "max": 89,
+          "name": "Staff of Thunder and Lightning"
+        },
+        {
+          "min": 90,
+          "max": 90,
+          "name": "Sword of Sharpness"
+        },
+        {
+          "min": 91,
+          "max": 92,
+          "name": "Thunderous Greatclub"
+        },
+        {
+          "min": 93,
+          "max": 93,
+          "name": "Tome of Clear Thought"
+        },
+        {
+          "min": 94,
+          "max": 94,
+          "name": "Tome of Leadership and Influence"
+        },
+        {
+          "min": 95,
+          "max": 96,
+          "name": "Tome of Understanding"
+        },
+        {
+          "min": 97,
+          "max": 97,
+          "name": "Wand of Polymorph"
+        },
+        {
+          "min": 98,
+          "max": 98,
+          "name": "Wand of the War Mage +3"
+        },
+        {
+          "min": 99,
+          "max": 100,
+          "name": "Weapon +3"
+        }
+      ]
+    }
+  ]
+}

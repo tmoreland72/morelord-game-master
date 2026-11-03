@@ -11,6 +11,7 @@ export const SPECIALTIES = [
   {id: "search", setting: "showDeleriumSearch", label: "Delerium Search"},
   {id: "foraging", setting: "showForaging", label: "Foraging Check"},
   {id: "death", setting: "showDeathSave", label: "Death Save"},
+  {id: "hoard", setting: "showTreasureHoard", label: "Treasure Hoard"},
   {id: "fate", setting: "showFate", label: "Roll of Fate"}
 ];
 

@@ -216,14 +216,14 @@ test("specialty requests stay visible until this world hides them", () => {
   try {
     assert.equal(drakkenheimContentActive(), true);
     assert.deepEqual(visibleSpecialties({}), SPECIALTIES.map(specialty => specialty.id));
-    assert.deepEqual(visibleSpecialties({showFate: false, showEncounter: true}), ["encounter", "search", "foraging", "death"]);
-    assert.deepEqual(specialtyOrder(["fate", "death", "missing", "fate"]), ["fate", "death", "encounter", "search", "foraging"]);
+    assert.deepEqual(visibleSpecialties({showFate: false, showEncounter: true}), ["encounter", "search", "foraging", "death", "hoard"]);
+    assert.deepEqual(specialtyOrder(["fate", "death", "missing", "fate"]), ["fate", "death", "encounter", "search", "foraging", "hoard"]);
     const order = moveSpecialty(["fate", "death", "encounter", "search", "foraging"], "death", "fate");
-    assert.deepEqual(order, ["death", "fate", "encounter", "search", "foraging"]);
+    assert.deepEqual(order, ["death", "fate", "encounter", "search", "foraging", "hoard"]);
     assert.deepEqual(moveSpecialty(order, "death", "death"), order);
-    assert.deepEqual(visibleSpecialties({showDeathSave: false}, order), ["fate", "encounter", "search", "foraging"]);
+    assert.deepEqual(visibleSpecialties({showDeathSave: false}, order), ["fate", "encounter", "search", "foraging", "hoard"]);
     assert.equal(order[0], "death");
-    assert.deepEqual(visibleSpecialties({showDeleriumSearch: false}), ["encounter", "foraging", "death", "fate"]);
+    assert.deepEqual(visibleSpecialties({showDeleriumSearch: false}), ["encounter", "foraging", "death", "hoard", "fate"]);
     assert.deepEqual(buildCheckRequest({type: "save", checkId: "dex", dc: 12, blind: false, actorIds: ["a"]}), {kind: "save", ability: "dex", dc: 12, blind: false, actorIds: ["a"]});
     assert.equal(buildCheckRequest({type: "skill", checkId: "prc", dc: null, blind: true, actorIds: ["a"]}).skill, "prc");
   } finally {
@@ -241,8 +241,8 @@ test("Delerium Search stays off Roll Requests and GM Settings unless a Drakkenhe
   const modules = ids => ({get: id => ({active: ids.includes(id)})});
   globalThis.game = {modules: modules([])};
   try {
-    assert.deepEqual(visibleSpecialties({}), ["encounter", "foraging", "death", "fate"]);
-    assert.deepEqual(visibleSpecialties({showForaging: false}), ["encounter", "death", "fate"]);
+    assert.deepEqual(visibleSpecialties({}), ["encounter", "foraging", "death", "hoard", "fate"]);
+    assert.deepEqual(visibleSpecialties({showForaging: false}), ["encounter", "death", "hoard", "fate"]);
     for (const id of ["drakkenheim-core", "drakkenheim-monsters", "drakkenheim-scgd"]) {
       globalThis.game = {modules: modules([id])};
       assert.equal(visibleSpecialties({}).includes("search"), true, id);
