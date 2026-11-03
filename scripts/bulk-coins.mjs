@@ -21,11 +21,18 @@ export function readCoins(values = {}) {
   }));
 }
 
+function currencyApi() {
+  const currency = core().currency;
+  if (typeof currency?.currencyToCp !== 'function' || typeof currency?.copperRate !== 'function') throw Error('Morelord Game Master requires Morelord Core\'s currency API.');
+  return currency;
+}
+
 export function coinShares(coins, count, split) {
   if (!Number.isInteger(count) || count < 1) throw Error('Select party members on Player Settings first.');
   coins = readCoins(coins);
   if (!split) return Array.from({length:count}, () => ({...coins}));
-  const values = Object.fromEntries(COINS.map(key => [key, BigInt(Math.round(CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[key].conversion))]));
+  const currency = currencyApi();
+  const values = Object.fromEntries(COINS.map(key => [key, BigInt(currency.copperRate(key))]));
   const total = COINS.reduce((sum, key) => sum + BigInt(coins[key]) * values[key], 0n);
   const divisor = BigInt(count), remainder = total % divisor;
   const recipient = remainder ? Math.floor(Math.random() * count) : -1;
@@ -105,14 +112,16 @@ export async function applyBulkCoins(operation, coins, operationId = foundry.uti
   const gm = activeGM();
   if (!gm) throw Error('An active GM is required.');
   return channel.executeAsUser('apply', {operation, coins:readCoins(coins), operationId}, gm.id);
-}export function formatCoins(coins) {
+}
+export function formatCoins(coins) {
   const whole = Object.fromEntries(COINS.map(key => [key, Math.floor(coins[key] ?? 0)]));
-  for (let index = 0; index < COINS.length - 1; index++) {
+  const currency = COINS.some(key => ((coins[key] ?? 0) - Math.floor(coins[key] ?? 0)) !== 0) ? currencyApi() : null;
+  for (let index = 0; index < COINS.length - 1 && currency; index++) {
     const key = COINS[index];
-    let copper = Math.round(((coins[key] ?? 0) - Math.floor(coins[key] ?? 0)) * CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[key].conversion);
+    let copper = Math.round(((coins[key] ?? 0) - Math.floor(coins[key] ?? 0)) * currency.copperRate(key));
     // Preserve whole entered denominations; express only their partial coins as change.
     for (const smaller of COINS.slice(index + 1).filter(key => key !== 'ep')) {
-      const ratio = CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[smaller].conversion;
+      const ratio = currency.copperRate(smaller);
       const amount = Math.floor(copper / ratio);
       whole[smaller] += amount; copper -= amount * ratio;
     }
@@ -125,6 +134,7 @@ export function planCoins(actors, operation, coins, currencyManager = game.dnd5e
   coins = readCoins(coins);
   if (!COINS.some(key => coins[key] > 0)) throw Error('Enter at least one coin.');
   const shares = coinShares(coins, actors.length, operation.startsWith('split-'));
+  const currency = operation.endsWith('-remove') ? currencyApi() : null;
   const rows = actors.map((actor, index) => {
     if (actor?.type !== 'character' || !actor.system.currency) throw Error('Party coins require character actors with currency.');
     const before = {...actor.system.currency}, requested = shares[index], applied = {}, deficit = {};
@@ -136,12 +146,12 @@ export function planCoins(actors, operation, coins, currencyManager = game.dnd5e
         if (!Number.isSafeInteger(after[key])) throw Error(`${actor.name}'s ${key} balance is too large.`);
         applied[key] = requested[key]; deficit[key] = 0;
       } else {
-        const ratio = CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[key].conversion;
-        const amount = Math.round(requested[key] * ratio);
+        const amount = currency.currencyToCp({[key]: requested[key]});
         if (!Number.isSafeInteger(amount)) throw Error('The coin removal is too large.');
+        const rate = currency.copperRate(key);
         const result = currencyManager.getActorCurrencyUpdates({system:{currency:after}}, amount, 'cp', {recursive:false});
         after = result.system.currency;
-        deficit[key] = Math.max(0, result.remainder) / ratio;
+        deficit[key] = Math.max(0, result.remainder) / rate;
         applied[key] = requested[key] - deficit[key];
       }
     }
@@ -155,12 +165,12 @@ export function planCoins(actors, operation, coins, currencyManager = game.dnd5e
     for (const row of rows) for (const key of COINS) {
       const shortfall = row.deficit[key];
       if (!shortfall) continue;
-      const ratio = CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[key].conversion;
-      const copper = Math.round(shortfall * ratio);
+      const rate = currency.copperRate(key);
+      const copper = Math.round(shortfall * rate);
       if (!Number.isSafeInteger(copper)) throw Error('The party coin deficit is too large.');
       const result = currencyManager.getActorCurrencyUpdates({system:{currency:purse.after}}, copper, 'cp', {recursive:false});
       purse.after = result.system.currency;
-      row.deficit[key] = result.remainder / ratio;
+      row.deficit[key] = result.remainder / rate;
       row.partyPaid[key] = shortfall - row.deficit[key];
       purse.requested[key] += shortfall; purse.applied[key] += row.partyPaid[key]; purse.deficit[key] += row.deficit[key];
     }

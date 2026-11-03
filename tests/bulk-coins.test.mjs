@@ -1,27 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as currency from '../../morelord-core/scripts/services/currency-service.js';
 import {COINS, readCoins, coinShares, planCoins, initializeBulkCoins, applyBulkCoins, formatCoins} from '../scripts/bulk-coins.mjs';
 import {readBulkUndo, writeBulkUndo} from '../scripts/bulk-undo.mjs';
 
 const coins = values => Object.fromEntries(COINS.map(key => [key, values[key] ?? 0]));
 const actor = (id, values) => ({id, uuid:`Actor.${id}`, name:id, type:'character', system:{currency:coins(values)}});
-const nativeStub = {getActorCurrencyUpdates({system:{currency}}, amount, key) {
-  if (amount <= 0) return {system:{currency:{...currency}}, remainder:0};
-  assert.equal(key, 'cp', 'Deductions use copper precision.');
-  const available = value(currency), charge = BigInt(amount), paid = available < charge ? available : charge;
+const rate = denomination => BigInt(currency.copperRate(denomination));
+const value = purse => COINS.reduce((sum, key) => sum + BigInt(purse[key] ?? 0) * rate(key), 0n);
+const makeChange = {getActorCurrencyUpdates({system:{currency:purse}}, amount) {
+  if (amount <= 0) return {system:{currency:{...purse}}, remainder:0};
+  const available = value(purse), charge = BigInt(amount), paid = available < charge ? available : charge;
   let change = available - paid;
   const after = coins({});
   for (const denomination of COINS.filter(key => key !== 'ep')) {
-    const ratio = BigInt(Math.round(CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[denomination].conversion));
+    const ratio = rate(denomination);
     after[denomination] = Number(change / ratio); change %= ratio;
   }
   return {system:{currency:after}, remainder:Number(charge - paid)};
 }};
 
-globalThis.CONFIG = {DND5E:{currencies:Object.fromEntries(Object.entries({pp:0.1,gp:1,ep:2,sp:10,cp:100}).map(([key, conversion]) => [key, {conversion}]))}};
-const value = coins => COINS.reduce((sum, key) => sum + BigInt(coins[key] ?? 0) * BigInt(Math.round(CONFIG.DND5E.currencies.cp.conversion / CONFIG.DND5E.currencies[key].conversion)), 0n);
+function useCurrency() {
+  globalThis.CONFIG = {DND5E:{currencies:Object.fromEntries(Object.entries({pp:0.1,gp:1,ep:2,sp:10,cp:100}).map(([key, conversion]) => [key, {conversion, label:key}]))}};
+  globalThis.game = {modules:new Map([['morelord-core', {active:true}]]), dnd5e:{applications:{CurrencyManager:makeChange}}};
+  globalThis.MorelordCore = {currency, socket:{createChannel() {}}, ui:{participation:{}}, rolls:{skill() {}}};
+}
+useCurrency();
 
 test('splits make change before division and assign only copper remainder randomly', () => {
+  useCurrency();
   const entered = {pp:2, gp:10, ep:4, sp:5, cp:8};
   const shares = coinShares(entered, 3, true);
   assert.equal(shares.reduce((sum, share) => sum + value(share), 0n), value(entered));
@@ -39,37 +46,48 @@ test('splits make change before division and assign only copper remainder random
 });
 
 test('additions preserve other coins and removals report individual deficits without negative balances', () => {
+  useCurrency();
   const actors = [actor('a', {gp:2, sp:5}), actor('b', {gp:10})];
-  const added = planCoins(actors, 'each-add', {gp:3}, nativeStub);
-  assert.equal(added[0].after.gp, 5); assert.equal(added[0].after.sp, 5);
-  const removed = planCoins(actors, 'each-remove', {gp:4}, nativeStub);
-  assert.deepEqual(removed.map(row => [row.requested.gp, row.applied.gp, row.deficit.gp, row.after.gp]), [[4,2.5,1.5,0],[4,4,0,6]]);
+  const added = planCoins(actors, 'each-add', {gp:3});
+  assert.deepEqual(added[0].after, coins({gp:5, sp:5}));
+  assert.deepEqual(added[1].after, coins({gp:13}));
+  const removed = planCoins(actors, 'each-remove', {gp:4});
+  assert.deepEqual(removed.map(row => [row.applied.gp, row.deficit.gp]), [[2.5, 1.5], [4, 0]]);
+  assert.deepEqual(removed[0].after, coins({}));
+  assert.deepEqual(removed[1].after, coins({gp:6}));
+  const changed = planCoins([actor('c', {gp:1})], 'each-remove', {cp:1});
+  assert.deepEqual(changed[0].after, coins({sp:9, cp:9}));
+  assert.equal(changed[0].deficit.cp, 0);
   assert.equal(actors[0].system.currency.gp, 2, 'Planning never changes character documents.');
 });
 
 test('coin boundaries reject fractional, negative, unsafe, unknown, and empty requests', () => {
+  useCurrency();
   for (const gp of [-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, true, null, {}, []]) assert.throws(() => readCoins({gp}));
   assert.throws(() => readCoins({gems:1}), /Unknown/);
   assert.throws(() => coinShares({gp:1}, 0, true), /Player Settings/);
-  assert.throws(() => planCoins([actor('a', {})], 'wrong', {gp:1}, nativeStub), /valid/);
-  assert.throws(() => planCoins([actor('a', {})], 'each-add', {}, nativeStub), /at least/);
-  assert.throws(() => planCoins([actor('a', {gp:Number.MAX_SAFE_INTEGER})], 'each-add', {gp:1}, nativeStub), /too large/);
+  assert.throws(() => planCoins([actor('a', {})], 'wrong', {gp:1}), /valid/);
+  assert.throws(() => planCoins([actor('a', {})], 'each-add', {}), /at least/);
+  assert.throws(() => planCoins([actor('a', {gp:Number.MAX_SAFE_INTEGER})], 'each-add', {gp:1}), /too large/);
+  assert.throws(() => planCoins([{id:'npc', name:'Goblin', type:'npc', system:{currency:coins({gp:5})}}], 'each-add', {gp:1}), /character/);
+  assert.throws(() => planCoins([{id:'a', name:'A', type:'character', system:{}}], 'each-add', {gp:1}), /currency/);
   assert.deepEqual(readCoins({gp:'2', sp:''}), coins({gp:2}));
 });
 
 test('removal uses personal coins, then the shared purse once, and reports only the unpaid deficit', () => {
-  globalThis.CONFIG = {DND5E:{currencies:Object.fromEntries(Object.entries({pp:0.1,gp:1,ep:2,sp:10,cp:100}).map(([key, conversion]) => [key, {conversion}]))}};
+  useCurrency();
   const members = [actor('a', {gp:1}), actor('b', {})];
   const purse = {...actor('party', {cp:300}), type:'group'};
-  const rows = planCoins(members, 'each-remove', {gp:3}, nativeStub, purse);
+  const rows = planCoins(members, 'each-remove', {gp:3}, undefined, purse);
   assert.deepEqual(rows.slice(0,2).map(row => [row.applied.gp, row.partyPaid.gp, row.deficit.gp]), [[1,2,0],[0,1,2]]);
   assert.equal(rows[2].after.cp, 0); assert.equal(rows[2].applied.gp, 3);
   assert.equal(rows[2].requested.gp, 5); assert.equal(rows[2].deficit.gp, 2);
   assert.equal(purse.system.currency.cp, 300, 'Planning does not spend real party currency.');
-  assert.equal(planCoins(members, 'each-add', {gp:1}, nativeStub, purse).length, 2, 'Additions do not touch the shared purse.');
+  assert.equal(planCoins(members, 'each-add', {gp:1}, undefined, purse).length, 2, 'Additions do not touch the shared purse.');
 });
 
 test('Core-routed GM actions update only configured characters, post public cards, and cannot apply twice', async () => {
+  useCurrency();
   const gm = {id:'gm', isGM:true, active:true}, player = {id:'player', isGM:false, active:true};
   const actors = new Map([actor('a', {gp:2}), actor('b', {gp:10}), actor('outside', {gp:100})].map(a => [a.id, a]));
   const messages = [], registrations = new Map(), writes = [], warnings = [];
@@ -77,8 +95,8 @@ test('Core-routed GM actions update only configured characters, post public card
     assert.equal(userId, gm.id);
     return registrations.get(type).handler(data, {senderUserId:game.user.id});
   }};
-  globalThis.game = {user:gm, actors, users:new Map([[gm.id, gm], [player.id, player]]), messages, dnd5e:{applications:{CurrencyManager:nativeStub}}, modules:new Map([['morelord-core', {active:true}]])};
-  globalThis.MorelordCore = {users:{list:() => [gm, player]}, socket:{createChannel:() => channel}, ui:{participation:{primaryPartyGroup:() => null}, actorIdentity:({actorUuid}) => `<span class="ml-actor-identity">${actorUuid}</span>`}, rolls:{skill() {}}};
+  globalThis.game = {user:gm, actors, users:new Map([[gm.id, gm], [player.id, player]]), messages, dnd5e:{applications:{CurrencyManager:makeChange}}, modules:new Map([['morelord-core', {active:true}]])};
+  globalThis.MorelordCore = {currency, users:{list:() => [gm, player]}, socket:{createChannel:() => channel}, ui:{participation:{primaryPartyGroup:() => null}, actorIdentity:({actorUuid}) => `<span class="ml-actor-identity">${actorUuid}</span>`}, rolls:{skill() {}}};
   globalThis.foundry = {utils:{randomID:() => 'test-operation-0001'}};
   globalThis.ui = {notifications:{warn:text => warnings.push(text)}};
   globalThis.Actor = {async updateDocuments(updates) {
@@ -139,7 +157,7 @@ test('Core-routed GM actions update only configured characters, post public card
 });
 
 test('chat amounts express partial denominations as whole smaller coins', () => {
-  globalThis.CONFIG = {DND5E:{currencies:Object.fromEntries(Object.entries({pp:0.1,gp:1,ep:2,sp:10,cp:100}).map(([key, conversion]) => [key, {conversion}]))}};
+  useCurrency();
   assert.equal(formatCoins({gp:0.99}), '9 sp, 9 cp');
   assert.equal(formatCoins({gp:6.99}), '6 gp, 9 sp, 9 cp');
   assert.equal(formatCoins({gp:4, ep:2}), '4 gp, 2 ep');
