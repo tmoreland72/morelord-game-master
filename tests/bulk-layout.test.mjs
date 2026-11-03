@@ -96,3 +96,16 @@ test('Undo Last Action is one right-aligned button and its enabled state updates
   assert.match(bulk, /fieldKey: 'sceneTokens\.disposition'/);
   assert.match(bulk, /fieldKey: 'sceneTokens\.visionField'/);
 });
+
+test('a label help icon stays on the text line and the select fills the field', () => {
+  const help = css.slice(css.indexOf('#mlgm .gm-label-help > .ml-help-button'));
+  assert.match(help, /\{[^}]*flex:0 0 auto/);
+  assert.match(help, /\{[^}]*height:1em/);
+  assert.match(help, /\{[^}]*min-height:0/);
+  assert.match(help, /\{[^}]*max-height:1em/);
+  assert.match(help, /\{[^}]*width:1em/);
+  const selects = css.slice(css.indexOf('#mlgm .gm-bulk .gm-specialty-field > select'));
+  assert.match(selects, /\{[^}]*align-self:stretch/);
+  assert.match(selects, /\{[^}]*width:100%/);
+  assert.match(selects, /\{[^}]*min-width:min\(100%,fit-content\)/);
+});
