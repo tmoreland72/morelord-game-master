@@ -1,6 +1,7 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
+import { HOARD_BANDS, resolveHoard, treasureHTML } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
@@ -18,7 +19,8 @@ export const deleriumSearch = () => {
 };
 export const surgeDie = req => req.surgeName === 'Volatile Magic' ? 4 : 20;
 const abilityName = id => game.i18n.localize(CONFIG.DND5E.abilities?.[id]?.label ?? id);
-export const requestTitle = req => req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d${surgeDie(req)}` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : req.kind === "ability" ? `${abilityName(req.ability)} check` : req.kind === "save" ? `${abilityName(req.ability)} saving throw` : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
+const hoardLabel = band => HOARD_BANDS.find(entry => entry.id === band)?.label ?? "Treasure Hoard";
+export const requestTitle = req => req.kind === "hoard" ? `Treasure Hoard · ${hoardLabel(req.band)}` : req.kind === "surge" ? `${req.surgeName || "Wild Magic"} Check · 1d${surgeDie(req)}` : req.kind === "foraging" ? `Foraging · ${req.terrain}` : req.kind === "delerium" ? `Delerium Search · ${req.searchSession.zone.name}` : req.kind === "encounter" ? `${req.name || "Encounter Check"} · 1d${req.die}` : req.kind === "death" ? "Death Saving Throw" : req.kind === "ability" ? `${abilityName(req.ability)} check` : req.kind === "save" ? `${abilityName(req.ability)} saving throw` : `${game.i18n.localize(CONFIG.DND5E.skills[req.skill].label)} check`;
 let channel;
 
 
@@ -27,6 +29,7 @@ export function validRequest(message) {
   if (!message?.author?.isGM || !Array.isArray(req?.actorIds)) return null;
   if (req.kind === "encounter") return Number.isInteger(req.die) && req.die >= 2 && req.die <= 1000 ? req : null;
   if (req.kind === "death") return req;
+  if (req.kind === "hoard") return req.actorIds.length === 1 && HOARD_BANDS.some(band => band.id === req.band) ? req : null;
   if (req.kind === "surge") return req.triggerId && req.tableUuid && req.actorIds.length === 1 ? req : null;
   if (req.kind === "delerium") return req.searchSession?.id ? req : null;
   if (req.kind === "ability" || req.kind === "save") return CONFIG.DND5E?.abilities?.[req.ability] ? req : null;
@@ -105,10 +108,11 @@ export async function createRequest(config) {
   if (config.dc != null && (!Number.isInteger(config.dc) || config.dc < 0)) throw new Error("DC must be a non-negative whole number or blank.");
   if (config.kind === "encounter" && (!Number.isInteger(config.die) || config.die < 2 || config.die > 1000)) throw new Error("Choose a die from 2 to 1000 sides.");
   if (config.kind === "death" && (actorIds.length !== 1 || !game.actors.get(actorIds[0]).rollDeathSave)) throw new Error("Select one character who supports death saving throws.");
+  if (config.kind === "hoard" && (actorIds.length !== 1 || !HOARD_BANDS.some(band => band.id === config.band))) throw new Error("Choose one character and a treasure hoard.");
   if (config.kind === "foraging") config={...config,skill:"sur"};
   if (["ability","save"].includes(config.kind)) {
     if (game.system.id !== "dnd5e" || !CONFIG.DND5E.abilities?.[config.ability]) throw new Error("Select a valid D&D 5e ability.");
-  } else if (!["encounter","death","delerium","surge"].includes(config.kind) && (game.system.id !== "dnd5e" || !CONFIG.DND5E.skills[config.skill])) throw new Error("Select a valid D&D 5e skill.");
+  } else if (!["encounter","death","delerium","surge","hoard"].includes(config.kind) && (game.system.id !== "dnd5e" || !CONFIG.DND5E.skills[config.skill])) throw new Error("Select a valid D&D 5e skill.");
   if (config.kind === "surge" && (actorIds.length !== 1 || !config.triggerId || !config.tableUuid)) throw new Error("Invalid Wild Magic request.");
   if (config.kind === "foraging") {
     const terrain=(await foragingTerrains())[config.terrainIndex];
@@ -152,7 +156,7 @@ async function materializeRoll(prepared, kind) {
 }
 export async function prepareRequestRoll(req, actor, skillId) {
   if (!req || !actor) throw new Error("This request is no longer available.");
-  if (["encounter", "surge"].includes(req.kind)) return null;
+  if (["encounter", "surge", "hoard"].includes(req.kind)) return null;
   if (req.kind === "death") {
     if (req.blind !== false) return null;
     const roll = firstRoll(await actor.rollDeathSave({}, {}, {create: false}));
@@ -163,6 +167,37 @@ export async function prepareRequestRoll(req, actor, skillId) {
   const roll = await rollNative(actor, req, skillId, {}, {evaluate: false});
   if (!roll) throw new RollCancelled();
   return roll;
+}
+async function finishHoard(message, req, actor, requestId, actorId) {
+  const rolls = [];
+  const result = await resolveHoard(req.band, async sides => {
+    const roll = new Roll(`1d${sides}`);
+    if (typeof roll.evaluate === "function") await roll.evaluate({allowInteractive: false});
+    const total = Number(roll.total);
+    if (!Number.isInteger(total) || total < 1 || total > sides) throw new Error(`A d${sides} came up ${roll.total}.`);
+    rolls.push(roll);
+    return total;
+  });
+  const blind = req.blind !== false;
+  const whisper = blind ? game.users.filter(user => user.isGM).map(user => user.id) : [];
+  const currency = core().currency;
+  const canPay = typeof currency?.currencyToCp === "function" && typeof currency?.addCurrency === "function";
+  const copper = canPay ? currency.currencyToCp(result.coins) : null;
+  let granted = false;
+  if (!blind && canPay && copper > 0) {
+    try {
+      await currency.addCurrency(actor, copper);
+      granted = true;
+    } catch (error) {
+      console.error(`${ID} | Treasure coins`, error);
+      ui.notifications?.warn(`The hoard was rolled, but the coins were not added: ${error.message}`);
+    }
+  } else if (!blind && copper == null) ui.notifications?.warn("Treasure coins were not added. Morelord Core's currency API is required.");
+  await ChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), flavor: e(`${actor.name} · ${requestTitle(req)}`), rolls, content: treasureHTML(result, {actorName: actor.name, copper, granted, escape: e}), blind, whisper,
+    flags: {[ID]: {result: {requestId, actorId, treasure: {bandId: result.bandId, hoardRoll: result.hoardRoll, coins: result.coins, valuables: result.valuables.map(entry => ({kind: entry.kind, count: entry.count, each: entry.each})), items: result.items.map(item => ({tableId: item.tableId, roll: item.roll, name: item.name}))}}}}},
+    {messageMode: blind ? "blind" : "public"});
+  await message.setFlag(ID, "request", {...req, completed: [...new Set([...(req.completed ?? []), actorId])]});
+  return {accepted: true};
 }
 export async function rollRequest(requestId, actorId, skillId, prepared = null) {
   const gm = authority(game.messages.get(requestId));
@@ -206,6 +241,7 @@ async function resolveRequest({requestId,actorId,skillId,roll:prepared}, executi
     scheduleRequestOutcomes(message);
     return {accepted:true};
   }
+  if (req.kind === "hoard") return finishHoard(message, req, actor, requestId, actorId);
   let roll, declined = false;
   const supplied = prepared && !["encounter","surge"].includes(req.kind) && !(req.kind === "delerium" && skillId === "decline");
   if (supplied) roll = await materializeRoll(prepared, req.kind);

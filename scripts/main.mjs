@@ -7,6 +7,7 @@ import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.
 import { ID, escapeHTML as e } from "./core.mjs";
 import { core, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
+import { HOARD_BANDS } from "./treasure.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
 import {applyBulkInspiration, applyBulkTokens, applyBulkUndo, applyBulkXp, applySceneTokens, bulkPanel, bulkXpChoice, initializeBulkActions, readXp, tokenFieldList, tokenScopeChoice} from './bulk-actions.mjs';
 import {sceneTokenScopeChoice} from './scene-tokens.mjs';
@@ -344,15 +345,21 @@ function specialtyGrid() {
 function specialtyCard(id) {
   const c = state.last[id] ?? {};
   const actors = partyActorIds().map(actorId => game.actors.get(actorId)).filter(Boolean);
-  const names = {encounter: "Encounter Check", search: "Delerium Search", foraging: "Foraging Check", death: "Death Save", fate: "Roll of Fate"};
+  const names = {encounter: "Encounter Check", search: "Delerium Search", foraging: "Foraging Check", death: "Death Save", hoard: "Treasure Hoard", fate: "Roll of Fate"};
   const zones = id === "search" ? searchZones() : [];
   const fateScope = c.scope === "party" ? "party" : "tokens";
+  const blind = id === "fate" ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
+  if (id === "hoard") {
+    const band = HOARD_BANDS.some(entry => entry.id === c.band) ? c.band : HOARD_BANDS[0].id;
+    const actorId = actors.some(actor => actor.id === c.actorIds?.[0]) ? c.actorIds[0] : actors[0]?.id;
+    const fields = `<label class="gm-specialty-field"><span>Hoard</span>${select("band", HOARD_BANDS.map(entry => option(entry.id, entry.label, band)).join(""))}</label><label class="gm-specialty-field"><span>Character</span>${select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))}</label>`;
+    return `<form class="ml-card gm-specialty-card" data-roll-card="hoard"><strong class="gm-specialty-title">${e(names.hoard)}</strong><div class="gm-specialty-row">${fields}${blind}${requestButton("quick-request", id, names.hoard)}</div></form>`;
+  }
   const field = id === "encounter" ? ["Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join(""))]
     : id === "search" ? ["Search area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join(""))]
     : id === "foraging" ? ["Terrain", select("terrainIndex", terrainOptions.map((terrain, index) => option(String(index), terrain.label, String(c.terrainIndex ?? 2))).join(""))]
     : id === "death" ? ["Character", select("actorId", actors.map(actor => option(actor.id, actor.name, c.actorIds?.[0] ?? actors[0]?.id)).join(""))]
     : ["Who rolls", select("scope", [option("party", "Party", fateScope), option("tokens", "Selected tokens", fateScope)].join(""))];
-  const blind = id === "fate" ? "" : `<label class="ml-check"><input type="checkbox" name="blind" ${c.blind === true ? "checked" : ""}><span>Blind roll</span></label>`;
   return `<form class="ml-card gm-specialty-card" data-roll-card="${e(id)}"><strong class="gm-specialty-title">${e(names[id])}</strong><div class="gm-specialty-row"><label class="gm-specialty-field"><span>${e(field[0])}</span>${field[1]}</label>${blind}${requestButton("quick-request", id, names[id])}</div></form>`;
 }
 function searchZones() {
@@ -373,6 +380,7 @@ function readQuick(id) {
   if (id === "encounter") return {kind: "encounter", die: Number(data.get("die")), blind, actorIds: partyActorIds()};
   if (id === "foraging") return {kind: "foraging", terrainIndex: Number(data.get("terrainIndex")), blind, actorIds: partyActorIds()};
   if (id === "death") return {kind: "death", blind, actorIds: [data.get("actorId")].filter(Boolean)};
+  if (id === "hoard") return {kind: "hoard", band: HOARD_BANDS.some(entry => entry.id === data.get("band")) ? data.get("band") : HOARD_BANDS[0].id, blind, actorIds: [data.get("actorId")].filter(Boolean)};
   return {kind: "delerium", zoneId: data.get("zoneId"), blind, actorIds: partyActorIds()};
 }
 async function sendCheck() {
@@ -490,7 +498,7 @@ async function sendQuick(id) {
   await saving;
   if (id === "fate") return sendFate();
   const config = readQuick(id);
-  if (!config.actorIds.length) throw new Error(id === "death" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
+  if (!config.actorIds.length) throw new Error(id === "death" || id === "hoard" ? "Choose a character from Player Settings." : "Select participating characters on the Player Settings tab first.");
   await persist(n => { n.last[id] = config; if (id === "encounter") n.last.die = config.die; });
   await createRequest(config);
 }
@@ -750,7 +758,7 @@ async function onChange(event) {
     return;
   }
   if (card?.dataset.rollCard === "fate") { await persist(n => { n.last.fate = {scope: new FormData(card).get("scope") === "party" ? "party" : "tokens"}; }); return; }
-  if (card && ["encounter","search","foraging","death"].includes(card.dataset.rollCard)) {
+  if (card && ["encounter","search","foraging","death","hoard"].includes(card.dataset.rollCard)) {
     const config = readQuick(card.dataset.rollCard);
     await persist(n => { n.last[card.dataset.rollCard] = config; if (card.dataset.rollCard === "encounter") n.last.die = config.die; });
     return;
