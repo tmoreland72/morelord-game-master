@@ -26,7 +26,7 @@ Choose the characters in scope once. Party requests, selected-token requests, an
 
 Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. One character lists every player character in the world. The label sits above that select. Sending with none chosen warns and leaves the form as it is. The request names only the chosen character, so only that character's owner can roll. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
 
-Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, Treasure Hoard, and Roll of Fate. Treasure Hoard sends one party character a CR 0-4 or CR 5-10 hoard. The player rolls that table, then the coin, gem, art, and magic item dice resolve in chat. GM Settings can hide any of them or change their order.
+Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, Treasure Hoard, and Roll of Fate. Treasure Hoard sends one party character a CR 0-4 or CR 5-10 hoard. The player rolls the d100, then each gem, art, and magic item step, on that same card. GM Settings can hide any of them or change their order.
 
 ## Bulk Actions
 

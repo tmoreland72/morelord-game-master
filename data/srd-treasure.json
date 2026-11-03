@@ -5,77 +5,112 @@
       "id": "cr-0-4",
       "label": "CR 0-4",
       "die": 100,
-      "source": "Original arrangement of SRD 5.2.1 coin denominations and magic item names. SRD 5.2.1 publishes no treasure hoard roll table.",
-      "coins": [
-        {
-          "denomination": "cp",
-          "dice": 4,
-          "sides": 6,
-          "multiplier": 50
-        },
-        {
-          "denomination": "sp",
-          "dice": 4,
-          "sides": 6,
-          "multiplier": 20
-        },
-        {
-          "denomination": "ep",
-          "dice": 1,
-          "sides": 6,
-          "multiplier": 1
-        },
-        {
-          "denomination": "gp",
-          "dice": 2,
-          "sides": 6,
-          "multiplier": 10
-        }
-      ],
+      "source": "Original arrangement of SRD 5.2.1 gem and art values and magic item names. Rows award only what they list. Rare rolls choose between the two Rare tables.",
       "rows": [
         {
           "min": 1,
-          "max": 25,
+          "max": 6,
           "valuables": [],
           "magic": []
         },
         {
-          "min": 26,
-          "max": 45,
+          "min": 7,
+          "max": 16,
           "valuables": [
             {
               "kind": "gems",
               "dice": 2,
-              "sides": 4,
+              "sides": 6,
               "each": {
-                "gp": 20
+                "gp": 10
               }
             }
           ],
           "magic": []
         },
         {
-          "min": 46,
-          "max": 60,
+          "min": 17,
+          "max": 26,
           "valuables": [
             {
               "kind": "art",
-              "dice": 1,
+              "dice": 2,
               "sides": 4,
               "each": {
-                "gp": 100
+                "gp": 25
               }
             }
           ],
           "magic": []
         },
         {
-          "min": 61,
-          "max": 80,
+          "min": 27,
+          "max": 36,
           "valuables": [
             {
               "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 37,
+          "max": 44,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 10
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
               "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 45,
+          "max": 52,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 53,
+          "max": 60,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
               "sides": 6,
               "each": {
                 "gp": 50
@@ -88,157 +123,66 @@
                 "common"
               ],
               "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 81,
-          "max": 92,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 1,
-              "sides": 4,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 93,
-          "max": 98,
-          "valuables": [],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 99,
-          "max": 100,
-          "valuables": [],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "count": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "cr-5-10",
-      "label": "CR 5-10",
-      "die": 100,
-      "source": "Original arrangement of SRD 5.2.1 coin denominations and magic item names. SRD 5.2.1 publishes no treasure hoard roll table.",
-      "coins": [
-        {
-          "denomination": "sp",
-          "dice": 2,
-          "sides": 6,
-          "multiplier": 100
-        },
-        {
-          "denomination": "gp",
-          "dice": 4,
-          "sides": 6,
-          "multiplier": 25
-        },
-        {
-          "denomination": "pp",
-          "dice": 1,
-          "sides": 6,
-          "multiplier": 2
-        }
-      ],
-      "rows": [
-        {
-          "min": 1,
-          "max": 15,
-          "valuables": [],
-          "magic": []
-        },
-        {
-          "min": 16,
-          "max": 30,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 31,
-          "max": 45,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 1,
-              "sides": 4,
-              "each": {
-                "gp": 200
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 46,
-          "max": 60,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
+              "sides": 6
             }
           ]
         },
         {
           "min": 61,
-          "max": 75,
+          "max": 65,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 10
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 66,
+          "max": 70,
           "valuables": [
             {
               "kind": "art",
-              "dice": 1,
+              "dice": 2,
               "sides": 4,
               "each": {
-                "gp": 200
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 71,
+          "max": 75,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 50
               }
             }
           ],
@@ -254,8 +198,651 @@
         },
         {
           "min": 76,
-          "max": 88,
+          "max": 78,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 10
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 79,
+          "max": 80,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 81,
+          "max": 85,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 86,
+          "max": 92,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 93,
+          "max": 97,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 98,
+          "max": 99,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 100,
+          "max": 100,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 2,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cr-5-10",
+      "label": "CR 5-10",
+      "die": 100,
+      "source": "Original arrangement of SRD 5.2.1 gem and art values and magic item names. Rows award only what they list. Rare rolls choose between the two Rare tables.",
+      "rows": [
+        {
+          "min": 1,
+          "max": 4,
           "valuables": [],
+          "magic": []
+        },
+        {
+          "min": 5,
+          "max": 10,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 11,
+          "max": 16,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 17,
+          "max": 22,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 23,
+          "max": 28,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": []
+        },
+        {
+          "min": 29,
+          "max": 32,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 33,
+          "max": 36,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 37,
+          "max": 40,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 41,
+          "max": 44,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "common"
+              ],
+              "dice": 1,
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "min": 45,
+          "max": 49,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 50,
+          "max": 54,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 55,
+          "max": 59,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 60,
+          "max": 63,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "uncommon"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 64,
+          "max": 66,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 67,
+          "max": 69,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 70,
+          "max": 72,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 73,
+          "max": 74,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 75,
+          "max": 76,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 77,
+          "max": 78,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 79,
+          "max": 79,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 80,
+          "max": 80,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "count": 1
+            }
+          ]
+        },
+        {
+          "min": 81,
+          "max": 84,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 25
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 85,
+          "max": 88,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 50
+              }
+            }
+          ],
           "magic": [
             {
               "tables": [
@@ -269,28 +856,133 @@
         },
         {
           "min": 89,
-          "max": 96,
-          "valuables": [],
-          "magic": [
+          "max": 91,
+          "valuables": [
             {
-              "tables": [
-                "uncommon"
-              ],
-              "count": 1
-            },
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
             {
               "tables": [
                 "rare-1",
                 "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 92,
+          "max": 94,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "rare-1",
+                "rare-2"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 95,
+          "max": 96,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 97,
+          "max": 98,
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
+              ],
+              "dice": 1,
+              "sides": 4
+            }
+          ]
+        },
+        {
+          "min": 99,
+          "max": 99,
+          "valuables": [
+            {
+              "kind": "gems",
+              "dice": 3,
+              "sides": 6,
+              "each": {
+                "gp": 100
+              }
+            }
+          ],
+          "magic": [
+            {
+              "tables": [
+                "very-rare"
               ],
               "count": 1
             }
           ]
         },
         {
-          "min": 97,
+          "min": 100,
           "max": 100,
-          "valuables": [],
+          "valuables": [
+            {
+              "kind": "art",
+              "dice": 2,
+              "sides": 4,
+              "each": {
+                "gp": 250
+              }
+            }
+          ],
           "magic": [
             {
               "tables": [
