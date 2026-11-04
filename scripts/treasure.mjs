@@ -546,16 +546,6 @@ export async function commitHoardStep({data, bandId, state, stepId = null, total
   return {state: next, step, alreadyResolved: false};
 }
 
-// whisper is null for a public hoard, or the user ids of a private hoard's recipients.
-export async function showHoardDice(rolls, whisper = null) {
-  const dice = globalThis.game?.dice3d;
-  if (typeof dice?.showForRoll !== "function" || !rolls?.length) return;
-  const recipients = Array.isArray(whisper) && whisper.length ? [...whisper] : null;
-  for (const roll of rolls) {
-    try { await dice.showForRoll(roll, globalThis.game.user, true, recipients, false); }
-    catch (error) { console.warn("Morelord Game Master | Dice animation", error); }
-  }
-}
 
 function itemLine(item, escape) {
   const detail = item.choice == null ? `${escape(item.tableName)} (${item.roll})` : `${escape(item.tableName)} (1d${item.tableCount ?? 2}: ${item.choice}, d100: ${item.roll})`;

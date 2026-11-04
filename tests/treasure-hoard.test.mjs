@@ -339,7 +339,9 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   assert.match(request.content, /2d6 gems \(10 GP each\)/);
   assert.equal(buttons(request.content).length, 1);
   assert.equal(created.length, 0);
-  assert.deepEqual(shown, ["1d100"]);
+  // The card update is the only animation; the clicking client does not show the dice itself.
+  assert.deepEqual(shown, []);
+  assert.equal(request.rolls.length, 1);
   delete game.dice3d;
   faces.push(6);
   const gemRoll = new Roll("2d6");
@@ -424,8 +426,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   await send(priv);
   await send(priv);
   delete game.dice3d;
-  assert.ok(privShown.length >= 1);
-  for (const shown of privShown) { assert.deepEqual([...shown.whisper].sort(), ["gm", "player"]); assert.equal(shown.blind, false); }
+  assert.deepEqual(privShown, []);
   assert.match(priv.content, /Hoard roll: 27/);
   assert.doesNotMatch(priv.content, /data-mlgm-hoard-reveal|Reveal/);
   assert.deepEqual([...priv.whisper].sort(), ["gm", "player"]);

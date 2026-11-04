@@ -1,7 +1,7 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
-import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, showHoardDice, spellScrollLevel } from "./treasure.mjs";
+import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, spellScrollLevel } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
@@ -103,8 +103,6 @@ function hoardWhisper(req) {
   const owners = game.users.filter(user => !user.isGM && actor?.testUserPermission?.(user, "OWNER")).map(user => user.id);
   return [...new Set([...owners, ...gmWhisper()])];
 }
-// Private dice animate only for the card's recipients.
-const hoardDiceWhisper = message => validRequest(message)?.private && message.whisper?.length ? [...message.whisper] : null;
 const hoardTitle = (req, actor) => `${requestTitle(req)} · ${actor?.name ?? "Character"}`;
 const hoardIdentity = actor => actor ? core().ui.actorIdentity({actorUuid: actor.uuid}) : "";
 function hoardMarkup(req, actor, state, {allowRoll = false} = {}) {
@@ -128,7 +126,9 @@ export async function placeHoardItem(actor, itemData) {
   const created = await actor.createEmbeddedDocuments("Item", [itemData]);
   return created?.[0] ?? null;
 }
-async function rollHoardFormulas(formulas, whisper = null) {
+// Dice So Nice animates the rolls once, when the GM adds them to the card.
+// Showing them here as well played every hoard roll twice.
+async function rollHoardFormulas(formulas) {
   const rolls = [];
   const totals = [];
   for (const formula of formulas) {
@@ -137,7 +137,6 @@ async function rollHoardFormulas(formulas, whisper = null) {
     totals.push(readHoardTotal(formula, roll));
     rolls.push(roll);
   }
-  await showHoardDice(rolls, whisper);
   return {rolls, totals};
 }
 function evaluatedDieData(formula, total) {
@@ -265,7 +264,7 @@ async function advanceHoard(message, req, actor, payload = {}) {
   if (!step || (payload.stepId && payload.stepId !== "next" && payload.stepId !== step.id)) return {accepted: true, alreadyResolved: true};
   const supplied = Array.isArray(payload.rolls) && payload.rolls.length === step.formulas.length;
   // The clicking client rolls. A missing payload comes only from an older client.
-  const rolled = supplied ? totalsFromPayload(step.formulas, payload.rolls) : await rollHoardFormulas(step.formulas, hoardDiceWhisper(message));
+  const rolled = supplied ? totalsFromPayload(step.formulas, payload.rolls) : await rollHoardFormulas(step.formulas);
   let scroll = null;
   if (step.kind === "magic") {
     const preview = previewMagicItem(data, step, rolled.totals);
@@ -297,7 +296,7 @@ async function submitHoardRoll(message, actor) {
   const step = nextHoardStep(data, req.band, state);
   const hoard = {stepId: step?.id ?? "next"};
   if (step) {
-    const rolled = await rollHoardFormulas(step.formulas, hoardDiceWhisper(request));
+    const rolled = await rollHoardFormulas(step.formulas);
     hoard.rolls = rolled.rolls.map(roll => typeof roll.toJSON === "function" ? roll.toJSON() : {formula: roll.formula, total: roll.total});
     if (step.kind === "magic") {
       const preview = previewMagicItem(data, step, rolled.totals);
