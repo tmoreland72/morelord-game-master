@@ -55,7 +55,7 @@ export async function recoverCombatAmmo(combat) {
       const key=`${spent.actorUuid}:${spent.itemId}`;
       const group=groups.get(key) ?? {...spent,count:0};group.count++;groups.set(key,group);
     }
-    const lines=[];
+    const lines=[],recovered=new Map();
     for (const group of groups.values()) {
       const quantity=Math.floor(group.count/2);
       if (!quantity) continue;
@@ -70,9 +70,14 @@ export async function recoverCombatAmmo(combat) {
         data.system.quantity=quantity;data.flags??={};data.flags[ID]??={};data.flags[ID].ammoReturned={[combat.id]:quantity};
         [item]=await actor.createEmbeddedDocuments('Item',[data],{keepId:true});
       }
+      const row=recovered.get(actor.uuid) ?? {heading:actor.name,items:[]};row.items.push({uuid:item.uuid,name:item.name,img:item.img,quantity:quantity-returned});recovered.set(actor.uuid,row);
       lines.push(`<p>${core().ui.actorIdentity({actorUuid:actor.uuid,name:actor.name,img:actor.img})}: ${e(item.name)} +${quantity-returned}</p>`);
     }
-    if (lines.length) await ChatMessage.create({content:`<section class="ml-chat-card"><h3>Ammunition recovered</h3>${lines.join('')}</section>`,whisper:core().users.list().filter(u=>u.isGM).map(u=>u.id),flags:{[ID]:{ammoRecovery:combat.id}}},{messageMode:'gm'});
+    const itemCard=core().ui.itemCard;
+    const content=typeof itemCard==='function'
+      ? itemCard({title:'Ammunition recovered',sections:[...recovered.values()],footer:'Morelord Game Master'})
+      : `<section class="ml-chat-card"><h3>Ammunition recovered</h3>${lines.join('')}</section>`;
+    if (lines.length) await ChatMessage.create({content,whisper:core().users.list().filter(u=>u.isGM).map(u=>u.id),flags:{[ID]:{ammoRecovery:combat.id}}},{messageMode:'gm'});
     return lines.length>0;
   });
 }

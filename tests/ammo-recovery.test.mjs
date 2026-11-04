@@ -37,3 +37,25 @@ test('ammo receipts track consumed native attacks, round down by stack, persist,
   hooks.get('dnd5e.rollAttackV2')(rolls,{subject,ammoUpdate:{id:'arrows',quantity:1}});item.system.quantity=1;
   hooks.get('dnd5e.postRollAttack')(rolls);await new Promise(r=>setTimeout(r,0));assert.equal(sent,1);assert.equal(m.flags.ammoSpent.combatId,'combat');
 });
+
+test('ammo recovery posts on Core\'s shared item card when it exists, and the plain card before then',async()=>{
+  const gm={id:'gm',isGM:true,active:true};
+  const item={id:'arrows',uuid:'Actor.a.Item.arrows',name:'Arrows',img:'arrows.webp',system:{quantity:5},returned:{},getFlag(_ns,key){return this.returned[key];},async update(changes){this.system.quantity=changes['system.quantity'];}};
+  const actor={uuid:'Actor.a',name:'Archer',img:'a.webp',items:new Map([['arrows',item]])};
+  const rule={kind:'ammo-recovery',enabled:true},combat={id:'c2',round:1};
+  const sent=[];let cards=[];
+  const base={socket:{createChannel:()=>({on(){},executeAsUser(){}})},ui:{participation:{},actorIdentity:()=>'<span>Archer</span>'},rolls:{skill(){}},users:{list:()=>[gm]}};
+  globalThis.game={user:gm,users:new Map([[gm.id,gm]]),modules:new Map([['morelord-core',{active:true}]]),settings:{get:()=>({triggers:[rule]})},messages:[{getFlag:()=>({combatId:'c2',actorUuid:'Actor.a',itemId:'arrows'})},{getFlag:()=>({combatId:'c2',actorUuid:'Actor.a',itemId:'arrows'})}],combats:new Map()};
+  globalThis.ChatMessage={create:async data=>{sent.push(data.content);}};
+  globalThis.fromUuid=async()=>actor;
+  globalThis.MorelordCore={...base,ui:{...base.ui,itemCard:options=>{cards.push(options);return '<section class="stub-card"></section>';}}};
+  assert.equal(await recoverCombatAmmo(combat),true);
+  assert.deepEqual(sent,['<section class="stub-card"></section>']);
+  assert.equal(cards[0].title,'Ammunition recovered');
+  assert.equal(cards[0].footer,'Morelord Game Master');
+  assert.deepEqual(cards[0].sections,[{heading:'Archer',items:[{uuid:'Actor.a.Item.arrows',name:'Arrows',img:'arrows.webp',quantity:1}]}]);
+  item.returned={};sent.length=0;
+  globalThis.MorelordCore=base;
+  assert.equal(await recoverCombatAmmo({...combat}),true);
+  assert.match(sent[0],/^<section class="ml-chat-card"><h3>Ammunition recovered<\/h3><p><span>Archer<\/span>: Arrows \+1<\/p>/);
+});

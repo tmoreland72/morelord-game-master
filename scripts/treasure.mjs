@@ -389,7 +389,7 @@ export async function srdItemIndex(packs = globalThis.game?.packs) {
     if (!pack) continue;
     let entries;
     try {
-      entries = await pack.getIndex({fields: ["name", "img", "type"]});
+      entries = await pack.getIndex({fields: ["name", "img", "type", "system.rarity", "system.rarities"]});
     } catch (error) {
       try { entries = await pack.getIndex(); }
       catch (retry) {
@@ -404,6 +404,7 @@ export async function srdItemIndex(packs = globalThis.game?.packs) {
         name: entry.name,
         uuid: entry.uuid ?? `Compendium.${pack.collection}.Item.${entry._id}`,
         img: entry.img ?? "",
+        rarity: entry.system?.rarities ?? entry.system?.rarity ?? null,
         type: entry.type ?? "loot",
         source
       });
@@ -453,12 +454,12 @@ function contentLink(uuid, label, escape) {
 function attachCatalog(state, index) {
   if (state.valuable && !state.valuable.compendiumUuid) {
     const hit = findLootItem(index, state.valuable.kind, state.valuable.gp);
-    if (hit) state.valuable.compendiumUuid = hit.uuid;
+    if (hit) Object.assign(state.valuable, {compendiumUuid: hit.uuid, img: hit.img || null});
   }
   for (const item of state.items) {
     if (item.compendiumUuid || item.spell || item.pendingVariant) continue;
     const hit = findSrdItem(index, item.catalogName, item.srdName);
-    if (hit) Object.assign(item, {compendiumUuid: hit.uuid, source: hit.source ?? null, unresolved: false});
+    if (hit) Object.assign(item, {compendiumUuid: hit.uuid, source: hit.source ?? null, img: hit.img || null, rarity: hit.rarity ?? null, unresolved: false});
     else if (!item.warned) {
       item.warned = true;
       item.unresolved = true;
@@ -572,7 +573,49 @@ function itemLine(item, escape) {
   return `<li>${link}${source}</li>`;
 }
 
-export function hoardCardHTML({title, identity = "", state, step = null, allowRoll = false, escape}) {
+const MODULE_LABEL = "Morelord Game Master";
+
+/** Core's shared award card, or null on a Core build that does not have it yet. */
+export function coreItemCard(api = coreApi()) {
+  return typeof api?.ui?.itemCard === "function" ? options => api.ui.itemCard(options) : null;
+}
+
+function awardRow(item, data = item.itemData ?? item.scrollData) {
+  return {
+    uuid: item.embeddedUuid || item.compendiumUuid || item.spell?.uuid || undefined,
+    name: item.name,
+    img: item.img || data?.img || undefined,
+    rarity: item.rarity ?? data?.system?.rarities ?? data?.system?.rarity,
+    quantity: item.quantity ?? 1
+  };
+}
+
+function hoardAwardCard(itemCard, {title, recipientName, state, step, allowRoll, escape}) {
+  const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
+  const sections = [];
+  const valuable = state?.valuable;
+  if (valuable) sections.push({heading: valuable.kind === "gems" ? "Gems" : "Art objects", items: [awardRow(valuable, lootData(valuable))]});
+  if (state?.items?.length) sections.push({heading: `Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}`, items: state.items.map(item => awardRow(item))});
+  if (state?.trinket) sections.push({heading: "Trinket", items: [awardRow(state.trinket)]});
+  const prompt = allowRoll && step?.prompt ? `<p>${escape(step.prompt)}</p>` : "";
+  const rolled = state?.hoardRoll != null ? `<p>Initial Roll: ${state.hoardRoll}</p>` : "";
+  const purse = state?.coins?.purse;
+  const card = itemCard({
+    title,
+    recipientName,
+    sections,
+    coins: purse,
+    coinLabel: state?.coins ? "None" : "",
+    totalLabel: state?.coins?.granted ? "Added to the purse." : "",
+    footer: MODULE_LABEL,
+    bodyHTML: rolled + prompt,
+    actionsHTML: allowRoll && step ? `<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : ""
+  });
+  return `<div class="mlgm-hoard">${card}</div>`;
+}
+
+export function hoardCardHTML({title, identity = "", recipientName = "", state, step = null, allowRoll = false, escape, itemCard = coreItemCard()}) {
+  if (itemCard) return hoardAwardCard(itemCard, {title, recipientName, state, step, allowRoll, escape});
   const rolled = state?.hoardRoll != null;
   const prompt = step?.prompt ? `<p>${escape(step.prompt)}</p>` : "";
   const button = allowRoll && step ? `${prompt}<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";
