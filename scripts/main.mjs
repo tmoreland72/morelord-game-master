@@ -354,7 +354,8 @@ function specialtyCard(id) {
     const band = HOARD_BANDS.some(entry => entry.id === c.band) ? c.band : HOARD_BANDS[0].id;
     const actorId = actors.some(actor => actor.id === c.actorIds?.[0]) ? c.actorIds[0] : actors[0]?.id;
     const fields = `<label class="gm-specialty-field"><span>Hoard</span>${select("band", HOARD_BANDS.map(entry => option(entry.id, entry.label, band)).join(""))}</label><label class="gm-specialty-field"><span>Character</span>${select("actorId", actors.map(actor => option(actor.id, actor.name, actorId)).join(""))}</label>`;
-    return `<form class="ml-card gm-specialty-card" data-roll-card="hoard"><strong class="gm-specialty-title">${e(names.hoard)}</strong><div class="gm-specialty-row">${fields}${blind}${requestButton("quick-request", id, names.hoard)}</div></form>`;
+    const privacy = `<label class="ml-check"><input type="checkbox" name="private" ${c.private === true ? "checked" : ""}><span>Private</span></label>`;
+    return `<form class="ml-card gm-specialty-card" data-roll-card="hoard"><strong class="gm-specialty-title">${e(names.hoard)}</strong><div class="gm-specialty-row">${fields}${privacy}${requestButton("quick-request", id, names.hoard)}</div></form>`;
   }
   const field = id === "encounter" ? ["Die", select("die", [4,6,8,10,12,20].map(die => option(String(die), `d${die}`, String(c.die ?? state.last.die ?? 8))).join(""))]
     : id === "search" ? ["Search area", select("zoneId", zones.map(zone => option(zone.id, `${zone.name} - DC ${zone.dc}`, c.zoneId ?? zones[0]?.id)).join(""))]
@@ -381,7 +382,7 @@ function readQuick(id) {
   if (id === "encounter") return {kind: "encounter", die: Number(data.get("die")), blind, actorIds: partyActorIds()};
   if (id === "foraging") return {kind: "foraging", terrainIndex: Number(data.get("terrainIndex")), blind, actorIds: partyActorIds()};
   if (id === "death") return {kind: "death", blind, actorIds: [data.get("actorId")].filter(Boolean)};
-  if (id === "hoard") return {kind: "hoard", band: HOARD_BANDS.some(entry => entry.id === data.get("band")) ? data.get("band") : HOARD_BANDS[0].id, blind, actorIds: [data.get("actorId")].filter(Boolean)};
+  if (id === "hoard") return {kind: "hoard", band: HOARD_BANDS.some(entry => entry.id === data.get("band")) ? data.get("band") : HOARD_BANDS[0].id, private: data.has("private"), actorIds: [data.get("actorId")].filter(Boolean)};
   return {kind: "delerium", zoneId: data.get("zoneId"), blind, actorIds: partyActorIds()};
 }
 async function sendCheck() {
