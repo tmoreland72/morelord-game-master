@@ -12,6 +12,7 @@ import {
   ITEM_PACKS, hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, magicItemFor, srdItemIndex, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
 } from "../scripts/treasure.mjs";
 import {initializeRequests, createRequest, placeHoardItem, registerRequestRenderers} from "../scripts/requests.mjs";
+import {releasedCoreCards} from "./core-release.mjs";
 
 const ID = "morelord-game-master";
 const rowAt = (hoard, roll) => hoard.rows.find(row => roll >= row.min && roll <= row.max);
@@ -297,7 +298,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   // Core's real roll-request renderer, so the hoard card is built from the shared markup.
   globalThis.foundry.utils.escapeHTML = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   globalThis.fromUuidSync = uuid => game.actors.get(uuid.replace("Actor.", ""));
-  const chatRequests = new ChatRollRequests({createChannel: () => ({on() {}})});
+  const chatRequests = releasedCoreCards();
   globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, chatRequests};
   initializeRequests();
   const send = (message, hoard, sender = gm.id) => dispatch({namespace: ID, type: "roll", data: {requestId: message.id, actorId: actor.id, hoard}, senderUserId: sender, targetUserId: gm.id, messageId: crypto.randomUUID()});

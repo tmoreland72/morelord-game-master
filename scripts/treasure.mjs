@@ -618,19 +618,8 @@ function pendingRequestCard(requestCard, {title, actorUuid, step}) {
   return requestCard({type: HOARD_REQUEST_TYPE, key: "hoard", title, entries: {hoard: entry}});
 }
 
-export function hoardCardHTML({title, actorUuid = "", identity = "", recipientName = "", state, step = null, allowRoll = false, escape, itemCard = coreItemCard(), requestCard = coreRequestCard()}) {
-  const row = state?.hoardRoll != null ? `<p>Initial Roll: ${state.hoardRoll}</p>` : "";
-  const pending = allowRoll && step;
-  let request;
-  if (pending && requestCard) {
-    // Core's card has a header, then the roll row. The Initial Roll sits at the top of that row.
-    request = pendingRequestCard(requestCard, {title, actorUuid, step}).replace('data-ml-roll-entry="hoard">', `data-ml-roll-entry="hoard">${row}`);
-  } else {
-    const prompt = pending && step.prompt ? `<p>${escape(step.prompt)}</p>` : "";
-    const button = pending ? `<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";
-    const entry = identity || prompt || button ? `<div class="ml-card ml-stack">${identity}${prompt}${button}</div>` : "";
-    request = `<section class="ml-chat-card ml-stack"><h3>${escape(title)}</h3>${row}${entry}</section>`;
-  }
+/** What the hoard has awarded so far, as Core's item card (or plain markup on an older Core). Empty before any award. */
+export function hoardAwardedHTML({recipientName = "", state, escape, itemCard = coreItemCard()}) {
   const results = hoardResults(state);
   let awarded = "";
   if (itemCard && results.any) {
@@ -652,6 +641,23 @@ export function hoardCardHTML({title, actorUuid = "", identity = "", recipientNa
     const trinket = state?.trinket ? `<p><strong>Trinket</strong><br>${contentLink(state.trinket.embeddedUuid, state.trinket.name, escape)} (${escape(state.trinket.source)})</p>` : "";
     if (coins || valuable || items || trinket) awarded = `<section class="ml-chat-card ml-stack">${coins}${valuable}${items}${trinket}</section>`;
   }
+  return awarded;
+}
+
+export function hoardCardHTML({title, actorUuid = "", identity = "", recipientName = "", state, step = null, allowRoll = false, escape, itemCard = coreItemCard(), requestCard = coreRequestCard()}) {
+  const row = state?.hoardRoll != null ? `<p>Initial Roll: ${state.hoardRoll}</p>` : "";
+  const pending = allowRoll && step;
+  let request;
+  if (pending && requestCard) {
+    // Core's card has a header, then the roll row. The Initial Roll sits at the top of that row.
+    request = pendingRequestCard(requestCard, {title, actorUuid, step}).replace('data-ml-roll-entry="hoard">', `data-ml-roll-entry="hoard">${row}`);
+  } else {
+    const prompt = pending && step.prompt ? `<p>${escape(step.prompt)}</p>` : "";
+    const button = pending ? `<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";
+    const entry = identity || prompt || button ? `<div class="ml-card ml-stack">${identity}${prompt}${button}</div>` : "";
+    request = `<section class="ml-chat-card ml-stack"><h3>${escape(title)}</h3>${row}${entry}</section>`;
+  }
+  const awarded = hoardAwardedHTML({recipientName, state, escape, itemCard});
   return `<div class="mlgm-hoard">${request}${awarded}</div>`;
 }
 

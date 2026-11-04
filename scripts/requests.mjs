@@ -1,7 +1,7 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
-import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, spellScrollLevel } from "./treasure.mjs";
+import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardAwardedHTML, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, spellScrollLevel } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
@@ -181,6 +181,39 @@ function totalsFromPayload(formulas, payloadRolls) {
   return {rolls: rebuilt.map(entry => entry.roll), totals: rebuilt.map(entry => entry.total)};
 }
 
+const CORE_ID = "morelord-core";
+const REQUEST_KINDS = ["skill", "ability", "save", "foraging", "surge", "encounter", "death", "delerium", "hoard"];
+const requestType = kind => `${ID}.${kind}`;
+const isCoreCard = message => Boolean(message?.getFlag?.(CORE_ID, "rollRequest"));
+/** Core's register, create, and updateEntry roll-request API, or null on a Core release that predates it. */
+export function coreRollCards(api = globalThis.MorelordCore) {
+  const requests = api?.chatRequests;
+  return requests && ["register", "create", "updateEntry"].every(name => typeof requests[name] === "function") ? requests : null;
+}
+const sameIds = (left, right) => [...(left ?? [])].sort().join() === [...right].sort().join();
+/** One Core card per request: the hoard is a single entry, every other kind has one entry per character. */
+async function createCoreRequest(req, cards) {
+  const type = requestType(req.kind), groupKey = foundry.utils.randomID();
+  const flags = {[ID]: {request: req}};
+  if (req.kind === "hoard") {
+    const actor = game.actors.get(req.actorIds[0]);
+    const step = nextHoardStep(await loadTreasure(), req.band, emptyHoardState(actor?.id));
+    // The card speaks as the character, so Dice So Nice plays the owner's dice when the GM adds the rolls.
+    const whisper = req.private ? hoardWhisper(req) : [];
+    const message = await cards.create({type, key: actor?.id ?? groupKey, groupKey, groupTitle: hoardTitle(), title: step?.prompt || hoardTitle(), actorUuid: actor?.uuid ?? null, modes: false, actionLabel: "Roll", data: {actorId: actor?.id}, speaker: ChatMessage.getSpeaker({actor}), whisper, flags});
+    // Core posts its cards in public mode, which clears the whisper. A private hoard restores its recipients.
+    if (whisper.length && !sameIds(message.whisper, whisper)) await message.update({whisper, blind: false});
+    return message;
+  }
+  const title = requestTitle(req);
+  const choices = req.kind === "delerium" ? [...req.searchSkills.map(({id, label}) => ({id, label})), {id: "decline", label: "Decline search"}] : [];
+  let message;
+  for (const id of req.actorIds) {
+    message = await cards.create({type, key: id, groupKey, groupTitle: title, title, actorUuid: game.actors.get(id)?.uuid ?? null, dc: req.dc ?? null, modes: false, actionLabel: "Roll", choices, data: {actorId: id}, ...(message ? {} : {flags})});
+  }
+  return message;
+}
+
 export async function createRequest(config) {
   if (!game.user.isGM) throw new Error("Only the GM can request checks.");
   if (!core().socket.ready) throw new Error("Morelord Core's socket connection is not ready.");
@@ -218,6 +251,8 @@ export async function createRequest(config) {
     req.searchSkills = search.getSkillOptions().map(skill => ({...skill}));
     req.dc = req.searchSession.zone.dc;
   }
+  const cards = coreRollCards(core());
+  if (cards) return createCoreRequest(req, cards);
   const content = req.kind === "hoard" ? await freshHoardContent(req) : requestHTML(req);
   const flags = {request: req};
   // The hoard card speaks as the character, like skill and save results, so the owner's dice are used.
@@ -294,10 +329,11 @@ async function advanceHoard(message, req, actor, payload = {}) {
   });
   if (committed.alreadyResolved) return {accepted: true, alreadyResolved: true};
   const rolls = [...(Array.isArray(message.rolls) ? message.rolls : []), ...stampActor(rolled.rolls, actor)];
-  const content = hoardMarkup(req, actor, committed.state, {allowRoll: true});
+  // On Core's card the content is Core's; the awarded items are added when the card renders. The older card is rebuilt here.
+  const content = isCoreCard(message) ? {} : {content: hoardMarkup(req, actor, committed.state, {allowRoll: true})};
   // An older card has no speaker; set it with the rolls so Dice So Nice finds the owner.
   const speaker = message.speaker?.actor === actor.id ? {} : {speaker: ChatMessage.getSpeaker({actor})};
-  await message.update({content, rolls, ...speaker, [`flags.${ID}.hoard`]: committed.state});
+  await message.update({...content, rolls, ...speaker, [`flags.${ID}.hoard`]: committed.state});
   if (committed.state.done) {
     const current = message.getFlag(ID, "request") ?? req;
     await message.setFlag(ID, "request", {...current, completed: [...new Set([...(current.completed ?? []), actor.id])]});
@@ -307,10 +343,8 @@ async function advanceHoard(message, req, actor, payload = {}) {
 function hoardRequestMessage(message) {
   return validRequest(message)?.kind === "hoard" ? message : null;
 }
-async function submitHoardRoll(message, actor) {
-  const request = hoardRequestMessage(message);
-  const req = validRequest(request);
-  if (!req || !actor) throw new Error("This request is no longer available.");
+/** The clicking client rolls the step's dice. The GM records them and rolls nothing. */
+async function prepareHoardRoll(request, req, actor) {
   const data = peekTreasure() ?? await loadTreasure();
   const state = request.getFlag(ID, "hoard") ?? emptyHoardState(actor.id);
   const step = nextHoardStep(data, req.band, state);
@@ -323,11 +357,56 @@ async function submitHoardRoll(message, actor) {
       if (spellScrollLevel(preview.name) != null) hoard.scroll = await resolveSpellScroll(preview.name);
     }
   }
+  return hoard;
+}
+async function submitHoardRoll(message, actor) {
+  const request = hoardRequestMessage(message);
+  const req = validRequest(request);
+  if (!req || !actor) throw new Error("This request is no longer available.");
+  const hoard = await prepareHoardRoll(request, req, actor);
   const gm = authority(request);
   if (!gm) throw new Error("An active GM is required to resolve this check.");
   const acknowledgement = await channel.executeAsUser("roll", {requestId: request.id, actorId: actor.id, hoard}, gm.id);
   if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
   return acknowledgement;
+}
+/** Core runs this on the clicking client. Whatever it returns reaches the GM's resolve as rollData; null sends nothing. */
+async function prepareCoreRoll(entry, choice, {message}) {
+  const req = validRequest(message), actor = game.actors.get(entry?.data?.actorId);
+  if (!req || !actor) throw new Error("This request is no longer available.");
+  try {
+    if (req.kind === "hoard") return {hoard: await prepareHoardRoll(message, req, actor)};
+    const prepared = await prepareRequestRoll(req, actor, choice || undefined);
+    return prepared ? {roll: packRoll(prepared)} : {};
+  } catch (error) {
+    // A closed roll dialog is not an error.
+    if (error?.name === "RollCancelled") return null;
+    throw error;
+  }
+}
+/** Core runs this on the GM. The player's dice are applied as rolled; the GM rolls nothing. */
+async function resolveCoreRoll(data, {actor, choice, senderUserId, message, rollData}) {
+  const result = await resolveRequest({requestId: message.id, actorId: actor?.id ?? data?.actorId, skillId: choice || undefined, roll: rollData?.roll, hoard: rollData?.hoard}, {senderUserId});
+  if (result?.accepted !== false && validRequest(message)?.kind === "hoard") reopenHoardStep(message);
+  return result;
+}
+/**
+ * Core marks an entry complete as soon as resolve returns, so the next hoard step reopens the same entry after that.
+ * Running on the same GM queue puts it behind the handler that is still finishing.
+ */
+function reopenHoardStep(message) {
+  const cards = coreRollCards(core());
+  const reopen = async () => {
+    const req = validRequest(message), state = message.getFlag(ID, "hoard");
+    const [entryKey] = Object.keys(message.getFlag(CORE_ID, "rollRequest")?.entries ?? {});
+    if (!cards || !req || !state || state.done || entryKey == null) return;
+    const step = nextHoardStep(peekTreasure() ?? await loadTreasure(), req.band, state);
+    if (step) await cards.updateEntry(message, entryKey, {completed: false, title: step.prompt || hoardTitle(), actionLabel: "Roll"});
+  };
+  void core().socket.runSerialized(`${ID}.rolls`, reopen).catch(error => ui.notifications.warn(`Treasure roll saved; the next step needs a refresh: ${error.message}`));
+}
+function registerCoreRequests(cards) {
+  for (const kind of REQUEST_KINDS) cards.register(requestType(kind), {prepare: prepareCoreRoll, resolve: resolveCoreRoll}, {serialize: `${ID}.rolls`});
 }
 /** A rebuilt card carries raw @UUID text, so run it through Foundry's enricher for the link and type icon. */
 async function enrichItemLinks(root) {
@@ -339,12 +418,21 @@ async function enrichItemLinks(root) {
     catch (error) { console.warn("Morelord Game Master | Treasure links", error); }
   }
 }
+/** Core's card is left as Core drew it. The Initial Roll joins its row and the awarded items go below it. */
+function decorateCoreHoard(html, actor, state) {
+  if (state.hoardRoll != null) html.querySelector("[data-ml-roll-entry]")?.insertAdjacentHTML("afterbegin", `<p>Initial Roll: ${e(state.hoardRoll)}</p>`);
+  const awarded = hoardAwardedHTML({recipientName: actor?.name ?? "", state, escape: e});
+  if (!awarded) return;
+  html.querySelector(".ml-core-roll-request")?.insertAdjacentHTML("afterend", awarded);
+  void enrichItemLinks(html);
+}
 function bindHoardCard(message, html) {
   const request = hoardRequestMessage(message);
   const req = validRequest(request);
   if (!req) return;
   const actor = game.actors.get(req.actorIds[0]);
   const state = request.getFlag(ID, "hoard") ?? emptyHoardState(actor?.id);
+  if (isCoreCard(message)) return decorateCoreHoard(html, actor, state);
   if (!peekTreasure()) {
     void loadTreasure().then(() => ui.chat?.updateMessage(message));
     return;
@@ -477,6 +565,19 @@ function rebindHoardCards() {
     if (validRequest(message)) ui.chat?.updateMessage?.(message);
   }
 }
+/** Core binds the Roll buttons. This only adds the assignee hint and the GM's Finalize button. */
+function decorateCoreRequest(message, html) {
+  const entries = message.getFlag(CORE_ID, "rollRequest")?.entries ?? {};
+  for (const btn of html.querySelectorAll("[data-ml-core-roll]")) {
+    const actor = game.actors.get(entries[btn.closest("[data-ml-roll-entry]")?.dataset.mlRollEntry]?.data?.actorId), target = actor && recipient(actor);
+    btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
+  }
+  if (validRequest(message).kind !== "delerium" || !game.user.isGM) return;
+  html.querySelector(".ml-core-roll-request")?.insertAdjacentHTML("beforeend", '<button type="button" class="ml-button" data-mlgm-finalize>Finalize / open search results (GM)</button>');
+  html.querySelector("[data-mlgm-finalize]")?.addEventListener("click", async () => {
+    try { await openSearchResults(await channel.executeAsUser("finalizeSearch", {requestId: message.id}, authority(message)?.id)); } catch (error) { ui.notifications.error(error.message); }
+  });
+}
 export function registerRequestRenderers() {
   if (!globalThis.Hooks?.on || globalThis.Hooks._mlgmRequestRenderers) return;
   globalThis.Hooks._mlgmRequestRenderers = true;
@@ -500,6 +601,7 @@ export function registerRequestRenderers() {
     });
     html.querySelector("[data-mlgm-search-results]")?.addEventListener("click",() => openSearchResults(message.id).catch(error => ui.notifications.error(error.message)));
     if (!validRequest(message) || validRequest(message).kind === "hoard" || message.getFlag(ID, "hoard")) return;
+    if (isCoreCard(message)) return decorateCoreRequest(message, html);
     const card = html.querySelector('.mlgm-request');
     if (card) card.outerHTML = requestHTML(validRequest(message));
     const finalize = html.querySelector("[data-mlgm-finalize]");
@@ -529,6 +631,8 @@ export function registerRequestRenderers() {
 }
 export function initializeRequests() {
   channel = core().socket.createChannel(ID);
+  const cards = coreRollCards(core());
+  if (cards) registerCoreRequests(cards);
   // Existing pending requests should also remain accessible after a player joins.
   if (game.user.isGM) for (const message of game.messages) {
     const req=validRequest(message);

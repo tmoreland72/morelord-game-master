@@ -7,6 +7,7 @@ import * as participation from "../../morelord-core/scripts/ui/actor-participati
 import {actorIdentity} from "../../morelord-core/scripts/ui/actor-identity.js";
 import {deleriumSearch} from "../../morelord-core/scripts/services/delerium-search.js";
 import {initializeRequests, createRequest, registerRequestRenderers, requestHTML} from "../scripts/requests.mjs";
+import {releasedCoreCards} from "./core-release.mjs";
 
 const ID = "morelord-game-master";
 class Collection extends Map {
@@ -86,7 +87,7 @@ test("every request kind renders through Core's roll-request card, rolls player-
   globalThis.socketlib = {registerModule: () => ({register(_name, fn) { dispatch = fn; }, executeAsUser(_method, _userId, payload) { sent.push(payload); return {accepted: true}; }, executeForUsers() {}})};
   const transport = new ContextualSocketService();
   transport.start();
-  const chatRequests = new ChatRollRequests({createChannel: () => ({on() {}})});
+  const chatRequests = releasedCoreCards();
   const withCore = chat => { globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, deleriumSearch, ...(chat ? {chatRequests: chat} : {})}; };
   withCore(chatRequests);
   initializeRequests();
