@@ -6,8 +6,6 @@
 // Table lookup and item resolution are pure functions here; the step flow
 // below only decides which die to roll next.
 
-import {rollControls} from "../../morelord-core/scripts/services/chat-roll-requests.js";
-
 export const HOARD_BANDS = [
   {id: "cr-0-4", label: "CR 0-4"},
   {id: "cr-5-10", label: "CR 5-10"}
@@ -606,16 +604,38 @@ function hoardResults(state) {
   return {sections, purse, hasCoins, any: hasCoins || hasRows};
 }
 
-export function hoardCardHTML({title, identity = "", recipientName = "", state, step = null, allowRoll = false, escape, itemCard = coreItemCard()}) {
+/** Core's shared roll-request card renderer (MorelordCore.chatRequests.html), or null on a Core build without it. */
+export function coreRequestCard(api = coreApi()) {
+  const requests = api?.chatRequests;
+  return typeof requests?.html === "function" ? request => requests.html(request) : null;
+}
+
+export const HOARD_REQUEST_TYPE = "morelord-game-master.hoard";
+
+/** Core's request card for the pending step: one entry, the step prompt as its line, and a single "Roll" button. */
+function pendingRequestCard(requestCard, {title, actorUuid, step}) {
+  const entry = {type: HOARD_REQUEST_TYPE, key: "hoard", title: step.prompt || title, actorUuid: actorUuid || null, dc: null, modes: false, actionLabel: "Roll", choices: [], data: {}, completed: false};
+  return requestCard({type: HOARD_REQUEST_TYPE, key: "hoard", title, entries: {hoard: entry}});
+}
+
+export function hoardCardHTML({title, actorUuid = "", identity = "", recipientName = "", state, step = null, allowRoll = false, escape, itemCard = coreItemCard(), requestCard = coreRequestCard()}) {
   const row = state?.hoardRoll != null ? `<p>Initial Roll: ${state.hoardRoll}</p>` : "";
-  // The pending step is Core's roll-request entry: identity, prompt, and rollControls, like the skill and save cards.
-  const prompt = step?.prompt ? `<p>${escape(step.prompt)}</p>` : "";
-  const controls = allowRoll && step ? prompt + rollControls(() => `data-mlgm-hoard-step="${escape(step.id)}"`, {modes: false}) : "";
-  const entry = identity || controls ? `<div class="ml-card ml-stack">${identity}${controls}</div>` : "";
-  const results = itemCard ? hoardResults(state) : null;
-  if (results?.any) {
+  const pending = allowRoll && step;
+  let request;
+  if (pending && requestCard) {
+    // The title line comes first in Core's card, so the Initial Roll goes right after it.
+    request = pendingRequestCard(requestCard, {title, actorUuid, step}).replace("</h3>", `</h3>${row}`);
+  } else {
+    const prompt = pending && step.prompt ? `<p>${escape(step.prompt)}</p>` : "";
+    const button = pending ? `<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";
+    const entry = identity || prompt || button ? `<div class="ml-card ml-stack">${identity}${prompt}${button}</div>` : "";
+    request = `<section class="ml-chat-card ml-stack"><h3>${escape(title)}</h3>${row}${entry}</section>`;
+  }
+  const results = hoardResults(state);
+  let awarded = "";
+  if (itemCard && results.any) {
     // Core's item card lists only what was awarded, below the request. It is never rendered empty.
-    const card = itemCard({
+    awarded = itemCard({
       title: "Treasure",
       recipientName,
       sections: results.sections,
@@ -624,13 +644,14 @@ export function hoardCardHTML({title, identity = "", recipientName = "", state, 
       totalLabel: state?.coins?.granted ? "Added to the purse." : "",
       footer: MODULE_LABEL
     });
-    return `<div class="mlgm-hoard"><section class="ml-chat-card ml-stack"><h3>${escape(title)}</h3>${row}${entry}</section>${card}</div>`;
+  } else {
+    const coins = state?.coins ? `<p><strong>Coins</strong><br>${escape(formatHoardCoins(state.coins.purse) || "None")}${state.coins.granted ? "<br>Added to the purse." : ""}</p>` : "";
+    const valuable = state?.valuable ? `<p><strong>${state.valuable.kind === "gems" ? "Gems" : "Art objects"}</strong><br>${state.valuable.quantity} x ${contentLink(state.valuable.embeddedUuid || state.valuable.compendiumUuid, state.valuable.name, escape)}</p>` : "";
+    const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
+    const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
+    const trinket = state?.trinket ? `<p><strong>Trinket</strong><br>${contentLink(state.trinket.embeddedUuid, state.trinket.name, escape)} (${escape(state.trinket.source)})</p>` : "";
+    if (coins || valuable || items || trinket) awarded = `<section class="ml-chat-card ml-stack">${coins}${valuable}${items}${trinket}</section>`;
   }
-  const coins = state?.coins ? `<p><strong>Coins</strong><br>${escape(formatHoardCoins(state.coins.purse) || "None")}${state.coins.granted ? "<br>Added to the purse." : ""}</p>` : "";
-  const valuable = state?.valuable ? `<p><strong>${state.valuable.kind === "gems" ? "Gems" : "Art objects"}</strong><br>${state.valuable.quantity} x ${contentLink(state.valuable.embeddedUuid || state.valuable.compendiumUuid, state.valuable.name, escape)}</p>` : "";
-  const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
-  const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
-  const trinket = state?.trinket ? `<p><strong>Trinket</strong><br>${contentLink(state.trinket.embeddedUuid, state.trinket.name, escape)} (${escape(state.trinket.source)})</p>` : "";
-  return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${row}${coins}${valuable}${items}${trinket}${entry}</section>`;
+  return `<div class="mlgm-hoard">${request}${awarded}</div>`;
 }
 

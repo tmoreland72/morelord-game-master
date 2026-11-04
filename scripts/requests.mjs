@@ -92,7 +92,21 @@ function canRoll(message, actor, user = game.user) {
 function rollButton(id) {
   return `<button type="button" data-mlgm-actor="${e(id)}">Roll</button>`;
 }
+/** Core's shared roll-request card (MorelordCore.chatRequests.html) for every request kind, one entry per character. */
+function coreRequestHTML(req, requests) {
+  const title = requestTitle(req), type = `${ID}.${req.kind}`;
+  const choices = req.kind === "delerium" ? [...req.searchSkills.map(({id, label}) => ({id, label})), {id: "decline", label: "Decline search"}] : [];
+  const entries = Object.fromEntries(req.actorIds.map(id => [id, {type, key: `${ID}:${id}`, title, actorUuid: game.actors.get(id)?.uuid ?? null, dc: req.dc ?? null, modes: false, actionLabel: "Roll", choices, data: {}, completed: false}]));
+  const card = requests.html({type, key: ID, title, entries});
+  const finalize = req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : "";
+  const close = card.lastIndexOf("</section>");
+  return `<div class="mlgm-request">${card.slice(0, close)}${finalize}${card.slice(close)}</div>`;
+}
 export function requestHTML(req) {
+  const requests = core().chatRequests;
+  return typeof requests?.html === "function" ? coreRequestHTML(req, requests) : legacyRequestHTML(req);
+}
+function legacyRequestHTML(req) {
   const controls = id => req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${rollButton(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : rollButton(id);
   return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${controls(id)}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
 }
@@ -108,13 +122,13 @@ const hoardIdentity = actor => actor ? core().ui.actorIdentity({actorUuid: actor
 function hoardMarkup(req, actor, state, {allowRoll = false} = {}) {
   const data = peekTreasure();
   const step = data ? nextHoardStep(data, req.band, state) : null;
-  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step, allowRoll: allowRoll && !state?.done, escape: e});
+  return hoardCardHTML({title: hoardTitle(req, actor), actorUuid: actor?.uuid ?? "", identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step, allowRoll: allowRoll && !state?.done, escape: e});
 }
 async function freshHoardContent(req) {
   const data = await loadTreasure();
   const actor = game.actors.get(req.actorIds[0]);
   const state = emptyHoardState(actor?.id);
-  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
+  return hoardCardHTML({title: hoardTitle(req, actor), actorUuid: actor?.uuid ?? "", identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
 }
 export async function placeHoardItem(actor, itemData) {
   if (needsGmPlace(game.user, actor)) {
@@ -340,10 +354,10 @@ function bindHoardCard(message, html) {
     node.outerHTML = hoardMarkup(req, actor, state, {allowRoll: !state.done});
     void enrichItemLinks(html);
   }
-  for (const button of html.querySelectorAll("[data-mlgm-hoard-step]")) {
+  for (const button of html.querySelectorAll("[data-mlgm-hoard-step], .mlgm-hoard [data-ml-core-roll]")) {
     button.disabled = !canRoll(request, actor);
     button.addEventListener("click", async () => {
-      try { await submitChatRoll(message, `hoard:${actor?.id}`, button.closest(".mlgm-hoard") ?? button.parentElement, () => submitHoardRoll(message, actor)); }
+      try { await submitChatRoll(message, `hoard:${actor?.id}`, button.closest("[data-ml-roll-entry]") ?? button.closest(".ml-card") ?? button.parentElement, () => submitHoardRoll(message, actor)); }
       catch (error) { if (error?.name !== "RollCancelled") ui.notifications.error(error.message); }
       finally { refreshRequests(); }
     });
@@ -493,14 +507,14 @@ export function registerRequestRenderers() {
       if (!game.user.isGM) finalize.remove();
       else finalize.addEventListener("click",async () => { try { await openSearchResults(await channel.executeAsUser("finalizeSearch",{requestId:message.id},authority(message)?.id)); } catch(error) { ui.notifications.error(error.message); } });
     }
-    for (const btn of html.querySelectorAll("[data-mlgm-actor]")) {
-      const actor = game.actors.get(btn.dataset.mlgmActor), done = isComplete(message,actor?.id) || isRollSubmitted(message,actor?.id), target = actor && recipient(actor);
+    for (const btn of html.querySelectorAll("[data-mlgm-actor], [data-ml-core-roll]")) {
+      // Core's card names the character on its row; the older card names it on the button.
+      const actor = game.actors.get(btn.dataset.mlgmActor ?? btn.closest("[data-ml-roll-entry]")?.dataset.mlRollEntry), done = isComplete(message,actor?.id) || isRollSubmitted(message,actor?.id), target = actor && recipient(actor);
       if (done) { markRollCompleted(btn.closest(".ml-card")); continue; }
       btn.disabled = !canRoll(message,actor);
-      if (!btn.dataset.mlgmSkill && (!btn.dataset.mlgmMode || btn.dataset.mlgmMode === "normal")) btn.textContent = done ? "Completed" : "Roll";
-      btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
+            btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
       btn.addEventListener("click",async () => {
-        const skill = btn.dataset.mlgmSkill ?? btn.closest('.ml-card')?.querySelector('[data-mlgm-search-skill]')?.value;
+        const skill = btn.hasAttribute("data-ml-roll-decline") ? "decline" : btn.dataset.mlgmSkill ?? btn.closest('.ml-card')?.querySelector('[data-mlgm-search-skill], [data-ml-roll-choice]')?.value;
         try {
           await submitChatRoll(message,actor.id,btn.closest(".ml-card"), async () => {
             const prepared = await prepareRequestRoll(validRequest(message), actor, skill);
