@@ -435,6 +435,12 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   const privRoot = chatRoot(priv.content);
   render(priv, privRoot);
   assert.match(privRoot.source, /Hoard roll: 27/);
+  // Another player gets the whispered roll message from Foundry but must not see the card.
+  const strangerView = Object.create(priv, {isContentVisible: {value: false}});
+  const hiddenRoot = chatRoot("<p>Private roll</p>");
+  render(strangerView, hiddenRoot);
+  assert.equal(hiddenRoot.hidden, true);
+  assert.doesNotMatch(hiddenRoot.source, /Hoard roll/);
   assert.equal(created.length, beforePrivate + 1);
   assert.equal(game.messages.contents?.some?.(message => message.getFlag?.(ID, "hoardLink")) ?? false, false);
   const ui = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");

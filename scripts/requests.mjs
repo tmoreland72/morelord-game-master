@@ -449,7 +449,14 @@ export function registerRequestRenderers() {
   globalThis.Hooks._mlgmRequestRenderers = true;
   Hooks.on("renderChatMessageHTML",(message,html) => {
     if (!coreReady()) return;
-    if (validRequest(message)?.kind === "hoard") bindHoardCard(message, html);
+    const hoardReq = validRequest(message)?.kind === "hoard" ? validRequest(message) : null;
+    // Foundry lists whispered roll messages for everyone; a private hoard stays hidden from non-recipients.
+    if (hoardReq?.private && message.isContentVisible === false) {
+      html.hidden = true;
+      if (html.style) html.style.display = "none";
+      return;
+    }
+    if (hoardReq) bindHoardCard(message, html);
     html.querySelector("[data-mlgm-open-encounters]")?.addEventListener("click",async () => {
       if (!game.user.isGM) return;
       try {
