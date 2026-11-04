@@ -5,7 +5,7 @@ import {initializeGlobalTriggers,saveGlobalTriggers} from "./global-triggers.mjs
 import {clockInterval,initializeDeferredClockSettlement} from "./world-clock.mjs";
 import {initializeTriggers,installTrigger,luckyFindWorldTable} from "./triggers.mjs";
 import { ID, escapeHTML as e } from "./core.mjs";
-import { core, recipient, initializeRequests, createRequest, foragingTerrains } from "./requests.mjs";
+import { core, recipient, initializeRequests, registerRequestRenderers, createRequest, foragingTerrains } from "./requests.mjs";
 import { CHECK_TYPES, SPECIALTIES, buildCheckRequest, characterFieldVisible, checkChoices, defaultCheckId, playerCharacterChoices, resolveRollActors, specialtyOrder, visibleSpecialties } from "./roll-requests.mjs";
 import { HOARD_BANDS } from "./treasure.mjs";
 import {applyBulkCoins, initializeBulkCoins, readCoins} from './bulk-coins.mjs';
@@ -82,6 +82,7 @@ async function form(title, content, actions = [["ok", "Save"]], {modal = true, v
 }
 
 Hooks.once("init", () => {
+  registerRequestRenderers();
   class GameMasterSettings extends foundry.applications.api.ApplicationV2 {
     render() { settings().catch(fail); return this; }
   }

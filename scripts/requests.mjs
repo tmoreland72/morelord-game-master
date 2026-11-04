@@ -128,16 +128,30 @@ async function rollHoardFormulas(formulas, blind) {
   await showHoardDice(rolls, blind);
   return {rolls, totals};
 }
+function evaluatedDieData(formula, total) {
+  const match = /^(\d+)d(\d+)$/.exec(formula);
+  const number = Number(match[1]);
+  const faces = Number(match[2]);
+  const results = [];
+  let remaining = total;
+  for (let index = 0; index < number; index += 1) {
+    const face = Math.min(faces, Math.max(1, remaining - (number - index - 1)));
+    results.push({result: face, active: true, exploded: false, discarded: false, success: null, failure: null, count: 1});
+    remaining -= face;
+  }
+  return {class: "Roll", formula, evaluated: true, terms: [{class: "Die", options: {}, evaluated: true, number, faces, modifiers: [], results}]};
+}
+function rebuildHoardRoll(formula, payload) {
+  const total = readHoardTotal(formula, payload);
+  const data = payload?.terms ? payload : evaluatedDieData(formula, total);
+  if (typeof Roll.fromData !== "function") throw new Error(`A ${formula} could not be rebuilt.`);
+  const roll = Roll.fromData(data);
+  if (Number(roll.total) !== total) throw new Error(`A ${formula} came up ${roll.total}.`);
+  return {roll, total};
+}
 function totalsFromPayload(formulas, payloadRolls) {
-  const rolls = [];
-  const totals = formulas.map((formula, index) => {
-    const total = readHoardTotal(formula, payloadRolls[index]);
-    const roll = new Roll(formula);
-    roll.total = total;
-    rolls.push(roll);
-    return total;
-  });
-  return {rolls, totals};
+  const rebuilt = formulas.map((formula, index) => rebuildHoardRoll(formula, payloadRolls[index]));
+  return {rolls: rebuilt.map(entry => entry.roll), totals: rebuilt.map(entry => entry.total)};
 }
 
 export async function createRequest(config) {
@@ -279,7 +293,7 @@ async function submitHoardRoll(message, actor) {
   const hoard = {stepId: step?.id ?? "next"};
   if (step) {
     const rolled = await rollHoardFormulas(step.formulas, blind);
-    hoard.rolls = rolled.rolls.map(roll => ({formula: roll.formula, total: roll.total}));
+    hoard.rolls = rolled.rolls.map(roll => typeof roll.toJSON === "function" ? roll.toJSON() : {formula: roll.formula, total: roll.total});
     if (step.kind === "magic") {
       const preview = previewMagicItem(data, step, rolled.totals);
       if (spellScrollLevel(preview.name) != null) hoard.scroll = await resolveSpellScroll(preview.name);
@@ -431,6 +445,53 @@ async function openSearchResults(summaryId) {
 function refreshRequests() {
   for (const message of game.messages) if (validRequest(message)) ui.chat?.updateMessage(message);
 }
+function rebindHoardCards() {
+  for (const message of game.messages ?? []) {
+    if (message?.getFlag?.(ID, "hoard") || message?.getFlag?.(ID, "hoardLink") || validRequest(message)?.kind === "hoard") ui.chat?.updateMessage?.(message);
+  }
+}
+export function registerRequestRenderers() {
+  if (!globalThis.Hooks?.on || globalThis.Hooks._mlgmRequestRenderers) return;
+  globalThis.Hooks._mlgmRequestRenderers = true;
+  Hooks.on("renderChatMessageHTML",(message,html) => {
+    if (message.getFlag(ID, "hoard") || message.getFlag(ID, "hoardLink") || validRequest(message)?.kind === "hoard") bindHoardCard(message, html);
+    html.querySelector("[data-mlgm-open-encounters]")?.addEventListener("click",async () => {
+      if (!game.user.isGM) return;
+      try {
+        if (!game.modules.get("morelord-encounters")?.active) throw new Error("Enable Morelord Encounters first.");
+        const {configureEncounter} = await import("../../morelord-encounters/scripts/apps/encounter-builder-dialog.mjs");
+        await configureEncounter();
+      } catch(error) {ui.notifications.error(error.message);}
+    });
+    html.querySelector("[data-mlgm-search-results]")?.addEventListener("click",() => openSearchResults(message.id).catch(error => ui.notifications.error(error.message)));
+    if (!validRequest(message) || validRequest(message).kind === "hoard" || message.getFlag(ID, "hoard")) return;
+    const card = html.querySelector('.mlgm-request');
+    if (card) card.outerHTML = requestHTML(validRequest(message));
+    const finalize = html.querySelector("[data-mlgm-finalize]");
+    if (finalize) {
+      if (!game.user.isGM) finalize.remove();
+      else finalize.addEventListener("click",async () => { try { await openSearchResults(await channel.executeAsUser("finalizeSearch",{requestId:message.id},authority(message)?.id)); } catch(error) { ui.notifications.error(error.message); } });
+    }
+    for (const btn of html.querySelectorAll("[data-mlgm-actor]")) {
+      const actor = game.actors.get(btn.dataset.mlgmActor), done = isComplete(message,actor?.id) || isRollSubmitted(message,actor?.id), target = actor && recipient(actor);
+      if (done) { markRollCompleted(btn.closest(".ml-card")); continue; }
+      btn.disabled = !canRoll(message,actor);
+      if (!btn.dataset.mlgmSkill && (!btn.dataset.mlgmMode || btn.dataset.mlgmMode === "normal")) btn.textContent = done ? "Completed" : "Roll";
+      btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
+      btn.addEventListener("click",async () => {
+        const skill = btn.dataset.mlgmSkill ?? btn.closest('.ml-card')?.querySelector('[data-mlgm-search-skill]')?.value;
+        try {
+          await submitChatRoll(message,actor.id,btn.closest(".ml-card"), async () => {
+            const prepared = await prepareRequestRoll(validRequest(message), actor, skill);
+            return rollRequest(message.id, actor.id, skill, prepared);
+          });
+        }
+        catch(error) { if (error?.name !== "RollCancelled") ui.notifications.error(error.message); }
+        finally { refreshRequests(); }
+      });
+    }
+  });
+}
 export function initializeRequests() {
   channel = core().socket.createChannel(ID);
   // Existing pending requests should also remain accessible after a player joins.
@@ -474,44 +535,8 @@ export function initializeRequests() {
     return foundry.utils.deepClone(session);
   },{serialize:`${ID}.rolls`});
 
-  Hooks.on("renderChatMessageHTML",(message,html) => {
-    if (message.getFlag(ID, "hoard") || message.getFlag(ID, "hoardLink") || validRequest(message)?.kind === "hoard") bindHoardCard(message, html);
-    html.querySelector("[data-mlgm-open-encounters]")?.addEventListener("click",async () => {
-      if (!game.user.isGM) return;
-      try {
-        if (!game.modules.get("morelord-encounters")?.active) throw new Error("Enable Morelord Encounters first.");
-        const {configureEncounter} = await import("../../morelord-encounters/scripts/apps/encounter-builder-dialog.mjs");
-        await configureEncounter();
-      } catch(error) {ui.notifications.error(error.message);}
-    });
-    html.querySelector("[data-mlgm-search-results]")?.addEventListener("click",() => openSearchResults(message.id).catch(error => ui.notifications.error(error.message)));
-    if (!validRequest(message) || validRequest(message).kind === "hoard" || message.getFlag(ID, "hoard")) return;
-    const card = html.querySelector('.mlgm-request');
-    if (card) card.outerHTML = requestHTML(validRequest(message));
-    const finalize = html.querySelector("[data-mlgm-finalize]");
-    if (finalize) {
-      if (!game.user.isGM) finalize.remove();
-      else finalize.addEventListener("click",async () => { try { await openSearchResults(await channel.executeAsUser("finalizeSearch",{requestId:message.id},authority(message)?.id)); } catch(error) { ui.notifications.error(error.message); } });
-    }
-    for (const btn of html.querySelectorAll("[data-mlgm-actor]")) {
-      const actor = game.actors.get(btn.dataset.mlgmActor), done = isComplete(message,actor?.id) || isRollSubmitted(message,actor?.id), target = actor && recipient(actor);
-      if (done) { markRollCompleted(btn.closest(".ml-card")); continue; }
-      btn.disabled = !canRoll(message,actor);
-      if (!btn.dataset.mlgmSkill && (!btn.dataset.mlgmMode || btn.dataset.mlgmMode === "normal")) btn.textContent = done ? "Completed" : "Roll";
-      btn.title = target?.isGM ? "Assigned to GM" : `Assigned to ${target?.name ?? "GM"}`;
-      btn.addEventListener("click",async () => {
-        const skill = btn.dataset.mlgmSkill ?? btn.closest('.ml-card')?.querySelector('[data-mlgm-search-skill]')?.value;
-        try {
-          await submitChatRoll(message,actor.id,btn.closest(".ml-card"), async () => {
-            const prepared = await prepareRequestRoll(validRequest(message), actor, skill);
-            return rollRequest(message.id, actor.id, skill, prepared);
-          });
-        }
-        catch(error) { if (error?.name !== "RollCancelled") ui.notifications.error(error.message); }
-        finally { refreshRequests(); }
-      });
-    }
-  });
+  registerRequestRenderers();
+  rebindHoardCards();
   Hooks.on("updateChatMessage",refreshRequests);
   Hooks.on("deleteChatMessage",refreshRequests);
   Hooks.on("userConnected",refreshRequests);

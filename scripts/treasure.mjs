@@ -439,10 +439,6 @@ function attachCatalog(state, index) {
   if (state.valuable && !state.valuable.compendiumUuid) {
     const hit = findLootItem(index, state.valuable.kind, state.valuable.gp);
     if (hit) state.valuable.compendiumUuid = hit.uuid;
-    else if (!state.valuable.warned) {
-      state.valuable.warned = true;
-      console.warn(`Morelord Game Master | No compendium item for ${state.valuable.name}.`);
-    }
   }
   for (const item of state.items) {
     if (item.compendiumUuid || item.spell) continue;

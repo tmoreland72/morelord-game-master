@@ -103,6 +103,10 @@ test("hoard coins use one denomination and Core addCoins when it exists", async 
 });
 
 test("a rare item is one step, and the step card survives a re-render without granting twice", async () => {
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => { warnings.push(args.join(" ")); };
+  try {
   const data = await loadTreasure();
   let state = emptyHoardState("actor");
   state = (await commitHoardStep({data, bandId: "cr-0-4", state, totals: [86], index: new Map()})).state;
@@ -131,6 +135,9 @@ test("a rare item is one step, and the step card survives a re-render without gr
   assert.match(html, /Actor\.actor\.Item\.art/);
   assert.equal((html.match(/data-mlgm-hoard-step/g) ?? []).length, 0);
   assert.equal(places.length, 0);
+  assert.equal(warnings.some(line => /Art object|Gemstone/.test(line)), false);
+  assert.equal(warnings.some(line => line.includes("Mace of Smiting")), true);
+  } finally { console.warn = originalWarn; }
 });
 
 test("the chat card rolls one step at a time, grants once, and keeps blind results whispered", async () => {
@@ -182,19 +189,29 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
   globalThis.CONFIG = {DND5E: {skills: {prc: {label: "Perception"}}}};
   const faces = [];
   const shown = [];
+  const rolledTotals = new WeakMap();
   globalThis.Roll = class {
-    constructor(formula) {
-      this.formula = formula;
-      const match = /^(\d+)d(\d+)$/.exec(formula);
+    constructor(formula) { this.formula = formula; }
+    get total() { return rolledTotals.get(this); }
+    async evaluate() {
+      const match = /^(\d+)d(\d+)$/.exec(this.formula);
       const total = faces.length ? faces.shift() : 1;
       const dice = Number(match[1]);
       const sides = Number(match[2]);
-      if (!Number.isInteger(total) || total < dice || total > dice * sides) throw new Error(`Bad ${formula} total ${total}`);
-      this.total = total;
+      if (!Number.isInteger(total) || total < dice || total > dice * sides) throw new Error(`Bad ${this.formula} total ${total}`);
+      rolledTotals.set(this, total);
+      return this;
     }
-    async evaluate() { return this; }
-    toJSON() { return {formula: this.formula, total: this.total}; }
+    static fromData(data) {
+      const roll = new this(data.formula);
+      const total = data.total ?? data.terms?.[0]?.results?.reduce((sum, result) => sum + result.result, 0);
+      rolledTotals.set(roll, total);
+      return roll;
+    }
+    toJSON() { return {formula: this.formula, total: this.total, evaluated: true}; }
   };
+  const probe = new Roll("1d6");
+  assert.throws(() => { probe.total = 4; }, /getter/);
   globalThis.ChatMessage = {
     getSpeaker: ({actor: speaker}) => ({actor: speaker?.id}),
     async create(data) {
@@ -254,7 +271,9 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
   assert.deepEqual(shown, ["1d100"]);
   delete game.dice3d;
   faces.push(6);
-  await send(request, undefined, player.id);
+  const gemRoll = new Roll("2d6");
+  await gemRoll.evaluate();
+  await send(request, {stepId: "valuables", rolls: [gemRoll.toJSON()]}, player.id);
   assert.equal(created.length, 1);
   assert.equal(created[0].system.quantity, 6);
   assert.match(request.content, /Gemstone \(10 GP\)/);
@@ -348,6 +367,57 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
   assert.equal(created.length, beforeBlind + 1);
   assert.match(readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8"), /data-roll-card="hoard"/);
   assert.equal(typeof placeHoardItem, "function");
+});
+
+test("a hoard card that rendered before ready gets its Roll button back", async () => {
+  const events = new Map();
+  globalThis.Hooks = {on(name, fn) { events.set(name, [...(events.get(name) ?? []), fn]); return fn; }, off() {}, call() {}};
+  const gm = {id: "gm", isGM: true, active: true};
+  const actor = {id: "actor", uuid: "Actor.actor", name: "Aster", type: "character", testUserPermission: () => true};
+  class Collection extends Map {
+    get contents() { return [...this.values()]; }
+    [Symbol.iterator]() { return this.values(); }
+    filter(fn) { return this.contents.filter(fn); }
+    find(fn) { return this.contents.find(fn); }
+  }
+  const collection = rows => new Collection(rows.map(row => [row.id, row]));
+  const listeners = [];
+  const message = {
+    id: "existing", author: gm, rolls: [],
+    content: `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Treasure Hoard · CR 0-4 · Aster</h3><button type="button" data-mlgm-hoard-step="table">Roll</button></section>`,
+    flags: {[ID]: {request: {kind: "hoard", band: "cr-0-4", actorIds: ["actor"], version: 2, blind: false, completed: []}}},
+    getFlag(ns, key) { return this.flags?.[ns]?.[key]; },
+    async update() {}
+  };
+  globalThis.game = {
+    user: gm, users: collection([gm]), actors: collection([actor]), messages: collection([message]),
+    system: {id: "dnd5e"}, modules: collection([{id: "morelord-core", active: true}]),
+    i18n: {localize: text => text}, settings: {settings: new Map([["morelord-core.ignoredUserIds", true]]), get: () => []}, packs: []
+  };
+  globalThis.foundry = {utils: {deepClone: structuredClone, randomID: () => crypto.randomUUID()}};
+  globalThis.ui = {notifications: {warn() {}, error() {}}, chat: {updateMessage(card) {
+    const hook = events.get("renderChatMessageHTML")?.at(-1);
+    const root = chatRoot(card.content);
+    const original = root.querySelectorAll.bind(root);
+    root.querySelectorAll = selector => original(selector).map(node => {
+      node.addEventListener = type => { listeners.push(type); };
+      return node;
+    });
+    hook?.(card, root);
+  }}};
+  globalThis.CONFIG = {DND5E: {skills: {}}};
+  globalThis.Roll = class { constructor(formula) { this.formula = formula; } get total() { return undefined; } };
+  globalThis.ChatMessage = {getSpeaker: () => ({}), async create() { return null; }};
+  globalThis.socketlib = {registerModule: () => ({register() {}})};
+  const transport = new ContextualSocketService();
+  transport.start();
+  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency};
+  await loadTreasure();
+  initializeRequests();
+  assert.equal(listeners.includes("click"), true);
+  const main = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  const init = main.slice(main.indexOf('Hooks.once("init"'), main.indexOf('Hooks.once("ready"'));
+  assert.match(init, /registerRequestRenderers\(\)/);
 });
 
 function chatRoot(source) {
