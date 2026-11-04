@@ -126,12 +126,13 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(html, /Give amount to each party member/);
     assert.match(html, /Set all party XP to this amount/);
     const xpCard = html.slice(html.indexOf('data-mlgm-bulk="xp"'), html.indexOf('data-mlgm-bulk="inspiration"'));
-    const xpRow = xpCard.slice(xpCard.indexOf('class="gm-specialty-row"'));
-    const actionRow = xpRow.slice(0, xpRow.indexOf('</div>'));
+    const amountRow = xpCard.slice(xpCard.indexOf('class="gm-specialty-row gm-apply-row"'));
     assert.match(xpCard, /class="gm-xp-fields"/);
-    assert.match(actionRow, /name="bulkXpAction"/);
-    assert.match(actionRow, /data-action="bulk-xp"/);
-    assert.doesNotMatch(actionRow, /name="xp"/);
+    assert.ok(xpCard.indexOf('name="bulkXpAction"') < xpCard.indexOf('class="gm-specialty-row gm-apply-row"'));
+    assert.match(amountRow, /name="xp"/);
+    assert.match(amountRow, /data-action="bulk-xp"[^>]*>Apply/);
+    assert.doesNotMatch(amountRow, /name="bulkXpAction"/);
+    assert.ok(amountRow.indexOf('name="xp"') < amountRow.indexOf('data-action="bulk-xp"'));
     assert.match(xpCard, /name="xp"/);
     assert.match(xpCard, /class="gm-label-help"/);
     assert.match(css, /align-items:flex-start/);
@@ -156,7 +157,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(tokensCard, />Party</);
     assert.match(tokensCard, />Selected Tokens</);
     assert.match(tokensCard, />All Tokens</);
-    assert.match(tokensCard, /<strong class="gm-specialty-title">Prototype Token Sync<\/strong><div class="gm-specialty-row"><label class="gm-specialty-field">/);
+    assert.match(tokensCard, /<strong class="gm-specialty-title">Prototype Token Sync<\/strong><div class="gm-specialty-row gm-apply-row"><label class="gm-specialty-field">/);
     assert.match(tokensCard, /data-tooltip="Party copies each party character&#39;s token on the active GM&#39;s current scene\. Selected Tokens copies the selected tokens, including NPCs\. All Tokens copies every token on the scene, including NPCs\. A selected token is used when one actor has several\."/);
     assert.doesNotMatch(tokensCard, /ml-help-button[^>]*\stitle=/);
     assert.doesNotMatch(tokensCard, /<p>/);

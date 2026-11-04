@@ -7,26 +7,27 @@ const bulk = readFileSync(new URL('../scripts/bulk-actions.mjs', import.meta.url
 const tray = readFileSync(new URL('../scripts/main.mjs', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../styles/game-master.css', import.meta.url), 'utf8');
 
-test('XP puts Amount on the line under Action', () => {
+test('XP puts Amount on the line under Action and Apply after Amount', () => {
   const xp = bulk.slice(bulk.indexOf('function xpContent'), bulk.indexOf('function inspirationContent'));
-  const rowAt = xp.indexOf('class="gm-specialty-row"');
-  const actionRow = xp.slice(rowAt, xp.indexOf('</div>', rowAt));
+  const rowAt = xp.indexOf('class="gm-specialty-row gm-apply-row"');
+  const amountRow = xp.slice(rowAt, xp.indexOf('</div>', rowAt));
   assert.match(xp, /class="gm-xp-fields"/);
   assert.match(xp, /name="bulkXpAction"/);
-  assert.match(actionRow, /\$\{actionField\}/);
-  assert.match(actionRow, /data-action="bulk-xp"/);
-  assert.doesNotMatch(actionRow, /name="xp"/);
-  assert.doesNotMatch(actionRow, /\$\{amountField\}/);
+  assert.match(amountRow, /\$\{amountField\}/);
+  assert.match(amountRow, /data-action="bulk-xp"/);
+  assert.doesNotMatch(amountRow, /name="bulkXpAction"/);
+  assert.doesNotMatch(amountRow, /\$\{actionField\}/);
+  assert.ok(amountRow.indexOf('${amountField}') < amountRow.indexOf('data-action="bulk-xp"'));
   const markup = xp.slice(xp.lastIndexOf('return `'));
-  assert.ok(markup.indexOf('${actionField}') < markup.indexOf('</div>'));
-  assert.ok(markup.indexOf('${amountField}') > markup.indexOf('</div>'));
+  assert.ok(markup.indexOf('${actionField}') < markup.indexOf('class="gm-specialty-row gm-apply-row"'));
   assert.match(css, /#mlgm \.gm-xp-fields \{[^}]*flex-direction:column/);
+  assert.match(css, /#mlgm \.gm-bulk \.gm-apply-row \{[^}]*flex-flow:row nowrap/);
 });
 
 test('Prototype Token Sync uses an Inspiration-style target row', () => {
   const tokens = bulk.slice(bulk.indexOf('function tokenContent'), bulk.indexOf('function sceneScopeOptions'));
   assert.match(tokens, /<strong class="gm-specialty-title">/);
-  assert.match(tokens, /class="gm-specialty-row"><label class="gm-specialty-field">/);
+  assert.match(tokens, /class="gm-specialty-row gm-apply-row"><label class="gm-specialty-field">/);
   assert.match(tokens, /name="bulkTokenScope"/);
   assert.match(tokens, /tokens\.party/);
   assert.match(tokens, /tokens\.selected/);
@@ -95,4 +96,17 @@ test('Undo Last Action is one right-aligned button and its enabled state updates
   assert.match(bulk, /sceneTokens\.title\.name/);
   assert.match(bulk, /fieldKey: 'sceneTokens\.disposition'/);
   assert.match(bulk, /fieldKey: 'sceneTokens\.visionField'/);
+});
+
+test('a label help icon stays on the text line and the select fills the field', () => {
+  const help = css.slice(css.indexOf('#mlgm .gm-label-help > .ml-help-button'));
+  assert.match(help, /\{[^}]*flex:0 0 auto/);
+  assert.match(help, /\{[^}]*height:1em/);
+  assert.match(help, /\{[^}]*min-height:0/);
+  assert.match(help, /\{[^}]*max-height:1em/);
+  assert.match(help, /\{[^}]*width:1em/);
+  const selects = css.slice(css.indexOf('#mlgm .gm-bulk .gm-specialty-field > select'));
+  assert.match(selects, /\{[^}]*align-self:stretch/);
+  assert.match(selects, /\{[^}]*width:100%/);
+  assert.match(selects, /\{[^}]*min-width:min\(100%,fit-content\)/);
 });
