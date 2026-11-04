@@ -108,13 +108,13 @@ const hoardIdentity = actor => actor ? core().ui.actorIdentity({actorUuid: actor
 function hoardMarkup(req, actor, state, {allowRoll = false} = {}) {
   const data = peekTreasure();
   const step = data ? nextHoardStep(data, req.band, state) : null;
-  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), state, step, allowRoll: allowRoll && !state?.done, escape: e});
+  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step, allowRoll: allowRoll && !state?.done, escape: e});
 }
 async function freshHoardContent(req) {
   const data = await loadTreasure();
   const actor = game.actors.get(req.actorIds[0]);
   const state = emptyHoardState(actor?.id);
-  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
+  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
 }
 export async function placeHoardItem(actor, itemData) {
   if (needsGmPlace(game.user, actor)) {
@@ -315,6 +315,16 @@ async function submitHoardRoll(message, actor) {
   if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
   return acknowledgement;
 }
+/** A rebuilt card carries raw @UUID text, so run it through Foundry's enricher for the link and type icon. */
+async function enrichItemLinks(root) {
+  const editor = globalThis.foundry?.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
+  if (typeof editor?.enrichHTML !== "function") return;
+  for (const node of root.querySelectorAll(".ml-award-card__item-name")) {
+    if (!node.innerHTML.includes("@UUID")) continue;
+    try { node.innerHTML = await editor.enrichHTML(node.innerHTML); }
+    catch (error) { console.warn("Morelord Game Master | Treasure links", error); }
+  }
+}
 function bindHoardCard(message, html) {
   const request = hoardRequestMessage(message);
   const req = validRequest(request);
@@ -326,7 +336,10 @@ function bindHoardCard(message, html) {
     return;
   }
   const node = html.querySelector(".mlgm-hoard") ?? html.querySelector(".mlgm-request");
-  if (node) node.outerHTML = hoardMarkup(req, actor, state, {allowRoll: !state.done});
+  if (node) {
+    node.outerHTML = hoardMarkup(req, actor, state, {allowRoll: !state.done});
+    void enrichItemLinks(html);
+  }
   for (const button of html.querySelectorAll("[data-mlgm-hoard-step]")) {
     button.disabled = !canRoll(request, actor);
     button.addEventListener("click", async () => {
