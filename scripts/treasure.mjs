@@ -535,26 +535,17 @@ export async function grantHoardAwards(state, {placeItem, addCoins}) {
   return state;
 }
 
-export async function commitHoardStep({data, bandId, state, stepId = null, totals, scroll = null, blind = false, index = new Map(), placeItem = async () => null, addCoins = async () => false}) {
+export async function commitHoardStep({data, bandId, state, stepId = null, totals, scroll = null, index = new Map(), placeItem = async () => null, addCoins = async () => false}) {
   const step = nextHoardStep(data, bandId, state);
   if (!step || (stepId && stepId !== "next" && stepId !== step.id)) return {state: copyState(state), step, alreadyResolved: true};
   if (!Array.isArray(totals) || totals.length !== step.formulas.length) throw new Error("The treasure roll did not match this step.");
   const next = applyHoardStep(data, bandId, state, step, totals, scroll);
   attachCatalog(next, index);
-  if (!blind) await grantHoardAwards(next, {placeItem, addCoins});
+  await grantHoardAwards(next, {placeItem, addCoins});
   next.done = nextHoardStep(data, bandId, next) == null;
   return {state: next, step, alreadyResolved: false};
 }
 
-export async function showHoardDice(rolls, blind) {
-  const dice = globalThis.game?.dice3d;
-  if (typeof dice?.showForRoll !== "function" || !rolls?.length) return;
-  const whisper = blind ? [...(globalThis.game?.users ?? [])].filter(user => user.isGM).map(user => user.id) : null;
-  for (const roll of rolls) {
-    try { await dice.showForRoll(roll, globalThis.game.user, true, whisper, Boolean(blind)); }
-    catch (error) { console.warn("Morelord Game Master | Dice animation", error); }
-  }
-}
 
 function itemLine(item, escape) {
   const detail = item.choice == null ? `${escape(item.tableName)} (${item.roll})` : `${escape(item.tableName)} (1d${item.tableCount ?? 2}: ${item.choice}, d100: ${item.roll})`;
@@ -562,20 +553,15 @@ function itemLine(item, escape) {
   return `<li>${detail}: ${link}</li>`;
 }
 
-export function hoardCardHTML({title, identity = "", state, step = null, blind = false, allowRoll = false, allowReveal = false, escape}) {
+export function hoardCardHTML({title, identity = "", state, step = null, allowRoll = false, escape}) {
   const rolled = state?.hoardRoll != null;
   const prompt = step?.prompt ? `<p>${escape(step.prompt)}</p>` : "";
   const button = allowRoll && step ? `${prompt}<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";
-  const reveal = allowReveal && blind && state?.done && !state?.revealed ? `<button type="button" data-mlgm-hoard-reveal>Reveal</button>` : "";
   const coins = state?.coins ? `<p><strong>Coins</strong><br>${escape(formatHoardCoins(state.coins.purse) || "None")}${state.coins.granted ? "<br>Added to the purse." : ""}</p>` : "";
   const valuable = state?.valuable ? `<p><strong>${state.valuable.kind === "gems" ? "Gems" : "Art objects"}</strong><br>${state.valuable.quantity} × ${contentLink(state.valuable.embeddedUuid || state.valuable.compendiumUuid, state.valuable.name, escape)}</p>` : "";
   const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
   const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
   const row = rolled ? `<p>Hoard roll: ${state.hoardRoll}</p><p>${escape(state.rowText)}</p>` : "";
-  return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${button}${reveal}</section>`;
+  return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${button}</section>`;
 }
 
-export function hoardShellHTML({title, identity = "", done = false, escape}) {
-  const control = done ? "<p>Completed</p>" : `<button type="button" data-mlgm-hoard-step="next">Roll</button>`;
-  return `<section class="ml-chat-card ml-stack mlgm-request mlgm-hoard"><h3>${escape(title)}</h3>${identity}${control}</section>`;
-}

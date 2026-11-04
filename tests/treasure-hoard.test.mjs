@@ -211,7 +211,7 @@ test("hoard row 95 rolls one item per counted roll, each from its own SRD 5.2 ra
   } finally { console.warn = warn; }
 });
 
-test("the chat card rolls one step at a time, grants once, and keeps blind results whispered", async () => {
+test("the chat card rolls one step at a time, grants once, and keeps private hoards whispered to the roller and GM", async () => {
   const events = new Map();
   globalThis.Hooks = {on(name, fn) { events.set(name, [...(events.get(name) ?? []), fn]); return fn; }, off() {}, call() {}};
   const gm = {id: "gm", isGM: true, active: true};
@@ -339,7 +339,9 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
   assert.match(request.content, /2d6 gems \(10 GP each\)/);
   assert.equal(buttons(request.content).length, 1);
   assert.equal(created.length, 0);
-  assert.deepEqual(shown, ["1d100"]);
+  // The card update is the only animation; the clicking client does not show the dice itself.
+  assert.deepEqual(shown, []);
+  assert.equal(request.rolls.length, 1);
   delete game.dice3d;
   faces.push(6);
   const gemRoll = new Roll("2d6");
@@ -409,38 +411,41 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
   game.modules.get("morelord-craftworks").api.spellScrollGenerator.randomSpell = async () => null;
   assert.equal((await resolveSpellScroll("Spell Scroll (level 1)")).spell, null);
 
-  const beforeBlind = created.length;
-  const blind = await createRequest({kind: "hoard", band: "cr-0-4", blind: true, actorIds: [actor.id]});
-  // The public shell carries only the next dice, so the player's own client rolls them.
-  assert.deepEqual(blind.getFlag(ID, "hoardNext"), {id: "table", formulas: ["1d100"]});
+  const beforePrivate = created.length;
+  // A blind flag on a hoard is ignored: hoards are public or private.
+  const priv = await createRequest({kind: "hoard", band: "cr-0-4", blind: true, private: true, actorIds: [actor.id]});
+  assert.equal(priv.getFlag(ID, "request").private, true);
+  assert.equal(priv.getFlag(ID, "request").blind, false);
+  assert.equal(priv.blind, false);
+  assert.deepEqual([...priv.whisper].sort(), ["gm", "player"]);
+  assert.equal(priv.getFlag(ID, "hoardNext"), undefined);
+  assert.equal(buttons(priv.content).length, 1);
+  const privShown = [];
+  game.dice3d = {async showForRoll(roll, _user, _sync, whisper, blind) { privShown.push({whisper, blind}); }};
   faces.push(27, 6);
-  await send(blind);
-  assert.equal(blind.getFlag(ID, "hoardNext").id, "valuables");
-  assert.deepEqual(Object.keys(blind.getFlag(ID, "hoardNext")).sort(), ["formulas", "id"]);
-  await send(blind);
-  assert.equal(blind.getFlag(ID, "hoardNext"), null);
-  const hidden = game.messages.get(blind.getFlag(ID, "hoardLink"));
-  assert.equal(hidden.blind, true);
-  assert.deepEqual(hidden.whisper, ["gm"]);
-  assert.match(hidden.content, /Hoard roll: 27/);
-  assert.match(hidden.content, /Gemstone \(50 GP\)|gems/);
-  assert.doesNotMatch(blind.content, /Hoard roll/);
-  assert.equal(created.length, beforeBlind);
-  assert.equal(actor.updates.length, 0);
-  const hiddenRoot = chatRoot(hidden.content);
-  render(hidden, hiddenRoot);
-  assert.equal(created.length, beforeBlind);
-  assert.match(hiddenRoot.source, /Hoard roll: 27/);
-  const revealed = await dispatch({namespace: ID, type: "revealHoard", data: {requestId: blind.id}, senderUserId: gm.id, targetUserId: gm.id, messageId: crypto.randomUUID()});
-  assert.equal(revealed.accepted, true);
-  assert.equal(created.length, beforeBlind + 1);
-  const posted = game.messages.find(message => message.getFlag(ID, "hoardReveal") === blind.id);
-  assert.equal(posted.blind, false);
-  assert.deepEqual(posted.whisper, []);
-  assert.match(posted.content, /content-link/);
-  const second = await dispatch({namespace: ID, type: "revealHoard", data: {requestId: blind.id}, senderUserId: gm.id, targetUserId: gm.id, messageId: crypto.randomUUID()});
-  assert.equal(second.alreadyResolved, true);
-  assert.equal(created.length, beforeBlind + 1);
+  await send(priv);
+  await send(priv);
+  delete game.dice3d;
+  assert.deepEqual(privShown, []);
+  assert.match(priv.content, /Hoard roll: 27/);
+  assert.doesNotMatch(priv.content, /data-mlgm-hoard-reveal|Reveal/);
+  assert.deepEqual([...priv.whisper].sort(), ["gm", "player"]);
+  // Private hoards grant as they roll, the same as public ones.
+  assert.equal(created.length, beforePrivate + 1);
+  const privRoot = chatRoot(priv.content);
+  render(priv, privRoot);
+  assert.match(privRoot.source, /Hoard roll: 27/);
+  // Another player gets the whispered roll message from Foundry but must not see the card.
+  const strangerView = Object.create(priv, {isContentVisible: {value: false}});
+  const hiddenRoot = chatRoot("<p>Private roll</p>");
+  render(strangerView, hiddenRoot);
+  assert.equal(hiddenRoot.hidden, true);
+  assert.doesNotMatch(hiddenRoot.source, /Hoard roll/);
+  assert.equal(created.length, beforePrivate + 1);
+  assert.equal(game.messages.contents?.some?.(message => message.getFlag?.(ID, "hoardLink")) ?? false, false);
+  const ui = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
+  assert.match(ui, /name="private"/);
+  assert.match(ui, /private: data\.has\("private"\)/);
   assert.match(readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8"), /data-roll-card="hoard"/);
   assert.equal(typeof placeHoardItem, "function");
 });
