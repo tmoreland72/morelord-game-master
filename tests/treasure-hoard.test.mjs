@@ -10,6 +10,7 @@ import {
   HOARD_BANDS, addHoardCoins, auditTreasure, commitHoardStep, describeRow, emptyHoardState, findSrdItem,
   ITEM_PACKS, hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, magicItemFor, srdItemIndex, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
 } from "../scripts/treasure.mjs";
+import {showHoardDice} from "../scripts/treasure.mjs";
 import {initializeRequests, createRequest, placeHoardItem, registerRequestRenderers} from "../scripts/requests.mjs";
 
 const ID = "morelord-game-master";
@@ -312,9 +313,9 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   assert.match(request.content, /2d6 gems \(10 GP each\)/);
   assert.equal(buttons(request.content).length, 1);
   assert.equal(created.length, 0);
-  // The card update is the only animation; the clicking client does not show the dice itself.
+  // The GM's apply shows no dice and attaches no rolls, so Dice So Nice has nothing to play under the GM's colors.
   assert.deepEqual(shown, []);
-  assert.equal(request.rolls.length, 1);
+  assert.equal(request.rolls.length, 0);
   delete game.dice3d;
   faces.push(6);
   const gemRoll = new Roll("2d6");
@@ -342,7 +343,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   await send(request);
   assert.match(request.content, /Potion of Healing<\/a> \(SRD 5.2\)/);
   assert.equal(buttons(request.content).length, 0);
-  assert.equal(request.rolls.at(-1) instanceof Roll, true);
+  assert.equal(request.rolls.length, 0);
   assert.equal(created.length, 2);
   const finished = await send(request);
   assert.equal(finished.alreadyResolved, true);
@@ -400,6 +401,22 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   await send(priv);
   delete game.dice3d;
   assert.deepEqual(privShown, []);
+  assert.equal(priv.rolls.length, 0);
+  // The clicking player animates their own dice once, as themselves; a private hoard limits who sees them.
+  const own = [];
+  const clicker = game.user;
+  game.user = player;
+  game.dice3d = {async showForRoll(roll, user, sync, users, blind) { own.push({formula: roll.formula, user: user.id, sync, users, blind}); }};
+  await showHoardDice([new Roll("1d100"), new Roll("2d6")], ["player", "gm"]);
+  await showHoardDice([new Roll("1d100")]);
+  delete game.dice3d;
+  game.user = clicker;
+  assert.deepEqual(own, [
+    {formula: "1d100", user: "player", sync: true, users: ["player", "gm"], blind: false},
+    {formula: "2d6", user: "player", sync: true, users: ["player", "gm"], blind: false},
+    {formula: "1d100", user: "player", sync: true, users: null, blind: false}
+  ]);
+  assert.match(readFileSync(new URL("../scripts/requests.mjs", import.meta.url), "utf8"), /await showHoardDice\(rolled\.rolls, req\.private === true \? hoardWhisper\(req\) : null\)/);
   assert.match(priv.content, /Hoard roll: 27/);
   assert.doesNotMatch(priv.content, /data-mlgm-hoard-reveal|Reveal/);
   assert.deepEqual([...priv.whisper].sort(), ["gm", "player"]);

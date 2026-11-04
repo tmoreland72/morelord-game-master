@@ -1,7 +1,7 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
-import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, spellScrollLevel } from "./treasure.mjs";
+import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, showHoardDice, spellScrollLevel } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
@@ -126,8 +126,8 @@ export async function placeHoardItem(actor, itemData) {
   const created = await actor.createEmbeddedDocuments("Item", [itemData]);
   return created?.[0] ?? null;
 }
-// Dice So Nice animates the rolls once, when the GM adds them to the card.
-// Showing them here as well played every hoard roll twice.
+// Only the clicking player's client animates hoard dice. The GM never attaches rolls to the card,
+// because Dice So Nice would play them again with the GM's colors and dice set.
 async function rollHoardFormulas(formulas) {
   const rolls = [];
   const totals = [];
@@ -275,9 +275,8 @@ async function advanceHoard(message, req, actor, payload = {}) {
     placeItem: itemData => placeHoardItem(actor, itemData), addCoins: purse => addHoardCoins(actor, purse)
   });
   if (committed.alreadyResolved) return {accepted: true, alreadyResolved: true};
-  const rolls = [...(Array.isArray(message.rolls) ? message.rolls : []), ...rolled.rolls];
   const content = hoardMarkup(req, actor, committed.state, {allowRoll: true});
-  await message.update({content, rolls, [`flags.${ID}.hoard`]: committed.state});
+  await message.update({content, [`flags.${ID}.hoard`]: committed.state});
   if (committed.state.done) {
     const current = message.getFlag(ID, "request") ?? req;
     await message.setFlag(ID, "request", {...current, completed: [...new Set([...(current.completed ?? []), actor.id])]});
@@ -297,6 +296,7 @@ async function submitHoardRoll(message, actor) {
   const hoard = {stepId: step?.id ?? "next"};
   if (step) {
     const rolled = await rollHoardFormulas(step.formulas);
+    await showHoardDice(rolled.rolls, req.private === true ? hoardWhisper(req) : null);
     hoard.rolls = rolled.rolls.map(roll => typeof roll.toJSON === "function" ? roll.toJSON() : {formula: roll.formula, total: roll.total});
     if (step.kind === "magic") {
       const preview = previewMagicItem(data, step, rolled.totals);
