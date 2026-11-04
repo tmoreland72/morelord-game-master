@@ -15,31 +15,54 @@ const state = () => ({
 });
 const step = {id: "magic-2", prompt: "Magic item 2 of 2"};
 
-test("hoard card hands Core's shared card the character, items, coins, roll line, and button", () => {
+const pendingState = () => ({...emptyHoardState("a"), hoardRoll: 37});
+const identity = "<span class=\"ml-actor-identity\">Chuck</span>";
+
+test("pending steps with no results are Core's roll-request markup with no item card", () => {
+  let calls = 0;
+  const countingCard = options => { calls++; return itemCard(options); };
+  for (const card of [countingCard, null]) {
+    const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: pendingState(), step, allowRoll: true, escape, itemCard: card});
+    assert.doesNotMatch(html, /ml-award-card/);
+    assert.match(html, /^<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Roll for Treasure<\/h3><p>Initial Roll: 37<\/p><div class="ml-card ml-stack">/);
+    assert.match(html, /<p>Magic item 2 of 2<\/p><div class="ml-roll-controls"><button type="button" data-mlgm-hoard-step="magic-2" aria-label="Roll">Roll<\/button><\/div>/);
+    assert.equal(html.match(/data-mlgm-hoard-step=/g).length, 1);
+    assert.doesNotMatch(html, /Table [A-Z]|d100|1d\d/);
+  }
+  assert.equal(calls, 0);
+  const first = hoardCardHTML({title: "Roll for Treasure", identity, state: emptyHoardState("a"), step: {id: "table", prompt: ""}, allowRoll: true, escape, itemCard});
+  assert.doesNotMatch(first, /ml-award-card|Initial Roll/);
+  assert.match(first, /<button type="button" data-mlgm-hoard-step="table"/);
+  // An empty purse is still not a result worth a card.
+  const none = hoardCardHTML({title: "T", identity, state: {...pendingState(), coins: {purse: {}, granted: true}}, step: null, escape, itemCard: () => { throw new Error("empty card"); }});
+  assert.doesNotMatch(none, /ml-award-card/);
+  assert.match(none, /Coins<\/strong><br>None/);
+});
+
+test("results go to Core's item card below the request, with no Roll button inside the item card", () => {
   const calls = [];
-  const html = hoardCardHTML({title: "Roll for Treasure", recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard: options => { calls.push(options); return `<section class="stub">card</section>`; }});
-  assert.equal(html, `<div class="mlgm-hoard"><section class="stub">card</section></div>`);
+  const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard: options => { calls.push(options); return `<section class="stub">card</section>`; }});
+  assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack"><h3>Roll for Treasure<\/h3><p>Initial Roll: 37<\/p><div class="ml-card ml-stack">/);
+  assert.match(html, /data-mlgm-hoard-step="magic-2"[^>]*>Roll<\/button><\/div><\/div><\/section><section class="stub">card<\/section><\/div>$/);
   const [options] = calls;
-  assert.equal(options.title, "Roll for Treasure");
   assert.equal(options.recipientName, "Chuck");
   assert.equal(options.footer, "Morelord Game Master");
   assert.deepEqual(options.coins, {gp: 120});
   assert.equal(options.totalLabel, "Added to the purse.");
+  assert.equal(options.bodyHTML, undefined);
+  assert.equal(options.actionsHTML, undefined);
   assert.deepEqual(options.sections.map(section => section.heading), ["Gems", "Magic items (1 of 2)", "Trinket"]);
   assert.deepEqual(options.sections[0].items, [{uuid: "Compendium.x.Item.g", name: "Gemstone (50 GP)", img: "gem.webp", rarity: "common", quantity: 4}]);
   assert.deepEqual(options.sections[1].items, [{uuid: "Compendium.x.Item.p", name: "Potion of Healing", img: "potion.webp", rarity: "common", quantity: 1}]);
   assert.deepEqual(options.sections[2].items, [{uuid: "Actor.a.Item.t", name: "Fragment of Fate", img: "fate.webp", rarity: "rare", quantity: 1}]);
-  assert.match(options.bodyHTML, /<p>Initial Roll: 37<\/p><p>Magic item 2 of 2<\/p>/);
-  assert.equal(options.actionsHTML, `<button type="button" data-mlgm-hoard-step="magic-2">Roll</button>`);
   assert.doesNotMatch(JSON.stringify(options), /Table [A-Z]|d100|1d\d/);
-  hoardCardHTML({title: "T", state: state(), step, allowRoll: false, escape, itemCard: options => { calls.push(options); return ""; }});
-  assert.equal(calls[1].actionsHTML, "");
-  assert.equal(calls[1].bodyHTML, "<p>Initial Roll: 37</p>");
+  const finished = hoardCardHTML({title: "T", identity, state: state(), step: null, allowRoll: true, escape, itemCard: () => "<section class=\"stub\"></section>"});
+  assert.doesNotMatch(finished, /data-mlgm-hoard-step/);
 });
 
-test("hoard card renders on Core's real item card with images, rarity, links, and one Roll button", () => {
-  const html = hoardCardHTML({title: "Roll for Treasure", recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard});
-  assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-award-card">/);
+test("results render on Core's real item card with images, rarity, links, and one Roll button outside it", () => {
+  const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard});
+  assert.equal(html.match(/ml-award-card"/g).length, 1);
   assert.match(html, /ml-award-card__recipient[^>]*><i[^>]*><\/i>Chuck</);
   assert.match(html, /src="potion\.webp"/);
   assert.match(html, /@UUID\[Compendium\.x\.Item\.p\]\{Potion of Healing\}/);
@@ -48,13 +71,14 @@ test("hoard card renders on Core's real item card with images, rarity, links, an
   assert.match(html, /<span>120 gp<\/span>/);
   assert.match(html, /MORELORD GAME MASTER/);
   assert.equal(html.match(/data-mlgm-hoard-step=/g).length, 1);
+  assert.ok(html.indexOf("data-mlgm-hoard-step") < html.indexOf("ml-award-card"));
 });
 
-test("hoard card falls back to the plain card until Core ships the shared card", () => {
+test("results fall back to the plain lists until Core ships the shared card", () => {
   assert.equal(coreItemCard({ui: {}}), null);
   assert.equal(typeof coreItemCard({ui: {itemCard}}), "function");
-  const html = hoardCardHTML({title: "Roll for Treasure", identity: "<span>Chuck</span>", recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard: null});
-  assert.match(html, /^<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Roll for Treasure<\/h3><span>Chuck<\/span><p>Initial Roll: 37<\/p>/);
+  const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard: null});
+  assert.match(html, /^<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Roll for Treasure<\/h3><p>Initial Roll: 37<\/p><p><strong>Coins<\/strong>/);
   assert.doesNotMatch(html, /ml-award-card/);
   assert.equal(html.match(/data-mlgm-hoard-step=/g).length, 1);
 });
