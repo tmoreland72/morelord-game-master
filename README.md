@@ -246,4 +246,4 @@ Bulk coin inputs use compact widths suitable for typical four-digit amounts, wit
 
 This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
-Treasure Hoard uses SRD 5.2.1 coin denominations and magic item names. See [ATTRIBUTION.md](ATTRIBUTION.md).
+Treasure Hoard uses SRD 5.2.1 magic item names. Gems and art are recorded by count and GP value. See [ATTRIBUTION.md](ATTRIBUTION.md).

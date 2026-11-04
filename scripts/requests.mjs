@@ -1,13 +1,17 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
-import { HOARD_BANDS, resolveHoard, treasureHTML } from "./treasure.mjs";
+import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, hoardShellHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, showHoardDice, spellScrollLevel } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
   if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ and its Socketlib connection.");
   return api;
 };
+function coreReady() {
+  const api = globalThis.game?.modules?.get?.("morelord-core")?.active && globalThis.MorelordCore;
+  return Boolean(api?.socket?.createChannel && api?.ui?.participation && api?.rolls?.skill);
+}
 export const activeGM = () => core().users.list().find(user => user.active && user.isGM);
 const authority = message => core().users.list().find(user => user.id === message?.author?.id && user.active && user.isGM) ?? activeGM();
 export const recipient = actor => core().users.activePlayerForActor(actor) ?? activeGM();
@@ -92,6 +96,67 @@ export function requestHTML(req) {
   const controls = id => req.kind === "delerium" ? `<select data-mlgm-search-skill aria-label="Search skill for ${e(game.actors.get(id)?.name)}">${req.searchSkills.map(s => `<option value="${e(s.id)}">${e(s.label)}</option>`).join("")}</select>${rollButton(id)}<button type="button" data-mlgm-actor="${e(id)}" data-mlgm-skill="decline">Decline search</button>` : rollButton(id);
   return `<section class="ml-chat-card ml-stack mlgm-request"><h3>${e(requestTitle(req))}</h3>${req.dc != null ? `<p>DC ${e(req.dc)}</p>` : ""}${req.actorIds.map(id => `<div class="ml-card ml-stack">${core().ui.actorIdentity({actorUuid:game.actors.get(id)?.uuid})}${controls(id)}</div>`).join("")}${req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : ""}</section>`;
 }
+const gmWhisper = () => game.users.filter(user => user.isGM).map(user => user.id);
+const hoardTitle = (req, actor) => `${requestTitle(req)} · ${actor?.name ?? "Character"}`;
+const hoardIdentity = actor => actor ? core().ui.actorIdentity({actorUuid: actor.uuid}) : "";
+function hoardMarkup(req, actor, state, {blind = false, allowRoll = false, allowReveal = false} = {}) {
+  const data = peekTreasure();
+  const step = data ? nextHoardStep(data, req.band, state) : null;
+  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), state, step, blind, allowRoll: allowRoll && !state?.done, allowReveal, escape: e});
+}
+async function freshHoardContent(req) {
+  const data = await loadTreasure();
+  const actor = game.actors.get(req.actorIds[0]);
+  const state = emptyHoardState(actor?.id);
+  return hoardCardHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
+}
+export async function placeHoardItem(actor, itemData) {
+  if (needsGmPlace(game.user, actor)) {
+    const gm = activeGM();
+    if (!gm) throw new Error("An active GM is required to add treasure.");
+    const placed = await channel.executeAsUser("placeHoardItem", {actorId: actor.id, itemData}, gm.id);
+    return placed?.uuid ? {uuid: placed.uuid, name: placed.name} : null;
+  }
+  const created = await actor.createEmbeddedDocuments("Item", [itemData]);
+  return created?.[0] ?? null;
+}
+async function rollHoardFormulas(formulas, blind) {
+  const rolls = [];
+  const totals = [];
+  for (const formula of formulas) {
+    const roll = new Roll(formula);
+    if (typeof roll.evaluate === "function") await roll.evaluate({allowInteractive: false});
+    totals.push(readHoardTotal(formula, roll));
+    rolls.push(roll);
+  }
+  await showHoardDice(rolls, blind);
+  return {rolls, totals};
+}
+function evaluatedDieData(formula, total) {
+  const match = /^(\d+)d(\d+)$/.exec(formula);
+  const number = Number(match[1]);
+  const faces = Number(match[2]);
+  const results = [];
+  let remaining = total;
+  for (let index = 0; index < number; index += 1) {
+    const face = Math.min(faces, Math.max(1, remaining - (number - index - 1)));
+    results.push({result: face, active: true, exploded: false, discarded: false, success: null, failure: null, count: 1});
+    remaining -= face;
+  }
+  return {class: "Roll", formula, evaluated: true, terms: [{class: "Die", options: {}, evaluated: true, number, faces, modifiers: [], results}]};
+}
+function rebuildHoardRoll(formula, payload) {
+  const total = readHoardTotal(formula, payload);
+  const data = payload?.terms ? payload : evaluatedDieData(formula, total);
+  if (typeof Roll.fromData !== "function") throw new Error(`A ${formula} could not be rebuilt.`);
+  const roll = Roll.fromData(data);
+  if (Number(roll.total) !== total) throw new Error(`A ${formula} came up ${roll.total}.`);
+  return {roll, total};
+}
+function totalsFromPayload(formulas, payloadRolls) {
+  const rebuilt = formulas.map((formula, index) => rebuildHoardRoll(formula, payloadRolls[index]));
+  return {rolls: rebuilt.map(entry => entry.roll), totals: rebuilt.map(entry => entry.total)};
+}
 
 export async function createRequest(config) {
   if (!game.user.isGM) throw new Error("Only the GM can request checks.");
@@ -128,7 +193,8 @@ export async function createRequest(config) {
     req.searchSkills = search.getSkillOptions().map(skill => ({...skill}));
     req.dc = req.searchSession.zone.dc;
   }
-  const message = await ChatMessage.create({content:requestHTML(req),whisper:[],blind:false,flags:{[ID]:{request:req}}},{messageMode:"public"});
+  const content = req.kind === "hoard" ? await freshHoardContent(req) : requestHTML(req);
+  const message = await ChatMessage.create({content,whisper:[],blind:false,flags:{[ID]:{request:req}}},{messageMode:"public"});
   return message;
 }
 
@@ -168,36 +234,113 @@ export async function prepareRequestRoll(req, actor, skillId) {
   if (!roll) throw new RollCancelled();
   return roll;
 }
-async function finishHoard(message, req, actor, requestId, actorId) {
-  const rolls = [];
-  const result = await resolveHoard(req.band, async sides => {
-    const roll = new Roll(`1d${sides}`);
-    if (typeof roll.evaluate === "function") await roll.evaluate({allowInteractive: false});
-    const total = Number(roll.total);
-    if (!Number.isInteger(total) || total < 1 || total > sides) throw new Error(`A d${sides} came up ${roll.total}.`);
-    rolls.push(roll);
-    return total;
-  });
+async function advanceHoard(message, req, actor, payload = {}) {
   const blind = req.blind !== false;
-  const whisper = blind ? game.users.filter(user => user.isGM).map(user => user.id) : [];
-  const currency = core().currency;
-  const canPay = typeof currency?.currencyToCp === "function" && typeof currency?.addCurrency === "function";
-  const copper = canPay ? currency.currencyToCp(result.coins) : null;
-  let granted = false;
-  if (!blind && canPay && copper > 0) {
-    try {
-      await currency.addCurrency(actor, copper);
-      granted = true;
-    } catch (error) {
-      console.error(`${ID} | Treasure coins`, error);
-      ui.notifications?.warn(`The hoard was rolled, but the coins were not added: ${error.message}`);
-    }
-  } else if (!blind && copper == null) ui.notifications?.warn("Treasure coins were not added. Morelord Core's currency API is required.");
-  await ChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), flavor: e(`${actor.name} · ${requestTitle(req)}`), rolls, content: treasureHTML(result, {actorName: actor.name, copper, granted, escape: e}), blind, whisper,
-    flags: {[ID]: {result: {requestId, actorId, treasure: {bandId: result.bandId, hoardRoll: result.hoardRoll, coins: result.coins, valuables: result.valuables.map(entry => ({kind: entry.kind, count: entry.count, each: entry.each})), items: result.items.map(item => ({tableId: item.tableId, roll: item.roll, name: item.name}))}}}}},
-    {messageMode: blind ? "blind" : "public"});
-  await message.setFlag(ID, "request", {...req, completed: [...new Set([...(req.completed ?? []), actorId])]});
+  const data = await loadTreasure();
+  const linked = blind ? game.messages.get(message.getFlag(ID, "hoardLink")) ?? null : message;
+  const state = linked?.getFlag(ID, "hoard") ?? emptyHoardState(actor.id);
+  const step = nextHoardStep(data, req.band, state);
+  if (!step || (payload.stepId && payload.stepId !== "next" && payload.stepId !== step.id)) return {accepted: true, alreadyResolved: true};
+  const supplied = Array.isArray(payload.rolls) && payload.rolls.length === step.formulas.length;
+  const rolled = supplied ? totalsFromPayload(step.formulas, payload.rolls) : await rollHoardFormulas(step.formulas, blind);
+  let scroll = null;
+  if (step.kind === "magic") {
+    const preview = previewMagicItem(data, step, rolled.totals);
+    if (spellScrollLevel(preview.name) != null) scroll = payload.scroll?.level === spellScrollLevel(preview.name) ? payload.scroll : await resolveSpellScroll(preview.name);
+  }
+  const committed = await commitHoardStep({
+    data, bandId: req.band, state, stepId: step.id, totals: rolled.totals, scroll, blind, index: await loadSrdItemIndex(),
+    placeItem: itemData => placeHoardItem(actor, itemData), addCoins: purse => addHoardCoins(actor, purse)
+  });
+  if (committed.alreadyResolved) return {accepted: true, alreadyResolved: true};
+  const prior = Array.isArray(linked?.rolls) ? linked.rolls : [];
+  const rolls = [...prior, ...rolled.rolls];
+  const content = hoardMarkup(req, actor, committed.state, {blind, allowRoll: true, allowReveal: blind});
+  let card = linked;
+  if (blind) {
+    if (card) await card.update({content, rolls, blind: true, whisper: gmWhisper(), [`flags.${ID}.hoard`]: committed.state});
+    else card = await ChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), flavor: e(hoardTitle(req, actor)), content, rolls, blind: true, whisper: gmWhisper(), flags: {[ID]: {hoard: committed.state, hoardRequest: message.id}}}, {messageMode: "blind"});
+    await message.update({content: hoardShellHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), done: committed.state.done, escape: e}), [`flags.${ID}.hoardLink`]: card.id});
+  } else await message.update({content, rolls, [`flags.${ID}.hoard`]: committed.state});
+  if (committed.state.done) {
+    const current = message.getFlag(ID, "request") ?? req;
+    await message.setFlag(ID, "request", {...current, completed: [...new Set([...(current.completed ?? []), actor.id])]});
+  }
   return {accepted: true};
+}
+async function revealHoard(message, req, actor) {
+  if (!req || req.blind === false) return {accepted: false, reason: "This hoard is already public."};
+  const card = game.messages.get(message.getFlag(ID, "hoardLink"));
+  const state = card?.getFlag(ID, "hoard");
+  if (!card || !state?.hoardRoll) return {accepted: false, reason: "Roll the hoard before revealing it."};
+  if (state.revealed) return {accepted: true, alreadyResolved: true};
+  await loadTreasure();
+  await grantHoardAwards(state, {placeItem: itemData => placeHoardItem(actor, itemData), addCoins: purse => addHoardCoins(actor, purse)});
+  state.revealed = true;
+  await card.update({content: hoardMarkup(req, actor, state, {blind: true}), [`flags.${ID}.hoard`]: state});
+  await ChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), content: hoardMarkup(req, actor, state, {blind: false}), whisper: [], blind: false, flags: {[ID]: {hoardReveal: message.id}}}, {messageMode: "public"});
+  return {accepted: true};
+}
+function hoardRequestMessage(message) {
+  if (validRequest(message)?.kind === "hoard") return message;
+  return game.messages.get(message.getFlag(ID, "hoardRequest")) ?? null;
+}
+async function submitHoardRoll(message, actor) {
+  const request = hoardRequestMessage(message);
+  const req = validRequest(request);
+  if (!req || !actor) throw new Error("This request is no longer available.");
+  const blind = req.blind !== false;
+  const holder = message.getFlag(ID, "hoard") ? message : (!blind ? request : null);
+  const data = peekTreasure() ?? await loadTreasure();
+  const state = holder?.getFlag(ID, "hoard") ?? emptyHoardState(actor.id);
+  const step = holder || !blind ? nextHoardStep(data, req.band, state) : null;
+  const hoard = {stepId: step?.id ?? "next"};
+  if (step) {
+    const rolled = await rollHoardFormulas(step.formulas, blind);
+    hoard.rolls = rolled.rolls.map(roll => typeof roll.toJSON === "function" ? roll.toJSON() : {formula: roll.formula, total: roll.total});
+    if (step.kind === "magic") {
+      const preview = previewMagicItem(data, step, rolled.totals);
+      if (spellScrollLevel(preview.name) != null) hoard.scroll = await resolveSpellScroll(preview.name);
+    }
+  }
+  const gm = authority(request);
+  if (!gm) throw new Error("An active GM is required to resolve this check.");
+  const acknowledgement = await channel.executeAsUser("roll", {requestId: request.id, actorId: actor.id, hoard}, gm.id);
+  if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
+  return acknowledgement;
+}
+function bindHoardCard(message, html) {
+  const request = hoardRequestMessage(message);
+  const req = validRequest(request);
+  if (!req) return;
+  const actor = game.actors.get(req.actorIds[0]);
+  const blind = req.blind !== false;
+  const viewingResult = Boolean(message.getFlag(ID, "hoard"));
+  const linked = game.messages.get(request.getFlag(ID, "hoardLink"));
+  const state = (viewingResult ? message : linked ?? request).getFlag(ID, "hoard") ?? emptyHoardState(actor?.id);
+  const shell = blind && !viewingResult;
+  if (!shell && !peekTreasure()) {
+    void loadTreasure().then(() => ui.chat?.updateMessage(message));
+    return;
+  }
+  const rendered = shell
+    ? hoardShellHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), done: Boolean(state.done || req.completed?.includes(actor?.id)), escape: e})
+    : hoardMarkup(req, actor, state, {blind: viewingResult && blind, allowRoll: !state.done, allowReveal: viewingResult && blind && game.user.isGM});
+  const node = html.querySelector(".mlgm-hoard") ?? html.querySelector(".mlgm-request");
+  if (node) node.outerHTML = rendered;
+  const reveal = html.querySelector("[data-mlgm-hoard-reveal]");
+  if (reveal && !game.user.isGM) reveal.remove();
+  reveal?.addEventListener("click", () => {
+    channel.executeAsUser("revealHoard", {requestId: request.id}, authority(request)?.id).catch(error => ui.notifications.error(error.message));
+  });
+  for (const button of html.querySelectorAll("[data-mlgm-hoard-step]")) {
+    button.disabled = !canRoll(request, actor);
+    button.addEventListener("click", async () => {
+      try { await submitChatRoll(message, `hoard:${actor?.id}`, button.closest(".mlgm-hoard") ?? button.parentElement, () => submitHoardRoll(message, actor)); }
+      catch (error) { if (error?.name !== "RollCancelled") ui.notifications.error(error.message); }
+      finally { refreshRequests(); }
+    });
+  }
 }
 export async function rollRequest(requestId, actorId, skillId, prepared = null) {
   const gm = authority(game.messages.get(requestId));
@@ -221,7 +364,7 @@ async function rollNative(actor, req, skillId, dialog, {evaluate} = {}) {
   if (typeof actor.rollSkill !== "function") throw new Error(`${actor.name} cannot make a skill check.`);
   return firstRoll(await actor.rollSkill({skill, ...target, ...pending}, dialog, message));
 }
-async function resolveRequest({requestId,actorId,skillId,roll:prepared}, execution) {
+async function resolveRequest({requestId,actorId,skillId,roll:prepared,hoard}, execution) {
   const message = game.messages.get(requestId), req = validRequest(message), actor = game.actors.get(actorId), sender = game.users.get(execution.senderUserId);
   if (!game.user.isGM || game.user.id !== authority(message)?.id) return {accepted:false,reason:"The request's active GM must resolve this check."};
   if (!req || !req.actorIds.includes(actorId)) return {accepted:false,reason:"This request is no longer available."};
@@ -241,7 +384,7 @@ async function resolveRequest({requestId,actorId,skillId,roll:prepared}, executi
     scheduleRequestOutcomes(message);
     return {accepted:true};
   }
-  if (req.kind === "hoard") return finishHoard(message, req, actor, requestId, actorId);
+  if (req.kind === "hoard") return advanceHoard(message, req, actor, hoard ?? {});
   let roll, declined = false;
   const supplied = prepared && !["encounter","surge"].includes(req.kind) && !(req.kind === "delerium" && skillId === "decline");
   if (supplied) roll = await materializeRoll(prepared, req.kind);
@@ -306,39 +449,17 @@ async function openSearchResults(summaryId) {
 function refreshRequests() {
   for (const message of game.messages) if (validRequest(message)) ui.chat?.updateMessage(message);
 }
-export function initializeRequests() {
-  channel = core().socket.createChannel(ID);
-  // Existing pending requests should also remain accessible after a player joins.
-  if (game.user.isGM) for (const message of game.messages) {
-    const req=validRequest(message);
-    if (req && authority(message)?.id===game.user.id && (message.blind || message.whisper?.length) && req.actorIds.some(id=>!req.completed?.includes(id)))
-      message.update({whisper:[],blind:false}).catch(error=>ui.notifications.warn(error.message));
-    if (req && authority(message)?.id === game.user.id && requestResults(message).length) {
-      const missingSummary = ["skill", "foraging"].includes(req.kind) && resultsFor(message).complete
-        && !game.messages.some(result => result.getFlag(ID,"summary")?.requestId === message.id);
-      const missingSearch = req.kind === "delerium" && req.actorIds.every(id => isComplete(message,id))
-        && !game.messages.some(result => result.getFlag(ID,"search")?.requestId === message.id);
-      const pendingSurge = req.kind === "surge" && !resultMessage(message.id,req.actorIds[0])?.getFlag(ID,"surge")?.resolved;
-      if (missingSummary || missingSearch || pendingSurge) scheduleRequestOutcomes(message);
-    }
+function rebindHoardCards() {
+  for (const message of game.messages ?? []) {
+    if (message?.getFlag?.(ID, "hoard") || message?.getFlag?.(ID, "hoardLink") || validRequest(message)) ui.chat?.updateMessage?.(message);
   }
-  // One GM-side queue also prevents overlapping death-save hooks and actor updates.
-  channel.on("roll",resolveRequest,{serialize:`${ID}.rolls`});
-  channel.on("finalizeSearch",async ({requestId},execution) => {
-    if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can finalize searches.");
-    return finalizeSearch(requestId);
-  },{serialize:`${ID}.rolls`});
-  channel.on("awardSearch",async ({summaryId,recipientUuid},execution) => {
-    if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can award search results.");
-    const message = game.messages.get(summaryId), data = message?.getFlag(ID,"search");
-    if (!message?.author?.isGM || !data?.session) throw new Error("Search summary not found.");
-    const session = foundry.utils.deepClone(data.session);
-    try { await deleriumSearch().rollAndAward(session, recipientUuid); }
-    finally { await message.update({content:searchSummary(session),[`flags.${ID}.search`]:{...data,session:foundry.utils.deepClone(session)}}); }
-    return foundry.utils.deepClone(session);
-  },{serialize:`${ID}.rolls`});
-
+}
+export function registerRequestRenderers() {
+  if (!globalThis.Hooks?.on || globalThis.Hooks._mlgmRequestRenderers) return;
+  globalThis.Hooks._mlgmRequestRenderers = true;
   Hooks.on("renderChatMessageHTML",(message,html) => {
+    if (!coreReady()) return;
+    if (message.getFlag(ID, "hoard") || message.getFlag(ID, "hoardLink") || validRequest(message)?.kind === "hoard") bindHoardCard(message, html);
     html.querySelector("[data-mlgm-open-encounters]")?.addEventListener("click",async () => {
       if (!game.user.isGM) return;
       try {
@@ -348,7 +469,7 @@ export function initializeRequests() {
       } catch(error) {ui.notifications.error(error.message);}
     });
     html.querySelector("[data-mlgm-search-results]")?.addEventListener("click",() => openSearchResults(message.id).catch(error => ui.notifications.error(error.message)));
-    if (!validRequest(message)) return;
+    if (!validRequest(message) || validRequest(message).kind === "hoard" || message.getFlag(ID, "hoard")) return;
     const card = html.querySelector('.mlgm-request');
     if (card) card.outerHTML = requestHTML(validRequest(message));
     const finalize = html.querySelector("[data-mlgm-finalize]");
@@ -375,6 +496,52 @@ export function initializeRequests() {
       });
     }
   });
+}
+export function initializeRequests() {
+  channel = core().socket.createChannel(ID);
+  // Existing pending requests should also remain accessible after a player joins.
+  if (game.user.isGM) for (const message of game.messages) {
+    const req=validRequest(message);
+    if (req && authority(message)?.id===game.user.id && (message.blind || message.whisper?.length) && req.actorIds.some(id=>!req.completed?.includes(id)))
+      message.update({whisper:[],blind:false}).catch(error=>ui.notifications.warn(error.message));
+    if (req && authority(message)?.id === game.user.id && requestResults(message).length) {
+      const missingSummary = ["skill", "foraging"].includes(req.kind) && resultsFor(message).complete
+        && !game.messages.some(result => result.getFlag(ID,"summary")?.requestId === message.id);
+      const missingSearch = req.kind === "delerium" && req.actorIds.every(id => isComplete(message,id))
+        && !game.messages.some(result => result.getFlag(ID,"search")?.requestId === message.id);
+      const pendingSurge = req.kind === "surge" && !resultMessage(message.id,req.actorIds[0])?.getFlag(ID,"surge")?.resolved;
+      if (missingSummary || missingSearch || pendingSurge) scheduleRequestOutcomes(message);
+    }
+  }
+  // One GM-side queue also prevents overlapping death-save hooks and actor updates.
+  channel.on("roll",resolveRequest,{serialize:`${ID}.rolls`});
+  channel.on("placeHoardItem", async ({actorId, itemData}) => {
+    if (!game.user.isGM) throw new Error("Only a GM can add treasure.");
+    const actor = game.actors.get(actorId);
+    const created = await actor?.createEmbeddedDocuments("Item", [itemData]);
+    return {uuid: created?.[0]?.uuid ?? null, name: created?.[0]?.name ?? itemData?.name ?? ""};
+  }, {serialize: `${ID}.rolls`});
+  channel.on("revealHoard", async ({requestId}, execution) => {
+    if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) return {accepted: false, reason: "Only a GM can reveal a treasure hoard."};
+    const message = game.messages.get(requestId), req = validRequest(message);
+    return revealHoard(message, req, game.actors.get(req?.actorIds?.[0]));
+  }, {serialize: `${ID}.rolls`});
+  channel.on("finalizeSearch",async ({requestId},execution) => {
+    if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can finalize searches.");
+    return finalizeSearch(requestId);
+  },{serialize:`${ID}.rolls`});
+  channel.on("awardSearch",async ({summaryId,recipientUuid},execution) => {
+    if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can award search results.");
+    const message = game.messages.get(summaryId), data = message?.getFlag(ID,"search");
+    if (!message?.author?.isGM || !data?.session) throw new Error("Search summary not found.");
+    const session = foundry.utils.deepClone(data.session);
+    try { await deleriumSearch().rollAndAward(session, recipientUuid); }
+    finally { await message.update({content:searchSummary(session),[`flags.${ID}.search`]:{...data,session:foundry.utils.deepClone(session)}}); }
+    return foundry.utils.deepClone(session);
+  },{serialize:`${ID}.rolls`});
+
+  registerRequestRenderers();
+  rebindHoardCards();
   Hooks.on("updateChatMessage",refreshRequests);
   Hooks.on("deleteChatMessage",refreshRequests);
   Hooks.on("userConnected",refreshRequests);
