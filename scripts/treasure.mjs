@@ -454,10 +454,13 @@ function attachCatalog(state, index) {
 
 function lootData(entry) {
   const gems = entry.kind === "gems";
+  // Foundry 14.369 core has no icons/commodities/treasure/gem-pile-gold.webp (Dev1 404).
+  // Art objects use brooch-crown-gold.webp, the V13.335 rename of broach-crown-gold.webp
+  // (foundryvtt#12060), which is still shipped in Foundry 14 core.
   return {
     name: entry.name,
     type: "loot",
-    img: gems ? "icons/commodities/gems/gem-faceted-round-white.webp" : "icons/commodities/treasure/gem-pile-gold.webp",
+    img: gems ? "icons/commodities/gems/gem-faceted-round-white.webp" : "icons/commodities/treasure/brooch-crown-gold.webp",
     system: {quantity: entry.quantity, price: {value: entry.gp, denomination: "gp"}, rarity: "common", identified: true}
   };
 }

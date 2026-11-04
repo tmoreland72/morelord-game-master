@@ -8,6 +8,10 @@ export const core = () => {
   if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ and its Socketlib connection.");
   return api;
 };
+function coreReady() {
+  const api = globalThis.game?.modules?.get?.("morelord-core")?.active && globalThis.MorelordCore;
+  return Boolean(api?.socket?.createChannel && api?.ui?.participation && api?.rolls?.skill);
+}
 export const activeGM = () => core().users.list().find(user => user.active && user.isGM);
 const authority = message => core().users.list().find(user => user.id === message?.author?.id && user.active && user.isGM) ?? activeGM();
 export const recipient = actor => core().users.activePlayerForActor(actor) ?? activeGM();
@@ -447,13 +451,14 @@ function refreshRequests() {
 }
 function rebindHoardCards() {
   for (const message of game.messages ?? []) {
-    if (message?.getFlag?.(ID, "hoard") || message?.getFlag?.(ID, "hoardLink") || validRequest(message)?.kind === "hoard") ui.chat?.updateMessage?.(message);
+    if (message?.getFlag?.(ID, "hoard") || message?.getFlag?.(ID, "hoardLink") || validRequest(message)) ui.chat?.updateMessage?.(message);
   }
 }
 export function registerRequestRenderers() {
   if (!globalThis.Hooks?.on || globalThis.Hooks._mlgmRequestRenderers) return;
   globalThis.Hooks._mlgmRequestRenderers = true;
   Hooks.on("renderChatMessageHTML",(message,html) => {
+    if (!coreReady()) return;
     if (message.getFlag(ID, "hoard") || message.getFlag(ID, "hoardLink") || validRequest(message)?.kind === "hoard") bindHoardCard(message, html);
     html.querySelector("[data-mlgm-open-encounters]")?.addEventListener("click",async () => {
       if (!game.user.isGM) return;

@@ -10,7 +10,7 @@ import {
   HOARD_BANDS, addHoardCoins, auditTreasure, commitHoardStep, describeRow, emptyHoardState, findSrdItem,
   hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
 } from "../scripts/treasure.mjs";
-import {initializeRequests, createRequest, placeHoardItem} from "../scripts/requests.mjs";
+import {initializeRequests, createRequest, placeHoardItem, registerRequestRenderers} from "../scripts/requests.mjs";
 
 const ID = "morelord-game-master";
 const rowAt = (hoard, roll) => hoard.rows.find(row => roll >= row.min && roll <= row.max);
@@ -36,7 +36,11 @@ test("treasure tables cover d100 and map every SRD name to a lookup key", async 
   assert.equal(findSrdItem(new Map([[lookupKey("Spell Scroll (Level 3)"), {name: "Spell Scroll (Level 3)", uuid: "Item.scroll"}]]), "Spell Scroll (level 3)").uuid, "Item.scroll");
   const source = readFileSync(new URL("../data/srd-treasure.json", import.meta.url), "utf8");
   for (const banned of ["Deck of Many Things", "Orb of Dragonkind", "Apparatus of Kwalish", "morelord-compendium", "Magic Item Table"]) assert.equal(source.includes(banned), false, banned);
-  assert.equal(readFileSync(new URL("../scripts/treasure.mjs", import.meta.url), "utf8").includes("morelord-compendium"), false);
+  const treasureSource = readFileSync(new URL("../scripts/treasure.mjs", import.meta.url), "utf8");
+  assert.equal(treasureSource.includes("morelord-compendium"), false);
+  assert.doesNotMatch(treasureSource, /img:.*gem-pile-gold\.webp/);
+  assert.match(treasureSource, /icons\/commodities\/treasure\/brooch-crown-gold\.webp/);
+  assert.match(treasureSource, /Foundry 14\.369/);
   assert.equal(readFileSync(new URL("../module.json", import.meta.url), "utf8").includes("morelord-craftworks"), false);
   assert.deepEqual(rangeIssues([{min: 1, max: 99}], 100), [100]);
   const low = data.hoards[0];
@@ -420,6 +424,71 @@ test("a hoard card that rendered before ready gets its Roll button back", async 
   assert.match(init, /registerRequestRenderers\(\)/);
 });
 
+test("chat render before Core is ready skips the card without calling core()", () => {
+  const events = new Map();
+  globalThis.Hooks = {on(name, fn) { events.set(name, [...(events.get(name) ?? []), fn]); return fn; }, off() {}, call() {}};
+  const gm = {id: "gm", isGM: true, active: true};
+  const actor = {id: "actor", uuid: "Actor.actor", name: "Aster", type: "character", testUserPermission: () => true};
+  class Collection extends Map {
+    get contents() { return [...this.values()]; }
+    [Symbol.iterator]() { return this.values(); }
+    filter(fn) { return this.contents.filter(fn); }
+    find(fn) { return this.contents.find(fn); }
+  }
+  const collection = rows => new Collection(rows.map(row => [row.id, row]));
+  const hoard = {
+    id: "early-hoard", author: gm, rolls: [],
+    content: `<section class="ml-chat-card mlgm-hoard"><button type="button" data-mlgm-hoard-step="table">Roll</button></section>`,
+    flags: {[ID]: {request: {kind: "hoard", band: "cr-0-4", actorIds: ["actor"], version: 2, blind: false, completed: []}}},
+    getFlag(ns, key) { return this.flags?.[ns]?.[key]; }
+  };
+  const skill = {
+    id: "early-skill", author: gm, rolls: [],
+    content: `<section class="ml-chat-card mlgm-request"><button type="button" data-mlgm-actor="actor">Roll</button></section>`,
+    flags: {[ID]: {request: {kind: "skill", skill: "prc", actorIds: ["actor"], version: 2, blind: false, completed: []}}},
+    getFlag(ns, key) { return this.flags?.[ns]?.[key]; }
+  };
+  globalThis.game = {
+    user: gm, users: collection([gm]), actors: collection([actor]), messages: collection([hoard, skill]),
+    system: {id: "dnd5e"}, modules: collection([{id: "morelord-core", active: true}]),
+    i18n: {localize: text => text}, settings: {settings: new Map([["morelord-core.ignoredUserIds", true]]), get: () => []}, packs: []
+  };
+  globalThis.CONFIG = {DND5E: {skills: {prc: {label: "Perception"}}, abilities: {}}};
+  globalThis.MorelordCore = undefined;
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args.join(" "));
+  registerRequestRenderers();
+  const hook = events.get("renderChatMessageHTML").at(-1);
+  const hoardRoot = chatRoot(hoard.content);
+  const skillRoot = chatRoot(skill.content);
+  assert.doesNotThrow(() => hook(hoard, hoardRoot));
+  assert.doesNotThrow(() => hook(skill, skillRoot));
+  assert.equal(errors.some(line => line.includes("Morelord Core")), false);
+  assert.equal(hoardRoot.source.includes("data-mlgm-hoard-step"), true);
+  console.error = originalError;
+  const listeners = [];
+  globalThis.ui = {notifications: {warn() {}, error() {}}, chat: {updateMessage(card) {
+    const root = chatRoot(card.content);
+    const original = root.querySelectorAll.bind(root);
+    root.querySelectorAll = selector => original(selector).map(node => {
+      node.addEventListener = type => { listeners.push(`${card.id}:${type}`); };
+      return node;
+    });
+    hook(card, root);
+  }}};
+  globalThis.foundry = {utils: {deepClone: structuredClone, randomID: () => crypto.randomUUID()}};
+  globalThis.Roll = class { constructor(formula) { this.formula = formula; } get total() { return undefined; } };
+  globalThis.ChatMessage = {getSpeaker: () => ({}), async create() { return null; }};
+  globalThis.socketlib = {registerModule: () => ({register() {}})};
+  const transport = new ContextualSocketService();
+  transport.start();
+  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency};
+  initializeRequests();
+  assert.equal(listeners.includes("early-hoard:click"), true);
+  assert.equal(listeners.includes("early-skill:click"), true);
+});
+
 function chatRoot(source) {
   const root = {
     source,
@@ -432,8 +501,10 @@ function chatRoot(source) {
       return null;
     },
     querySelectorAll(selector) {
-      if (selector !== "[data-mlgm-hoard-step]") return [];
-      return [...this.source.matchAll(/data-mlgm-hoard-step="/g)].map(() => ({disabled: false, closest() { return null; }, parentElement: null, addEventListener() {}}));
+      const button = () => ({disabled: false, dataset: {}, closest() { return {querySelector() { return null; }}; }, parentElement: null, addEventListener() {}});
+      if (selector === "[data-mlgm-hoard-step]") return [...this.source.matchAll(/data-mlgm-hoard-step="/g)].map(button);
+      if (selector === "[data-mlgm-actor]") return [...this.source.matchAll(/data-mlgm-actor="/g)].map(button);
+      return [];
     }
   };
   return root;
