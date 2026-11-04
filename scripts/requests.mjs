@@ -1,7 +1,7 @@
 import { afterDiceAnimation } from "../../morelord-core/scripts/services/dice-animation.js";
 import { canRollForActor, markRollCompleted, isRollSubmitted, submitChatRoll } from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import { ID, escapeHTML as e, summarize } from "./core.mjs";
-import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, showHoardDice, spellScrollLevel } from "./treasure.mjs";
+import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoardAwards, hoardCardHTML, loadSrdItemIndex, loadTreasure, needsGmPlace, nextHoardStep, peekTreasure, previewMagicItem, readHoardTotal, resolveSpellScroll, spellScrollLevel } from "./treasure.mjs";
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
@@ -126,8 +126,10 @@ export async function placeHoardItem(actor, itemData) {
   const created = await actor.createEmbeddedDocuments("Item", [itemData]);
   return created?.[0] ?? null;
 }
-// Only the clicking player's client animates hoard dice. The GM never attaches rolls to the card,
-// because Dice So Nice would play them again with the GM's colors and dice set.
+// Dice So Nice animates the rolls once, when the GM adds them to the card. The card's speaker is the
+// character, so Dice So Nice's "Use character owner's dice appearance" setting plays the player's own dice.
+// Nothing else animates them: showing them here as well played every hoard roll twice.
+const stampActor = (rolls, actor) => { for (const roll of rolls) roll.data = {...(roll.data ?? {}), actorId: actor.id}; return rolls; };
 async function rollHoardFormulas(formulas) {
   const rolls = [];
   const totals = [];
@@ -204,8 +206,10 @@ export async function createRequest(config) {
   }
   const content = req.kind === "hoard" ? await freshHoardContent(req) : requestHTML(req);
   const flags = {request: req};
-  if (req.kind === "hoard" && req.private) return ChatMessage.create({content,whisper:hoardWhisper(req),blind:false,flags:{[ID]:flags}});
-  const message = await ChatMessage.create({content,whisper:[],blind:false,flags:{[ID]:flags}},{messageMode:"public"});
+  // The hoard card speaks as the character, like skill and save results, so the owner's dice are used.
+  if (req.kind === "hoard" && req.private) return ChatMessage.create({content,speaker:ChatMessage.getSpeaker({actor:game.actors.get(actorIds[0])}),whisper:hoardWhisper(req),blind:false,flags:{[ID]:flags}});
+  const speaker = req.kind === "hoard" ? {speaker:ChatMessage.getSpeaker({actor:game.actors.get(actorIds[0])})} : {};
+  const message = await ChatMessage.create({content,...speaker,whisper:[],blind:false,flags:{[ID]:flags}},{messageMode:"public"});
   return message;
 }
 
@@ -275,8 +279,11 @@ async function advanceHoard(message, req, actor, payload = {}) {
     placeItem: itemData => placeHoardItem(actor, itemData), addCoins: purse => addHoardCoins(actor, purse)
   });
   if (committed.alreadyResolved) return {accepted: true, alreadyResolved: true};
+  const rolls = [...(Array.isArray(message.rolls) ? message.rolls : []), ...stampActor(rolled.rolls, actor)];
   const content = hoardMarkup(req, actor, committed.state, {allowRoll: true});
-  await message.update({content, [`flags.${ID}.hoard`]: committed.state});
+  // An older card has no speaker; set it with the rolls so Dice So Nice finds the owner.
+  const speaker = message.speaker?.actor === actor.id ? {} : {speaker: ChatMessage.getSpeaker({actor})};
+  await message.update({content, rolls, ...speaker, [`flags.${ID}.hoard`]: committed.state});
   if (committed.state.done) {
     const current = message.getFlag(ID, "request") ?? req;
     await message.setFlag(ID, "request", {...current, completed: [...new Set([...(current.completed ?? []), actor.id])]});
@@ -296,7 +303,6 @@ async function submitHoardRoll(message, actor) {
   const hoard = {stepId: step?.id ?? "next"};
   if (step) {
     const rolled = await rollHoardFormulas(step.formulas);
-    await showHoardDice(rolled.rolls, req.private === true ? hoardWhisper(req) : null);
     hoard.rolls = rolled.rolls.map(roll => typeof roll.toJSON === "function" ? roll.toJSON() : {formula: roll.formula, total: roll.total});
     if (step.kind === "magic") {
       const preview = previewMagicItem(data, step, rolled.totals);
