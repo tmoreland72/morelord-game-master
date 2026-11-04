@@ -1,15 +1,10 @@
-// SRD 5.2.1 names the magic items and the coin denominations. It does not
-// publish treasure hoard tables. data/srd-treasure.json is this module's
-// arrangement: each d100 row lists only what that row awards.
-//
-// Rarity mapping onto the SRD tables in that file:
-//   Common    → common
-//   Uncommon  → uncommon
-//   Rare      → rare-1 and rare-2 (one d100 list was too long, so each item
-//               roll picks Rare or Rare II)
-//   Very Rare → very-rare
-// The two Rare bands in a hoard both use that Rare pair. SRD 5.2 has no
-// rarity between Uncommon and Rare, and this module has no Legendary table.
+// data/srd-treasure.json copies the Morelord compendium "Table 2" hoard
+// tables and Magic Item Tables A-G: same dice, ranges and entries. Table H is
+// rebuilt from the 2014 DMG Table H. Each item row names the 2024 item to link
+// (`item`, plus an SRD 5.2 name in `srd` when that differs). Rows with a
+// `variant` roll their own die as a separate step (Figurine d8, Horn d2).
+// Table lookup and item resolution are pure functions here; the step flow
+// below only decides which die to roll next.
 
 export const HOARD_BANDS = [
   {id: "cr-0-4", label: "CR 0-4"},
@@ -46,6 +41,11 @@ export function rangeIssues(rows, die = 100) {
   return problems;
 }
 
+function itemRowIssue(row) {
+  if (row?.variant) return rangeIssues(row.variant.rows, row.variant.die).length || row.variant.rows.some(option => !option.item);
+  return !row?.item;
+}
+
 export function auditTreasure(data, bands = HOARD_BANDS) {
   const problems = [];
   const tables = new Map((data?.tables ?? []).map(table => [table.id, table]));
@@ -54,11 +54,7 @@ export function auditTreasure(data, bands = HOARD_BANDS) {
     const issues = rangeIssues(table.rows, table.die);
     if (table.die !== 100) problems.push(`${table.name} does not roll a d100.`);
     if (issues.length) problems.push(`${table.name} does not cover its die: ${issues.slice(0, 8).join(", ")}.`);
-    const names = new Set();
-    for (const row of table.rows ?? []) {
-      if (!row.name || names.has(row.name)) problems.push(`${table.name} has a missing or repeated item.`);
-      names.add(row.name);
-    }
+    if ((table.rows ?? []).some(itemRowIssue)) problems.push(`${table.name} has a row with no item.`);
   }
   const hoards = data?.hoards ?? [];
   if (hoards.map(hoard => hoard.id).join() !== bands.map(band => band.id).join()) problems.push("Hoard ids do not match the request bands.");
@@ -69,9 +65,10 @@ export function auditTreasure(data, bands = HOARD_BANDS) {
       for (const coin of row.coins ?? []) if (!COIN_RATES[coin.denomination] || !positive(coin.dice) || !positive(coin.sides, 2) || !positive(coin.multiplier)) problems.push(`${hoard.label} has a coin term that is not structured dice.`);
       for (const valuable of row.valuables ?? []) if (!["gems", "art"].includes(valuable.kind) || !positive(valuable.dice) || !positive(valuable.sides, 2) || !positive(valuable.each?.gp)) problems.push(`${hoard.label} has a gem or art term that is not structured dice.`);
       for (const magic of row.magic ?? []) {
-        if (!magic.tables?.length || magic.tables.some(id => !tables.has(id))) problems.push(`${hoard.label} references a missing magic item table.`);
+        if (!tables.has(magic.table)) problems.push(`${hoard.label} references a missing magic item table.`);
         if (!positive(magic.count) && !(positive(magic.dice) && positive(magic.sides, 2))) problems.push(`${hoard.label} has a magic roll without a count.`);
       }
+      if (row.trinket && !data?.trinkets?.[row.trinket]) problems.push(`${hoard.label} references a missing trinket.`);
     }
   }
   return problems;
@@ -98,8 +95,8 @@ function ordinal(level) {
 }
 
 export function scrollLookupNames(level) {
-  if (level === 0) return ["Spell Scroll (Cantrip)", "Spell Scroll (cantrip)"];
-  return [`Spell Scroll (Level ${level})`, `Spell Scroll (level ${level})`, `Spell Scroll (${ordinal(level)} Level)`];
+  if (level === 0) return ["Spell Scroll (Cantrip)", "Spell Scroll, Cantrip"];
+  return [`Spell Scroll (Level ${level})`, `Spell Scroll (level ${level})`, `Spell Scroll, ${ordinal(level)} Level`, `Spell Scroll, Level ${level}`, `Spell Scroll (${ordinal(level)} Level)`];
 }
 
 export function spellScrollLabel(level, spellName = "") {
@@ -112,17 +109,12 @@ export function gemArtLabel(kind, gp) {
   return kind === "gems" ? `Gemstone (${gp} GP)` : `Art object (${gp} GP)`;
 }
 
-function tierName(tables) {
-  const id = tables?.[0] ?? "";
-  if (id === "common") return "Common";
-  if (id === "uncommon") return "Uncommon";
-  if (id === "very-rare") return "Very Rare";
-  if (String(id).startsWith("rare")) return "Rare";
-  return "Magic";
+function tableName(data, id) {
+  return data?.tables?.find(table => table.id === id)?.name ?? `Magic Item Table ${id}`;
 }
 
-export function describeRow(row) {
-  if (!row?.coins?.length && !row?.valuables?.length && !row?.magic?.length) return "No treasure";
+export function describeRow(row, data = null) {
+  if (!row?.coins?.length && !row?.valuables?.length && !row?.magic?.length && !row?.trinket) return "No treasure";
   const parts = [];
   for (const coin of row.coins ?? []) parts.push(`${coin.dice}d${coin.sides} × ${coin.multiplier} ${String(coin.denomination).toUpperCase()}`);
   for (const valuable of row.valuables ?? []) {
@@ -130,10 +122,10 @@ export function describeRow(row) {
     parts.push(`${valuable.dice}d${valuable.sides} ${noun} (${valuable.each.gp.toLocaleString()} GP each)`);
   }
   for (const magic of row.magic ?? []) {
-    const count = magic.count ? String(magic.count) : `${magic.dice}d${magic.sides}`;
-    const noun = magic.count === 1 ? "magic item" : "magic items";
-    parts.push(`${count} ${tierName(magic.tables)} ${noun}`);
+    const times = magic.count === 1 ? "once" : `${magic.count ?? `${magic.dice}d${magic.sides}`} times`;
+    parts.push(`Roll ${times} on ${tableName(data, magic.table)}`);
   }
+  if (row.trinket) parts.push(`${data?.trinkets?.[row.trinket]?.name ?? "Fragment of Fate"} trinket`);
   return parts.join("; ");
 }
 
@@ -161,6 +153,15 @@ function lookup(table, roll) {
   return row;
 }
 
+/** The item a d100 (and, for a variant row, its own die) gives on a table. */
+export function magicItemFor(data, tableId, roll, variantRoll = null) {
+  const table = tableById(data, tableId);
+  const row = lookup(table, roll);
+  if (row.variant && variantRoll == null) return {table, roll, row, pending: row.variant};
+  const pick = row.variant ? lookup({name: row.entry, rows: row.variant.rows}, variantRoll) : row;
+  return {table, roll, row, variantRoll: row.variant ? variantRoll : null, entry: pick.entry, name: pick.label ?? pick.item, catalogName: pick.item, srdName: pick.srd ?? null, renamed: Boolean(pick.label), swappedFrom: pick.swappedFrom ?? null};
+}
+
 export function emptyHoardState(actorId) {
   return {actorId: actorId ?? null, hoardRoll: null, rowText: "", valuable: null, counts: {}, items: [], coins: null, revealed: false, done: false};
 }
@@ -174,20 +175,15 @@ export function nextHoardStep(data, bandId, state) {
     const term = row.valuables[0];
     return {id: "valuables", kind: "valuables", formulas: [`${term.dice}d${term.sides}`], term, prompt: term.kind === "gems" ? "Gems" : "Art objects"};
   }
+  const pending = (state.items ?? []).find(item => item.pendingVariant);
+  if (pending) return {id: `${pending.id}-variant`, kind: "variant", group: pending.group, index: pending.index, formulas: [`1d${pending.pendingVariant}`], table: pending.tableId, prompt: `${pending.entry}: roll 1d${pending.pendingVariant}`};
   for (let group = 0; group < (row.magic ?? []).length; group += 1) {
     const term = row.magic[group];
     const count = term.count ?? state.counts?.[group];
-    const tier = tierName(term.tables);
-    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], tier, prompt: `${tier} magic items: roll ${term.dice}d${term.sides} for how many`};
+    const name = tableName(data, term.table);
+    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], table: term.table, prompt: `${name}: roll ${term.dice}d${term.sides} for how many`};
     const have = (state.items ?? []).filter(item => item.group === group).length;
-    if (have < count) {
-      const formulas = [];
-      if (term.tables.length > 1) formulas.push(`1d${term.tables.length}`);
-      formulas.push(`1d${tableById(data, term.tables[0]).die ?? 100}`);
-      // A tier split across tables rolls 1d<n> to pick the table, then d100 on it. Say so on the card.
-      const pick = term.tables.length > 1 ? `: roll ${formulas[0]} to pick the table (${term.tables.map((id, i) => `${i + 1} = ${tableById(data, id).name}`).join(", ")}), then ${formulas[1]}` : "";
-      return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, count, formulas, tables: [...term.tables], tier, prompt: `${tier} magic item ${have + 1} of ${count}${pick}`};
-    }
+    if (have < count) return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, count, formulas: [`1d${tableById(data, term.table).die ?? 100}`], table: term.table, prompt: `${name}: item ${have + 1} of ${count}`};
   }
   return null;
 }
@@ -207,12 +203,10 @@ export function readHoardTotal(formula, raw) {
   return total;
 }
 
+/** The catalog name a magic step's roll lands on (a variant row has none yet). */
 export function previewMagicItem(data, step, totals) {
-  const choice = step.tables.length > 1 ? totals[0] : 1;
-  const table = tableById(data, step.tables[choice - 1]);
-  const roll = totals[totals.length - 1];
-  const result = lookup(table, roll);
-  return {choice, table, roll, name: result.name};
+  const hit = magicItemFor(data, step.table, totals[0]);
+  return {...hit, name: hit.pending ? "" : hit.catalogName};
 }
 
 function copyState(state) {
@@ -224,6 +218,7 @@ function copyState(state) {
     counts: {...(state?.counts ?? {})},
     items: (state?.items ?? []).map(item => structuredClone(item)),
     coins: state?.coins ? {...state.coins, purse: {...(state.coins.purse ?? {})}} : null,
+    trinket: state?.trinket ? structuredClone(state.trinket) : null,
     revealed: state?.revealed === true,
     done: state?.done === true
   };
@@ -235,7 +230,9 @@ export function applyHoardStep(data, bandId, state, step, totals, scroll = null)
   if (step.kind === "table") {
     next.hoardRoll = totals[0];
     const row = rowFor(hoard, totals[0]);
-    next.rowText = describeRow(row);
+    next.rowText = describeRow(row, data);
+    const trinket = row.trinket ? data.trinkets?.[row.trinket] : null;
+    if (trinket) next.trinket = {name: trinket.name, quantity: 1, itemData: structuredClone(trinket), source: "Game Master", embeddedUuid: null, granted: false};
     return next;
   }
   const row = rowFor(hoard, next.hoardRoll);
@@ -254,28 +251,35 @@ export function applyHoardStep(data, bandId, state, step, totals, scroll = null)
     next.counts[step.group] = totals[0];
     return next;
   }
-  const preview = previewMagicItem(data, step, totals);
-  const level = spellScrollLevel(preview.name);
-  const spell = level != null && scroll?.spell?.name && scroll?.spell?.uuid ? {name: String(scroll.spell.name), uuid: String(scroll.spell.uuid), level} : null;
-  next.items.push({
-    id: step.id,
-    group: step.group,
-    name: spell ? spellScrollLabel(level, spell.name) : (level != null ? spellScrollLabel(level) : preview.name),
-    catalogName: preview.name,
-    tableId: preview.table.id,
-    tableName: preview.table.name,
-    roll: preview.roll,
-    choice: step.tables.length > 1 ? preview.choice : null,
-    tableCount: step.tables.length > 1 ? step.tables.length : null,
-    quantity: 1,
-    compendiumUuid: null,
-    embeddedUuid: null,
-    spell,
-    scrollData: level != null && scroll?.itemData && typeof scroll.itemData === "object" ? scroll.itemData : null,
-    granted: false,
-    unresolved: false
-  });
+  if (step.kind === "variant") {
+    const item = next.items.find(entry => entry.pendingVariant);
+    Object.assign(item, itemRecord(magicItemFor(data, item.tableId, item.roll, totals[0]), null), {id: item.id, group: item.group, index: item.index});
+    return next;
+  }
+  const hit = magicItemFor(data, step.table, totals[0]);
+  next.items.push({id: step.id, group: step.group, index: step.index, ...itemRecord(hit, scroll)});
   return next;
+}
+
+function itemRecord(hit, scroll) {
+  const base = {tableId: hit.table.id, tableName: hit.table.name, roll: hit.roll, quantity: 1, compendiumUuid: null, source: null, embeddedUuid: null, granted: false, unresolved: false};
+  if (hit.pending) return {...base, entry: hit.row.entry, name: hit.row.entry, catalogName: null, pendingVariant: hit.pending.die, spell: null, scrollData: null};
+  const level = spellScrollLevel(hit.catalogName);
+  const spell = level != null && scroll?.spell?.name && scroll?.spell?.uuid ? {name: String(scroll.spell.name), uuid: String(scroll.spell.uuid), level} : null;
+  return {
+    ...base,
+    entry: hit.entry,
+    name: spell ? spellScrollLabel(level, spell.name) : (level != null ? spellScrollLabel(level) : hit.name),
+    catalogName: hit.catalogName,
+    srdName: hit.srdName,
+    renamed: hit.renamed,
+    swappedFrom: hit.swappedFrom,
+    variantDie: hit.row.variant?.die ?? null,
+    variantRoll: hit.variantRoll,
+    pendingVariant: null,
+    spell,
+    scrollData: level != null && scroll?.itemData && typeof scroll.itemData === "object" ? scroll.itemData : null
+  };
 }
 
 /** Copper total as one purse entry. At least 1 gp is awarded in gp, rounded to
@@ -371,11 +375,19 @@ function indexRows(entries) {
   return [...entries];
 }
 
+/** Packs searched for treasure items, first match wins: 2024 DMG, 2024 PHB, SRD 5.2. */
+export const ITEM_PACKS = [
+  {collection: "dnd-dungeon-masters-guide.equipment", source: "Dungeon Master's Guide (2024)"},
+  {collection: "dnd-players-handbook.equipment", source: "Player's Handbook (2024)"},
+  {collection: "dnd5e.equipment24", source: "SRD 5.2"}
+];
+
 export async function srdItemIndex(packs = globalThis.game?.packs) {
-  const list = [...(packs ?? [])].filter(pack => pack?.documentName === "Item" && String(pack.collection ?? "").startsWith("dnd5e."));
-  list.sort((a, b) => Number(String(b.collection).includes("equipment24")) - Number(String(a.collection).includes("equipment24")));
+  const all = [...(packs ?? [])];
   const index = new Map();
-  for (const pack of list) {
+  for (const {collection, source} of ITEM_PACKS) {
+    const pack = all.find(entry => entry?.collection === collection && entry?.documentName === "Item");
+    if (!pack) continue;
     let entries;
     try {
       entries = await pack.getIndex({fields: ["name", "img", "type"]});
@@ -393,7 +405,8 @@ export async function srdItemIndex(packs = globalThis.game?.packs) {
         name: entry.name,
         uuid: entry.uuid ?? `Compendium.${pack.collection}.Item.${entry._id}`,
         img: entry.img ?? "",
-        type: entry.type ?? "loot"
+        type: entry.type ?? "loot",
+        source
       });
     }
   }
@@ -408,8 +421,8 @@ export async function loadSrdItemIndex() {
   return srdItemIndex();
 }
 
-export function findSrdItem(index, name) {
-  const direct = index?.get?.(lookupKey(name));
+export function findSrdItem(index, name, srdName = null) {
+  const direct = index?.get?.(lookupKey(name)) ?? (srdName ? index?.get?.(lookupKey(srdName)) : null);
   if (direct) return direct;
   const level = spellScrollLevel(name);
   if (level == null || !index) return null;
@@ -444,9 +457,9 @@ function attachCatalog(state, index) {
     if (hit) state.valuable.compendiumUuid = hit.uuid;
   }
   for (const item of state.items) {
-    if (item.compendiumUuid || item.spell) continue;
-    const hit = findSrdItem(index, item.catalogName);
-    if (hit) item.compendiumUuid = hit.uuid;
+    if (item.compendiumUuid || item.spell || item.pendingVariant) continue;
+    const hit = findSrdItem(index, item.catalogName, item.srdName);
+    if (hit) Object.assign(item, {compendiumUuid: hit.uuid, source: hit.source ?? null, unresolved: false});
     else if (!item.warned) {
       item.warned = true;
       item.unresolved = true;
@@ -469,6 +482,11 @@ function lootData(entry) {
 }
 
 async function documentData(entry) {
+  if (entry.itemData && typeof entry.itemData === "object") {
+    const data = structuredClone(entry.itemData);
+    delete data._id;
+    return data;
+  }
   if (entry.scrollData && typeof entry.scrollData === "object") {
     const data = structuredClone(entry.scrollData);
     delete data._id;
@@ -500,6 +518,7 @@ async function documentData(entry) {
         const data = document.toObject();
         delete data._id;
         data.system = {...(data.system ?? {}), quantity: entry.quantity ?? 1};
+        if (entry.renamed) data.name = entry.name;
         return data;
       }
     } catch (error) {
@@ -511,7 +530,7 @@ async function documentData(entry) {
 }
 
 async function grantRecord(entry, placeItem) {
-  if (!entry || entry.granted) return;
+  if (!entry || entry.granted || entry.pendingVariant) return;
   const data = await documentData(entry);
   if (!data) {
     entry.unresolved = true;
@@ -531,6 +550,7 @@ export async function grantHoardAwards(state, {placeItem, addCoins}) {
     state.coins.granted = true;
   }
   await grantRecord(state.valuable, placeItem);
+  await grantRecord(state.trinket, placeItem);
   for (const item of state.items) await grantRecord(item, placeItem);
   return state;
 }
@@ -548,9 +568,11 @@ export async function commitHoardStep({data, bandId, state, stepId = null, total
 
 
 function itemLine(item, escape) {
-  const detail = item.choice == null ? `${escape(item.tableName)} (${item.roll})` : `${escape(item.tableName)} (1d${item.tableCount ?? 2}: ${item.choice}, d100: ${item.roll})`;
+  const variant = item.variantRoll != null ? `, d${item.variantDie}: ${item.variantRoll}` : "";
+  const detail = `${escape(item.tableName)} (d100: ${item.roll}${variant})`;
   const link = contentLink(item.embeddedUuid || item.compendiumUuid || item.spell?.uuid, item.name, escape);
-  return `<li>${detail}: ${link}</li>`;
+  const source = item.pendingVariant ? "" : item.spell ? " (Craftworks)" : item.source ? ` (${escape(item.source)})` : item.embeddedUuid || item.compendiumUuid ? "" : " (text only)";
+  return `<li>${detail}: ${link}${source}</li>`;
 }
 
 export function hoardCardHTML({title, identity = "", state, step = null, allowRoll = false, escape}) {
@@ -562,6 +584,7 @@ export function hoardCardHTML({title, identity = "", state, step = null, allowRo
   const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
   const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
   const row = rolled ? `<p>Hoard roll: ${state.hoardRoll}</p><p>${escape(state.rowText)}</p>` : "";
-  return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${button}</section>`;
+  const trinket = state?.trinket ? `<p><strong>Trinket</strong><br>${contentLink(state.trinket.embeddedUuid, state.trinket.name, escape)} (${escape(state.trinket.source)})</p>` : "";
+  return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${trinket}${button}</section>`;
 }
 

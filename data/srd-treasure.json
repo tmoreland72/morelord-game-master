@@ -1,2425 +1,3060 @@
 {
-  "srd": "5.2.1",
-  "hoards": [
+ "source": "Copied from morelord-compendium tables-1 'Table 2' (Troy's tables). Item names link the 2024 DMG/PHB first, then SRD 5.2. Arrow of Slaying is Ammunition of Slaying. Magic Item Table H is rebuilt from the 2014 DMG Table H with the same rule.",
+ "hoards": [
+  {
+   "id": "cr-0-4",
+   "label": "CR 0-4",
+   "name": "Treasure Hoard: Challenge 0—4, Table 2",
+   "die": 100,
+   "rows": [
     {
-      "id": "cr-0-4",
-      "label": "CR 0-4",
-      "die": 100,
-      "source": "Original arrangement of SRD 5.2.1 gem and art values and magic item names. Rows award only what they list. Rare rolls choose between the two Rare tables.",
-      "rows": [
-        {
-          "min": 1,
-          "max": 6,
-          "valuables": [],
-          "magic": []
-        },
-        {
-          "min": 7,
-          "max": 16,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 10
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 17,
-          "max": 26,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 27,
-          "max": 36,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 37,
-          "max": 44,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 10
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 45,
-          "max": 52,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 53,
-          "max": 60,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 61,
-          "max": 65,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 10
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 66,
-          "max": 70,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 71,
-          "max": 75,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 76,
-          "max": 78,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 10
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 79,
-          "max": 80,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 81,
-          "max": 85,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 86,
-          "max": 92,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 93,
-          "max": 97,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 98,
-          "max": 99,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 100,
-          "max": 100,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 2,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "count": 1
-            }
-          ]
-        }
-      ]
+     "min": 1,
+     "max": 6,
+     "entry": "— | —",
+     "valuables": [],
+     "magic": []
     },
     {
-      "id": "cr-5-10",
-      "label": "CR 5-10",
-      "die": 100,
-      "source": "Original arrangement of SRD 5.2.1 gem and art values and magic item names. Rows award only what they list. Rare rolls choose between the two Rare tables.",
-      "rows": [
-        {
-          "min": 1,
-          "max": 4,
-          "valuables": [],
-          "magic": []
-        },
-        {
-          "min": 5,
-          "max": 10,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 11,
-          "max": 16,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 17,
-          "max": 22,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 23,
-          "max": 28,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": []
-        },
-        {
-          "min": 29,
-          "max": 32,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 33,
-          "max": 36,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 37,
-          "max": 40,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 41,
-          "max": 44,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "common"
-              ],
-              "dice": 1,
-              "sides": 6
-            }
-          ]
-        },
-        {
-          "min": 45,
-          "max": 49,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 50,
-          "max": 54,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 55,
-          "max": 59,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 60,
-          "max": 63,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "uncommon"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 64,
-          "max": 66,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 67,
-          "max": 69,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 70,
-          "max": 72,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 73,
-          "max": 74,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 75,
-          "max": 76,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 77,
-          "max": 78,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 79,
-          "max": 79,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 80,
-          "max": 80,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 81,
-          "max": 84,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 25
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 85,
-          "max": 88,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 50
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 89,
-          "max": 91,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 92,
-          "max": 94,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "rare-1",
-                "rare-2"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 95,
-          "max": 96,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 97,
-          "max": 98,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "dice": 1,
-              "sides": 4
-            }
-          ]
-        },
-        {
-          "min": 99,
-          "max": 99,
-          "valuables": [
-            {
-              "kind": "gems",
-              "dice": 3,
-              "sides": 6,
-              "each": {
-                "gp": 100
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "count": 1
-            }
-          ]
-        },
-        {
-          "min": 100,
-          "max": 100,
-          "valuables": [
-            {
-              "kind": "art",
-              "dice": 2,
-              "sides": 4,
-              "each": {
-                "gp": 250
-              }
-            }
-          ],
-          "magic": [
-            {
-              "tables": [
-                "very-rare"
-              ],
-              "count": 1
-            }
-          ]
-        }
-      ]
+     "min": 7,
+     "max": 16,
+     "entry": "[[/r 2d6]] (7) 10 gp gems | —",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 10
+       }
+      }
+     ],
+     "magic": []
+    },
+    {
+     "min": 17,
+     "max": 26,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | —",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": []
+    },
+    {
+     "min": 27,
+     "max": 36,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | —",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": []
+    },
+    {
+     "min": 37,
+     "max": 44,
+     "entry": "[[/r 2d6]] (7) 10 gp gems | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 10
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 45,
+     "max": 52,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 53,
+     "max": 60,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 61,
+     "max": 65,
+     "entry": "[[/r 2d6]] (7) 10 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 10
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 66,
+     "max": 70,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 71,
+     "max": 75,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 76,
+     "max": 78,
+     "entry": "[[/r 2d6]] (7) 10 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 10
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 79,
+     "max": 80,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 81,
+     "max": 85,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 86,
+     "max": 92,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table F].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 93,
+     "max": 97,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table F] | Fragment of Fate trinket",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ],
+     "trinket": "fragment-of-fate"
+    },
+    {
+     "min": 98,
+     "max": 99,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll once on @table[Magic Item Table G] | Fragment of Fate trinket",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "G",
+       "count": 1
+      }
+     ],
+     "trinket": "fragment-of-fate"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "[[/r 2d6]] (7) 50 gp gems | Roll once on @table[Magic Item Table G] | Fragment of Fate trinket",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 2,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "G",
+       "count": 1
+      }
+     ],
+     "trinket": "fragment-of-fate"
     }
-  ],
-  "tables": [
+   ]
+  },
+  {
+   "id": "cr-5-10",
+   "label": "CR 5-10",
+   "name": "Treasure Hoard: Challenge 5—10, Table 2",
+   "die": 100,
+   "rows": [
     {
-      "id": "common",
-      "name": "Common Magic Items",
-      "rarity": "Common",
-      "die": 100,
-      "source": "SRD 5.2.1, Magic Items A–Z",
-      "rows": [
-        {
-          "min": 1,
-          "max": 20,
-          "name": "Bead of Nourishment"
-        },
-        {
-          "min": 21,
-          "max": 40,
-          "name": "Potion of Climbing"
-        },
-        {
-          "min": 41,
-          "max": 60,
-          "name": "Potion of Healing"
-        },
-        {
-          "min": 61,
-          "max": 80,
-          "name": "Spell Scroll (cantrip)"
-        },
-        {
-          "min": 81,
-          "max": 100,
-          "name": "Spell Scroll (level 1)"
-        }
-      ]
+     "min": 1,
+     "max": 4,
+     "entry": "— | —",
+     "valuables": [],
+     "magic": []
     },
     {
-      "id": "uncommon",
-      "name": "Uncommon Magic Items",
-      "rarity": "Uncommon",
-      "die": 100,
-      "source": "SRD 5.2.1, Magic Items A–Z",
-      "rows": [
-        {
-          "min": 1,
-          "max": 1,
-          "name": "Adamantine Armor"
-        },
-        {
-          "min": 2,
-          "max": 2,
-          "name": "Ammunition +1"
-        },
-        {
-          "min": 3,
-          "max": 3,
-          "name": "Amulet of Proof against Detection and Location"
-        },
-        {
-          "min": 4,
-          "max": 4,
-          "name": "Armor +1"
-        },
-        {
-          "min": 5,
-          "max": 5,
-          "name": "Bag of Holding"
-        },
-        {
-          "min": 6,
-          "max": 6,
-          "name": "Bag of Tricks"
-        },
-        {
-          "min": 7,
-          "max": 8,
-          "name": "Boots of Elvenkind"
-        },
-        {
-          "min": 9,
-          "max": 9,
-          "name": "Boots of Striding and Springing"
-        },
-        {
-          "min": 10,
-          "max": 10,
-          "name": "Boots of the Winterlands"
-        },
-        {
-          "min": 11,
-          "max": 11,
-          "name": "Bracers of Archery"
-        },
-        {
-          "min": 12,
-          "max": 12,
-          "name": "Brooch of Shielding"
-        },
-        {
-          "min": 13,
-          "max": 13,
-          "name": "Broom of Flying"
-        },
-        {
-          "min": 14,
-          "max": 15,
-          "name": "Circlet of Blasting"
-        },
-        {
-          "min": 16,
-          "max": 16,
-          "name": "Cloak of Elvenkind"
-        },
-        {
-          "min": 17,
-          "max": 17,
-          "name": "Cloak of Protection"
-        },
-        {
-          "min": 18,
-          "max": 18,
-          "name": "Cloak of the Manta Ray"
-        },
-        {
-          "min": 19,
-          "max": 19,
-          "name": "Decanter of Endless Water"
-        },
-        {
-          "min": 20,
-          "max": 20,
-          "name": "Deck of Illusions"
-        },
-        {
-          "min": 21,
-          "max": 22,
-          "name": "Dust of Disappearance"
-        },
-        {
-          "min": 23,
-          "max": 23,
-          "name": "Dust of Dryness"
-        },
-        {
-          "min": 24,
-          "max": 24,
-          "name": "Dust of Sneezing and Choking"
-        },
-        {
-          "min": 25,
-          "max": 25,
-          "name": "Efficient Quiver"
-        },
-        {
-          "min": 26,
-          "max": 26,
-          "name": "Elemental Gem"
-        },
-        {
-          "min": 27,
-          "max": 27,
-          "name": "Eversmoking Bottle"
-        },
-        {
-          "min": 28,
-          "max": 29,
-          "name": "Eyes of Charming"
-        },
-        {
-          "min": 30,
-          "max": 30,
-          "name": "Eyes of Minute Seeing"
-        },
-        {
-          "min": 31,
-          "max": 31,
-          "name": "Eyes of the Eagle"
-        },
-        {
-          "min": 32,
-          "max": 32,
-          "name": "Feather Token (Anchor)"
-        },
-        {
-          "min": 33,
-          "max": 33,
-          "name": "Feather Token (Fan)"
-        },
-        {
-          "min": 34,
-          "max": 34,
-          "name": "Feather Token (Tree)"
-        },
-        {
-          "min": 35,
-          "max": 36,
-          "name": "Figurine of Wondrous Power (Silver Raven)"
-        },
-        {
-          "min": 37,
-          "max": 37,
-          "name": "Gauntlets of Ogre Power"
-        },
-        {
-          "min": 38,
-          "max": 38,
-          "name": "Gem of Brightness"
-        },
-        {
-          "min": 39,
-          "max": 39,
-          "name": "Gloves of Missile Snaring"
-        },
-        {
-          "min": 40,
-          "max": 40,
-          "name": "Gloves of Swimming and Climbing"
-        },
-        {
-          "min": 41,
-          "max": 41,
-          "name": "Gloves of Thievery"
-        },
-        {
-          "min": 42,
-          "max": 43,
-          "name": "Goggles of Night"
-        },
-        {
-          "min": 44,
-          "max": 44,
-          "name": "Hat of Disguise"
-        },
-        {
-          "min": 45,
-          "max": 45,
-          "name": "Headband of Intellect"
-        },
-        {
-          "min": 46,
-          "max": 46,
-          "name": "Helm of Comprehending Languages"
-        },
-        {
-          "min": 47,
-          "max": 47,
-          "name": "Helm of Telepathy"
-        },
-        {
-          "min": 48,
-          "max": 48,
-          "name": "Immovable Rod"
-        },
-        {
-          "min": 49,
-          "max": 50,
-          "name": "Javelin of Lightning"
-        },
-        {
-          "min": 51,
-          "max": 51,
-          "name": "Lantern of Revealing"
-        },
-        {
-          "min": 52,
-          "max": 52,
-          "name": "Medallion of Thoughts"
-        },
-        {
-          "min": 53,
-          "max": 53,
-          "name": "Mithral Armor"
-        },
-        {
-          "min": 54,
-          "max": 54,
-          "name": "Necklace of Adaptation"
-        },
-        {
-          "min": 55,
-          "max": 55,
-          "name": "Oil of Slipperiness"
-        },
-        {
-          "min": 56,
-          "max": 56,
-          "name": "Pearl of Power"
-        },
-        {
-          "min": 57,
-          "max": 58,
-          "name": "Periapt of Health"
-        },
-        {
-          "min": 59,
-          "max": 59,
-          "name": "Periapt of Wound Closure"
-        },
-        {
-          "min": 60,
-          "max": 60,
-          "name": "Philter of Love"
-        },
-        {
-          "min": 61,
-          "max": 61,
-          "name": "Pipes of Haunting"
-        },
-        {
-          "min": 62,
-          "max": 62,
-          "name": "Pipes of the Sewers"
-        },
-        {
-          "min": 63,
-          "max": 63,
-          "name": "Potion of Animal Friendship"
-        },
-        {
-          "min": 64,
-          "max": 65,
-          "name": "Potion of Giant Strength (hill)"
-        },
-        {
-          "min": 66,
-          "max": 66,
-          "name": "Potion of Growth"
-        },
-        {
-          "min": 67,
-          "max": 67,
-          "name": "Potion of Healing (greater)"
-        },
-        {
-          "min": 68,
-          "max": 68,
-          "name": "Potion of Poison"
-        },
-        {
-          "min": 69,
-          "max": 69,
-          "name": "Potion of Resistance"
-        },
-        {
-          "min": 70,
-          "max": 70,
-          "name": "Potion of Water Breathing"
-        },
-        {
-          "min": 71,
-          "max": 72,
-          "name": "Ring of Jumping"
-        },
-        {
-          "min": 73,
-          "max": 73,
-          "name": "Ring of Mind Shielding"
-        },
-        {
-          "min": 74,
-          "max": 74,
-          "name": "Ring of Swimming"
-        },
-        {
-          "min": 75,
-          "max": 75,
-          "name": "Ring of Warmth"
-        },
-        {
-          "min": 76,
-          "max": 76,
-          "name": "Ring of Water Walking"
-        },
-        {
-          "min": 77,
-          "max": 77,
-          "name": "Robe of Useful Items"
-        },
-        {
-          "min": 78,
-          "max": 79,
-          "name": "Rope of Climbing"
-        },
-        {
-          "min": 80,
-          "max": 80,
-          "name": "Sending Stones"
-        },
-        {
-          "min": 81,
-          "max": 81,
-          "name": "Sentinel Shield"
-        },
-        {
-          "min": 82,
-          "max": 82,
-          "name": "Shield +1"
-        },
-        {
-          "min": 83,
-          "max": 83,
-          "name": "Slippers of Spider Climbing"
-        },
-        {
-          "min": 84,
-          "max": 84,
-          "name": "Spell Scroll (level 2)"
-        },
-        {
-          "min": 85,
-          "max": 86,
-          "name": "Spell Scroll (level 3)"
-        },
-        {
-          "min": 87,
-          "max": 87,
-          "name": "Staff of the Python"
-        },
-        {
-          "min": 88,
-          "max": 88,
-          "name": "Stone of Good Luck (Luckstone)"
-        },
-        {
-          "min": 89,
-          "max": 89,
-          "name": "Trident of Fish Command"
-        },
-        {
-          "min": 90,
-          "max": 90,
-          "name": "Wand of Magic Detection"
-        },
-        {
-          "min": 91,
-          "max": 91,
-          "name": "Wand of Magic Missiles"
-        },
-        {
-          "min": 92,
-          "max": 93,
-          "name": "Wand of Secrets"
-        },
-        {
-          "min": 94,
-          "max": 94,
-          "name": "Wand of the War Mage +1"
-        },
-        {
-          "min": 95,
-          "max": 95,
-          "name": "Wand of Web"
-        },
-        {
-          "min": 96,
-          "max": 96,
-          "name": "Weapon +1"
-        },
-        {
-          "min": 97,
-          "max": 97,
-          "name": "Weapon of Warning"
-        },
-        {
-          "min": 98,
-          "max": 98,
-          "name": "Wind Fan"
-        },
-        {
-          "min": 99,
-          "max": 100,
-          "name": "Winged Boots"
-        }
-      ]
+     "min": 5,
+     "max": 10,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | —",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": []
     },
     {
-      "id": "rare-1",
-      "name": "Rare Magic Items",
-      "rarity": "Rare",
-      "die": 100,
-      "source": "SRD 5.2.1, Magic Items A–Z",
-      "rows": [
-        {
-          "min": 1,
-          "max": 1,
-          "name": "Ammunition +2"
-        },
-        {
-          "min": 2,
-          "max": 3,
-          "name": "Amulet of Health"
-        },
-        {
-          "min": 4,
-          "max": 5,
-          "name": "Armor +2"
-        },
-        {
-          "min": 6,
-          "max": 7,
-          "name": "Armor of Resistance"
-        },
-        {
-          "min": 8,
-          "max": 9,
-          "name": "Armor of Vulnerability"
-        },
-        {
-          "min": 10,
-          "max": 10,
-          "name": "Arrow-Catching Shield"
-        },
-        {
-          "min": 11,
-          "max": 12,
-          "name": "Bag of Beans"
-        },
-        {
-          "min": 13,
-          "max": 14,
-          "name": "Bead of Force"
-        },
-        {
-          "min": 15,
-          "max": 16,
-          "name": "Belt of Dwarvenkind"
-        },
-        {
-          "min": 17,
-          "max": 18,
-          "name": "Belt of Giant Strength (hill)"
-        },
-        {
-          "min": 19,
-          "max": 20,
-          "name": "Berserker Axe"
-        },
-        {
-          "min": 21,
-          "max": 21,
-          "name": "Boots of Levitation"
-        },
-        {
-          "min": 22,
-          "max": 23,
-          "name": "Boots of Speed"
-        },
-        {
-          "min": 24,
-          "max": 25,
-          "name": "Bowl of Commanding Water Elementals"
-        },
-        {
-          "min": 26,
-          "max": 27,
-          "name": "Bracers of Defense"
-        },
-        {
-          "min": 28,
-          "max": 29,
-          "name": "Brazier of Commanding Fire Elementals"
-        },
-        {
-          "min": 30,
-          "max": 30,
-          "name": "Cape of the Mountebank"
-        },
-        {
-          "min": 31,
-          "max": 32,
-          "name": "Censer of Controlling Air Elementals"
-        },
-        {
-          "min": 33,
-          "max": 34,
-          "name": "Chime of Opening"
-        },
-        {
-          "min": 35,
-          "max": 36,
-          "name": "Cloak of Displacement"
-        },
-        {
-          "min": 37,
-          "max": 38,
-          "name": "Cloak of the Bat"
-        },
-        {
-          "min": 39,
-          "max": 40,
-          "name": "Cube of Force"
-        },
-        {
-          "min": 41,
-          "max": 41,
-          "name": "Dagger of Venom"
-        },
-        {
-          "min": 42,
-          "max": 43,
-          "name": "Dimensional Shackles"
-        },
-        {
-          "min": 44,
-          "max": 45,
-          "name": "Dragon Slayer"
-        },
-        {
-          "min": 46,
-          "max": 47,
-          "name": "Elixir of Health"
-        },
-        {
-          "min": 48,
-          "max": 49,
-          "name": "Elven Chain"
-        },
-        {
-          "min": 50,
-          "max": 50,
-          "name": "Feather Token (Bird)"
-        },
-        {
-          "min": 51,
-          "max": 52,
-          "name": "Feather Token (Swan Boat)"
-        },
-        {
-          "min": 53,
-          "max": 54,
-          "name": "Feather Token (Whip)"
-        },
-        {
-          "min": 55,
-          "max": 56,
-          "name": "Figurine of Wondrous Power (Bronze Griffon)"
-        },
-        {
-          "min": 57,
-          "max": 58,
-          "name": "Figurine of Wondrous Power (Ebony Fly)"
-        },
-        {
-          "min": 59,
-          "max": 60,
-          "name": "Figurine of Wondrous Power (Golden Lions)"
-        },
-        {
-          "min": 61,
-          "max": 61,
-          "name": "Figurine of Wondrous Power (Ivory Goats)"
-        },
-        {
-          "min": 62,
-          "max": 63,
-          "name": "Figurine of Wondrous Power (Marble Elephant)"
-        },
-        {
-          "min": 64,
-          "max": 65,
-          "name": "Figurine of Wondrous Power (Onyx Dog)"
-        },
-        {
-          "min": 66,
-          "max": 67,
-          "name": "Figurine of Wondrous Power (Serpentine Owl)"
-        },
-        {
-          "min": 68,
-          "max": 69,
-          "name": "Flame Tongue"
-        },
-        {
-          "min": 70,
-          "max": 70,
-          "name": "Folding Boat"
-        },
-        {
-          "min": 71,
-          "max": 72,
-          "name": "Gem of Seeing"
-        },
-        {
-          "min": 73,
-          "max": 74,
-          "name": "Giant Slayer"
-        },
-        {
-          "min": 75,
-          "max": 76,
-          "name": "Glamoured Studded Leather"
-        },
-        {
-          "min": 77,
-          "max": 78,
-          "name": "Handy Haversack"
-        },
-        {
-          "min": 79,
-          "max": 80,
-          "name": "Helm of Teleportation"
-        },
-        {
-          "min": 81,
-          "max": 81,
-          "name": "Horn of Blasting"
-        },
-        {
-          "min": 82,
-          "max": 83,
-          "name": "Horn of Valhalla (brass)"
-        },
-        {
-          "min": 84,
-          "max": 85,
-          "name": "Horn of Valhalla (silver)"
-        },
-        {
-          "min": 86,
-          "max": 87,
-          "name": "Horseshoes of Speed"
-        },
-        {
-          "min": 88,
-          "max": 89,
-          "name": "Instant Fortress"
-        },
-        {
-          "min": 90,
-          "max": 90,
-          "name": "Ioun Stone (Awareness)"
-        },
-        {
-          "min": 91,
-          "max": 92,
-          "name": "Ioun Stone (Protection)"
-        },
-        {
-          "min": 93,
-          "max": 94,
-          "name": "Ioun Stone (Reserve)"
-        },
-        {
-          "min": 95,
-          "max": 96,
-          "name": "Ioun Stone (Sustenance)"
-        },
-        {
-          "min": 97,
-          "max": 98,
-          "name": "Iron Bands"
-        },
-        {
-          "min": 99,
-          "max": 100,
-          "name": "Mace of Disruption"
-        }
-      ]
+     "min": 11,
+     "max": 16,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | —",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": []
     },
     {
-      "id": "rare-2",
-      "name": "Rare Magic Items II",
-      "rarity": "Rare",
-      "die": 100,
-      "source": "SRD 5.2.1, Magic Items A–Z",
-      "rows": [
-        {
-          "min": 1,
-          "max": 1,
-          "name": "Mace of Smiting"
-        },
-        {
-          "min": 2,
-          "max": 3,
-          "name": "Mace of Terror"
-        },
-        {
-          "min": 4,
-          "max": 5,
-          "name": "Mantle of Spell Resistance"
-        },
-        {
-          "min": 6,
-          "max": 7,
-          "name": "Necklace of Fireballs"
-        },
-        {
-          "min": 8,
-          "max": 9,
-          "name": "Necklace of Prayer Beads"
-        },
-        {
-          "min": 10,
-          "max": 11,
-          "name": "Oil of Etherealness"
-        },
-        {
-          "min": 12,
-          "max": 12,
-          "name": "Periapt of Proof against Poison"
-        },
-        {
-          "min": 13,
-          "max": 14,
-          "name": "Portable Hole"
-        },
-        {
-          "min": 15,
-          "max": 16,
-          "name": "Potion of Clairvoyance"
-        },
-        {
-          "min": 17,
-          "max": 18,
-          "name": "Potion of Diminution"
-        },
-        {
-          "min": 19,
-          "max": 20,
-          "name": "Potion of Gaseous Form"
-        },
-        {
-          "min": 21,
-          "max": 22,
-          "name": "Potion of Giant Strength (fire)"
-        },
-        {
-          "min": 23,
-          "max": 24,
-          "name": "Potion of Giant Strength (frost or stone)"
-        },
-        {
-          "min": 25,
-          "max": 25,
-          "name": "Potion of Healing (superior)"
-        },
-        {
-          "min": 26,
-          "max": 27,
-          "name": "Potion of Heroism"
-        },
-        {
-          "min": 28,
-          "max": 29,
-          "name": "Potion of Invisibility"
-        },
-        {
-          "min": 30,
-          "max": 31,
-          "name": "Potion of Invulnerability"
-        },
-        {
-          "min": 32,
-          "max": 33,
-          "name": "Potion of Mind Reading"
-        },
-        {
-          "min": 34,
-          "max": 35,
-          "name": "Ring of Animal Influence"
-        },
-        {
-          "min": 36,
-          "max": 37,
-          "name": "Ring of Evasion"
-        },
-        {
-          "min": 38,
-          "max": 38,
-          "name": "Ring of Feather Falling"
-        },
-        {
-          "min": 39,
-          "max": 40,
-          "name": "Ring of Free Action"
-        },
-        {
-          "min": 41,
-          "max": 42,
-          "name": "Ring of Protection"
-        },
-        {
-          "min": 43,
-          "max": 44,
-          "name": "Ring of Resistance"
-        },
-        {
-          "min": 45,
-          "max": 46,
-          "name": "Ring of Spell Storing"
-        },
-        {
-          "min": 47,
-          "max": 48,
-          "name": "Ring of the Ram"
-        },
-        {
-          "min": 49,
-          "max": 50,
-          "name": "Ring of X-ray Vision"
-        },
-        {
-          "min": 51,
-          "max": 51,
-          "name": "Robe of Eyes"
-        },
-        {
-          "min": 52,
-          "max": 53,
-          "name": "Rod of Rulership"
-        },
-        {
-          "min": 54,
-          "max": 55,
-          "name": "Rope of Entanglement"
-        },
-        {
-          "min": 56,
-          "max": 57,
-          "name": "Shield +2"
-        },
-        {
-          "min": 58,
-          "max": 59,
-          "name": "Shield of Missile Attraction"
-        },
-        {
-          "min": 60,
-          "max": 61,
-          "name": "Spell Scroll (level 4)"
-        },
-        {
-          "min": 62,
-          "max": 62,
-          "name": "Spell Scroll (level 5)"
-        },
-        {
-          "min": 63,
-          "max": 64,
-          "name": "Staff of Charming"
-        },
-        {
-          "min": 65,
-          "max": 66,
-          "name": "Staff of Healing"
-        },
-        {
-          "min": 67,
-          "max": 68,
-          "name": "Staff of Swarming Insects"
-        },
-        {
-          "min": 69,
-          "max": 70,
-          "name": "Staff of the Woodlands"
-        },
-        {
-          "min": 71,
-          "max": 72,
-          "name": "Staff of Withering"
-        },
-        {
-          "min": 73,
-          "max": 74,
-          "name": "Stone of Controlling Earth Elementals"
-        },
-        {
-          "min": 75,
-          "max": 75,
-          "name": "Sun Blade"
-        },
-        {
-          "min": 76,
-          "max": 77,
-          "name": "Sword of Life Stealing"
-        },
-        {
-          "min": 78,
-          "max": 79,
-          "name": "Sword of Wounding"
-        },
-        {
-          "min": 80,
-          "max": 81,
-          "name": "Vicious Weapon"
-        },
-        {
-          "min": 82,
-          "max": 83,
-          "name": "Wand of Binding"
-        },
-        {
-          "min": 84,
-          "max": 85,
-          "name": "Wand of Enemy Detection"
-        },
-        {
-          "min": 86,
-          "max": 87,
-          "name": "Wand of Fear"
-        },
-        {
-          "min": 88,
-          "max": 88,
-          "name": "Wand of Fireballs"
-        },
-        {
-          "min": 89,
-          "max": 90,
-          "name": "Wand of Lightning Bolts"
-        },
-        {
-          "min": 91,
-          "max": 92,
-          "name": "Wand of Paralysis"
-        },
-        {
-          "min": 93,
-          "max": 94,
-          "name": "Wand of the War Mage +2"
-        },
-        {
-          "min": 95,
-          "max": 96,
-          "name": "Wand of Wonder"
-        },
-        {
-          "min": 97,
-          "max": 98,
-          "name": "Weapon +2"
-        },
-        {
-          "min": 99,
-          "max": 100,
-          "name": "Wings of Flying"
-        }
-      ]
+     "min": 17,
+     "max": 22,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | —",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": []
     },
     {
-      "id": "very-rare",
-      "name": "Very Rare Magic Items",
-      "rarity": "Very Rare",
-      "die": 100,
-      "source": "SRD 5.2.1, Magic Items A–Z",
-      "rows": [
-        {
-          "min": 1,
-          "max": 1,
-          "name": "Ammunition +3"
-        },
-        {
-          "min": 2,
-          "max": 2,
-          "name": "Ammunition of Slaying"
-        },
-        {
-          "min": 3,
-          "max": 3,
-          "name": "Amulet of the Planes"
-        },
-        {
-          "min": 4,
-          "max": 5,
-          "name": "Animated Shield"
-        },
-        {
-          "min": 6,
-          "max": 6,
-          "name": "Armor +3"
-        },
-        {
-          "min": 7,
-          "max": 7,
-          "name": "Bag of Devouring"
-        },
-        {
-          "min": 8,
-          "max": 9,
-          "name": "Belt of Giant Strength (fire)"
-        },
-        {
-          "min": 10,
-          "max": 10,
-          "name": "Belt of Giant Strength (frost or stone)"
-        },
-        {
-          "min": 11,
-          "max": 11,
-          "name": "Candle of Invocation"
-        },
-        {
-          "min": 12,
-          "max": 13,
-          "name": "Carpet of Flying"
-        },
-        {
-          "min": 14,
-          "max": 14,
-          "name": "Cloak of Arachnida"
-        },
-        {
-          "min": 15,
-          "max": 15,
-          "name": "Crystal Ball"
-        },
-        {
-          "min": 16,
-          "max": 17,
-          "name": "Dancing Sword"
-        },
-        {
-          "min": 18,
-          "max": 18,
-          "name": "Demon Armor"
-        },
-        {
-          "min": 19,
-          "max": 19,
-          "name": "Dragon Scale Mail"
-        },
-        {
-          "min": 20,
-          "max": 21,
-          "name": "Dwarven Plate"
-        },
-        {
-          "min": 22,
-          "max": 22,
-          "name": "Dwarven Thrower"
-        },
-        {
-          "min": 23,
-          "max": 23,
-          "name": "Efreeti Bottle"
-        },
-        {
-          "min": 24,
-          "max": 25,
-          "name": "Energy Bow"
-        },
-        {
-          "min": 26,
-          "max": 26,
-          "name": "Figurine of Wondrous Power (Obsidian Steed)"
-        },
-        {
-          "min": 27,
-          "max": 27,
-          "name": "Frost Brand"
-        },
-        {
-          "min": 28,
-          "max": 28,
-          "name": "Hat of Many Spells"
-        },
-        {
-          "min": 29,
-          "max": 30,
-          "name": "Helm of Brilliance"
-        },
-        {
-          "min": 31,
-          "max": 31,
-          "name": "Horn of Valhalla (bronze)"
-        },
-        {
-          "min": 32,
-          "max": 32,
-          "name": "Horseshoes of a Zephyr"
-        },
-        {
-          "min": 33,
-          "max": 34,
-          "name": "Ioun Stone (Absorption)"
-        },
-        {
-          "min": 35,
-          "max": 35,
-          "name": "Ioun Stone (Agility)"
-        },
-        {
-          "min": 36,
-          "max": 36,
-          "name": "Ioun Stone (Fortitude)"
-        },
-        {
-          "min": 37,
-          "max": 38,
-          "name": "Ioun Stone (Insight)"
-        },
-        {
-          "min": 39,
-          "max": 39,
-          "name": "Ioun Stone (Intellect)"
-        },
-        {
-          "min": 40,
-          "max": 40,
-          "name": "Ioun Stone (Leadership)"
-        },
-        {
-          "min": 41,
-          "max": 42,
-          "name": "Ioun Stone (Strength)"
-        },
-        {
-          "min": 43,
-          "max": 43,
-          "name": "Manual of Bodily Health"
-        },
-        {
-          "min": 44,
-          "max": 44,
-          "name": "Manual of Gainful Exercise"
-        },
-        {
-          "min": 45,
-          "max": 46,
-          "name": "Manual of Golems"
-        },
-        {
-          "min": 47,
-          "max": 47,
-          "name": "Manual of Quickness of Action"
-        },
-        {
-          "min": 48,
-          "max": 48,
-          "name": "Marvelous Pigments"
-        },
-        {
-          "min": 49,
-          "max": 50,
-          "name": "Mirror of Life Trapping"
-        },
-        {
-          "min": 51,
-          "max": 51,
-          "name": "Nine Lives Stealer"
-        },
-        {
-          "min": 52,
-          "max": 52,
-          "name": "Oathbow"
-        },
-        {
-          "min": 53,
-          "max": 53,
-          "name": "Oil of Sharpness"
-        },
-        {
-          "min": 54,
-          "max": 55,
-          "name": "Potion of Flying"
-        },
-        {
-          "min": 56,
-          "max": 56,
-          "name": "Potion of Giant Strength (cloud)"
-        },
-        {
-          "min": 57,
-          "max": 57,
-          "name": "Potion of Healing (supreme)"
-        },
-        {
-          "min": 58,
-          "max": 59,
-          "name": "Potion of Longevity"
-        },
-        {
-          "min": 60,
-          "max": 60,
-          "name": "Potion of Speed"
-        },
-        {
-          "min": 61,
-          "max": 61,
-          "name": "Potion of Vitality"
-        },
-        {
-          "min": 62,
-          "max": 63,
-          "name": "Quarterstaff of the Acrobat"
-        },
-        {
-          "min": 64,
-          "max": 64,
-          "name": "Ring of Regeneration"
-        },
-        {
-          "min": 65,
-          "max": 65,
-          "name": "Ring of Shooting Stars"
-        },
-        {
-          "min": 66,
-          "max": 67,
-          "name": "Ring of Telekinesis"
-        },
-        {
-          "min": 68,
-          "max": 68,
-          "name": "Robe of Scintillating Colors"
-        },
-        {
-          "min": 69,
-          "max": 69,
-          "name": "Robe of Stars"
-        },
-        {
-          "min": 70,
-          "max": 71,
-          "name": "Rod of Absorption"
-        },
-        {
-          "min": 72,
-          "max": 72,
-          "name": "Rod of Alertness"
-        },
-        {
-          "min": 73,
-          "max": 73,
-          "name": "Rod of Security"
-        },
-        {
-          "min": 74,
-          "max": 75,
-          "name": "Scimitar of Speed"
-        },
-        {
-          "min": 76,
-          "max": 76,
-          "name": "Shield +3"
-        },
-        {
-          "min": 77,
-          "max": 77,
-          "name": "Shield of the Cavalier"
-        },
-        {
-          "min": 78,
-          "max": 78,
-          "name": "Spell Scroll (level 6)"
-        },
-        {
-          "min": 79,
-          "max": 80,
-          "name": "Spell Scroll (level 7)"
-        },
-        {
-          "min": 81,
-          "max": 81,
-          "name": "Spell Scroll (level 8)"
-        },
-        {
-          "min": 82,
-          "max": 82,
-          "name": "Spellguard Shield"
-        },
-        {
-          "min": 83,
-          "max": 84,
-          "name": "Staff of Fire"
-        },
-        {
-          "min": 85,
-          "max": 85,
-          "name": "Staff of Frost"
-        },
-        {
-          "min": 86,
-          "max": 86,
-          "name": "Staff of Power"
-        },
-        {
-          "min": 87,
-          "max": 88,
-          "name": "Staff of Striking"
-        },
-        {
-          "min": 89,
-          "max": 89,
-          "name": "Staff of Thunder and Lightning"
-        },
-        {
-          "min": 90,
-          "max": 90,
-          "name": "Sword of Sharpness"
-        },
-        {
-          "min": 91,
-          "max": 92,
-          "name": "Thunderous Greatclub"
-        },
-        {
-          "min": 93,
-          "max": 93,
-          "name": "Tome of Clear Thought"
-        },
-        {
-          "min": 94,
-          "max": 94,
-          "name": "Tome of Leadership and Influence"
-        },
-        {
-          "min": 95,
-          "max": 96,
-          "name": "Tome of Understanding"
-        },
-        {
-          "min": 97,
-          "max": 97,
-          "name": "Wand of Polymorph"
-        },
-        {
-          "min": 98,
-          "max": 98,
-          "name": "Wand of the War Mage +3"
-        },
-        {
-          "min": 99,
-          "max": 100,
-          "name": "Weapon +3"
-        }
-      ]
+     "min": 23,
+     "max": 28,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | —",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": []
+    },
+    {
+     "min": 29,
+     "max": 32,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 33,
+     "max": 36,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 37,
+     "max": 40,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 41,
+     "max": 44,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll [[/r 1d6]] times on @table[Magic Item Table A].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "A",
+       "dice": 1,
+       "sides": 6
+      }
+     ]
+    },
+    {
+     "min": 45,
+     "max": 49,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 50,
+     "max": 54,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 55,
+     "max": 59,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 60,
+     "max": 63,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table B].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "B",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 64,
+     "max": 66,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 67,
+     "max": 69,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 70,
+     "max": 72,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 73,
+     "max": 74,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table C].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "C",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 75,
+     "max": 76,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll once on @table[Magic Item Table D].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "D",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "min": 77,
+     "max": 78,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | Roll once on @table[Magic Item Table D].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "D",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "min": 79,
+     "max": 79,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll once on @table[Magic Item Table D].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "D",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "min": 80,
+     "max": 80,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll once on @table[Magic Item Table D].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "D",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "min": 81,
+     "max": 84,
+     "entry": "[[/r 2d4]] (5) 25 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table F].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 25
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 85,
+     "max": 88,
+     "entry": "[[/r 3d6]] (10) 50 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table F].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 50
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 89,
+     "max": 91,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table F].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 92,
+     "max": 94,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table F].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "F",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 95,
+     "max": 96,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll [[/r 1d4]] times on @table[Magic Item Table G].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "G",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 97,
+     "max": 98,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll [[/r 1d4]] times on @table[Magic Item Table G].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "G",
+       "dice": 1,
+       "sides": 4
+      }
+     ]
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "[[/r 3d6]] (10) 100 gp gems | Roll once on @table[Magic Item Table H].",
+     "valuables": [
+      {
+       "kind": "gems",
+       "dice": 3,
+       "sides": 6,
+       "each": {
+        "gp": 100
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "H",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "[[/r 2d4]] (5) 250 gp art objects | Roll once on @table[Magic Item Table H].",
+     "valuables": [
+      {
+       "kind": "art",
+       "dice": 2,
+       "sides": 4,
+       "each": {
+        "gp": 250
+       }
+      }
+     ],
+     "magic": [
+      {
+       "table": "H",
+       "count": 1
+      }
+     ]
     }
-  ]
+   ]
+  }
+ ],
+ "tables": [
+  {
+   "id": "A",
+   "name": "Magic Item Table A",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 50,
+     "entry": "Potion of healing",
+     "item": "Potion of Healing"
+    },
+    {
+     "min": 51,
+     "max": 60,
+     "entry": "Spell scroll (cantrip)",
+     "item": "Spell Scroll (cantrip)"
+    },
+    {
+     "min": 61,
+     "max": 70,
+     "entry": "Potion of climbing",
+     "item": "Potion of Climbing"
+    },
+    {
+     "min": 71,
+     "max": 90,
+     "entry": "Spell scroll (1st level)",
+     "item": "Spell Scroll (level 1)"
+    },
+    {
+     "min": 91,
+     "max": 94,
+     "entry": "Spell scroll (2nd level)",
+     "item": "Spell Scroll (level 2)"
+    },
+    {
+     "min": 95,
+     "max": 98,
+     "entry": "Potion of greater healing",
+     "item": "Potion of Healing (Greater)"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Bag of holding",
+     "item": "Bag of Holding"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Driftglobe",
+     "item": "Driftglobe"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "name": "Magic Item Table B",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 15,
+     "entry": "Potion of greater healing",
+     "item": "Potion of Healing (Greater)"
+    },
+    {
+     "min": 16,
+     "max": 22,
+     "entry": "Potion of fire breath",
+     "item": "Potion of Fire Breath"
+    },
+    {
+     "min": 23,
+     "max": 29,
+     "entry": "Potion of resistance",
+     "item": "Potion of Resistance"
+    },
+    {
+     "min": 30,
+     "max": 34,
+     "entry": "+1 ammunition",
+     "item": "Ammunition, +1, +2, or +3",
+     "label": "Ammunition, +1"
+    },
+    {
+     "min": 35,
+     "max": 39,
+     "entry": "Potion of animal friendship",
+     "item": "Potion of Animal Friendship"
+    },
+    {
+     "min": 40,
+     "max": 44,
+     "entry": "Potion of hill giant strength",
+     "item": "Potion of Giant Strength (Hill)"
+    },
+    {
+     "min": 45,
+     "max": 49,
+     "entry": "Potion of growth",
+     "item": "Potion of Growth"
+    },
+    {
+     "min": 50,
+     "max": 54,
+     "entry": "Potion of water breathing",
+     "item": "Potion of Water Breathing"
+    },
+    {
+     "min": 55,
+     "max": 59,
+     "entry": "Spell scroll (2nd level)",
+     "item": "Spell Scroll (level 2)"
+    },
+    {
+     "min": 60,
+     "max": 64,
+     "entry": "Spell scroll (3rd level)",
+     "item": "Spell Scroll (level 3)"
+    },
+    {
+     "min": 65,
+     "max": 67,
+     "entry": "Bag of holding",
+     "item": "Bag of Holding"
+    },
+    {
+     "min": 68,
+     "max": 70,
+     "entry": "Keoghtom's ointment",
+     "item": "Keoghtom's Ointment"
+    },
+    {
+     "min": 71,
+     "max": 73,
+     "entry": "Oil of slipperiness",
+     "item": "Oil of Slipperiness"
+    },
+    {
+     "min": 74,
+     "max": 75,
+     "entry": "Dust of disappearance",
+     "item": "Dust of Disappearance"
+    },
+    {
+     "min": 76,
+     "max": 77,
+     "entry": "Dust of dryness",
+     "item": "Dust of Dryness"
+    },
+    {
+     "min": 78,
+     "max": 79,
+     "entry": "Dust of sneezing and choking",
+     "item": "Dust of Sneezing and Choking"
+    },
+    {
+     "min": 80,
+     "max": 81,
+     "entry": "Elemental gem",
+     "item": "Elemental Gem"
+    },
+    {
+     "min": 82,
+     "max": 83,
+     "entry": "Philter of love",
+     "item": "Philter of Love"
+    },
+    {
+     "min": 84,
+     "max": 84,
+     "entry": "Alchemy jug",
+     "item": "Alchemy Jug"
+    },
+    {
+     "min": 85,
+     "max": 85,
+     "entry": "Cap of water breathing",
+     "item": "Cap of Water Breathing"
+    },
+    {
+     "min": 86,
+     "max": 86,
+     "entry": "Cloak of the manta ray",
+     "item": "Cloak of the Manta Ray"
+    },
+    {
+     "min": 87,
+     "max": 87,
+     "entry": "Driftglobe",
+     "item": "Driftglobe"
+    },
+    {
+     "min": 88,
+     "max": 88,
+     "entry": "Goggles of night",
+     "item": "Goggles of Night"
+    },
+    {
+     "min": 89,
+     "max": 89,
+     "entry": "Helm of comprehending languages",
+     "item": "Helm of Comprehending Languages"
+    },
+    {
+     "min": 90,
+     "max": 90,
+     "entry": "Immovable rod",
+     "item": "Immovable Rod"
+    },
+    {
+     "min": 91,
+     "max": 91,
+     "entry": "Lantern of revealing",
+     "item": "Lantern of Revealing"
+    },
+    {
+     "min": 92,
+     "max": 92,
+     "entry": "Mariner's armor",
+     "item": "Mariner's Armor"
+    },
+    {
+     "min": 93,
+     "max": 93,
+     "entry": "Mithral armor",
+     "item": "Mithral Armor"
+    },
+    {
+     "min": 94,
+     "max": 94,
+     "entry": "Potion of poison",
+     "item": "Potion of Poison"
+    },
+    {
+     "min": 95,
+     "max": 95,
+     "entry": "Ring of swimming",
+     "item": "Ring of Swimming"
+    },
+    {
+     "min": 96,
+     "max": 96,
+     "entry": "Robe of useful items",
+     "item": "Robe of Useful Items"
+    },
+    {
+     "min": 97,
+     "max": 97,
+     "entry": "Rope of climbing",
+     "item": "Rope of Climbing"
+    },
+    {
+     "min": 98,
+     "max": 98,
+     "entry": "Saddle of the cavalier",
+     "item": "Saddle of the Cavalier"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Wand of magic detection",
+     "item": "Wand of Magic Detection"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Wand of secrets",
+     "item": "Wand of Secrets"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "name": "Magic Item Table C",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 15,
+     "entry": "Potion of superior healing",
+     "item": "Potion of Healing (Superior)"
+    },
+    {
+     "min": 16,
+     "max": 22,
+     "entry": "Spell scroll (4th level)",
+     "item": "Spell Scroll (level 4)"
+    },
+    {
+     "min": 23,
+     "max": 27,
+     "entry": "+2 ammunition",
+     "item": "Ammunition, +1, +2, or +3",
+     "label": "Ammunition, +2"
+    },
+    {
+     "min": 28,
+     "max": 32,
+     "entry": "Potion of clairvoyance",
+     "item": "Potion of Clairvoyance"
+    },
+    {
+     "min": 33,
+     "max": 37,
+     "entry": "Potion of diminution",
+     "item": "Potion of Diminution"
+    },
+    {
+     "min": 38,
+     "max": 42,
+     "entry": "Potion of gaseous form",
+     "item": "Potion of Gaseous Form"
+    },
+    {
+     "min": 43,
+     "max": 47,
+     "entry": "Potion of frost giant strength",
+     "item": "Potion of Giant Strength (Frost)"
+    },
+    {
+     "min": 48,
+     "max": 52,
+     "entry": "Potion of stone giant strength",
+     "item": "Potion of Giant Strength (Stone)"
+    },
+    {
+     "min": 53,
+     "max": 57,
+     "entry": "Potion of heroism",
+     "item": "Potion of Heroism"
+    },
+    {
+     "min": 58,
+     "max": 62,
+     "entry": "Potion of invulnerability",
+     "item": "Potion of Invulnerability"
+    },
+    {
+     "min": 63,
+     "max": 67,
+     "entry": "Potion of mind reading",
+     "item": "Potion of Mind Reading"
+    },
+    {
+     "min": 68,
+     "max": 72,
+     "entry": "Spell scroll (5th level)",
+     "item": "Spell Scroll (level 5)"
+    },
+    {
+     "min": 73,
+     "max": 75,
+     "entry": "Elixir of health",
+     "item": "Elixir of Health"
+    },
+    {
+     "min": 76,
+     "max": 78,
+     "entry": "Oil of etherealness",
+     "item": "Oil of Etherealness"
+    },
+    {
+     "min": 79,
+     "max": 81,
+     "entry": "Potion of fire giant strength",
+     "item": "Potion of Giant Strength (Fire)"
+    },
+    {
+     "min": 82,
+     "max": 84,
+     "entry": "Quaal's feather token",
+     "item": "Quaal's Feather Token",
+     "srd": "Feather Token"
+    },
+    {
+     "min": 85,
+     "max": 87,
+     "entry": "Scroll of protection",
+     "item": "Scroll of Protection"
+    },
+    {
+     "min": 88,
+     "max": 89,
+     "entry": "Bag of beans",
+     "item": "Bag of Beans"
+    },
+    {
+     "min": 90,
+     "max": 91,
+     "entry": "Bead of force",
+     "item": "Bead of Force"
+    },
+    {
+     "min": 92,
+     "max": 92,
+     "entry": "Chime of opening",
+     "item": "Chime of Opening"
+    },
+    {
+     "min": 93,
+     "max": 93,
+     "entry": "Decanter of endless water",
+     "item": "Decanter of Endless Water"
+    },
+    {
+     "min": 94,
+     "max": 94,
+     "entry": "Eyes of minute seeing",
+     "item": "Eyes of Minute Seeing"
+    },
+    {
+     "min": 95,
+     "max": 95,
+     "entry": "Folding boat",
+     "item": "Folding Boat"
+    },
+    {
+     "min": 96,
+     "max": 96,
+     "entry": "Heward's handy haversack",
+     "item": "Heward's Handy Haversack",
+     "srd": "Handy Haversack"
+    },
+    {
+     "min": 97,
+     "max": 97,
+     "entry": "Horseshoes of speed",
+     "item": "Horseshoes of Speed"
+    },
+    {
+     "min": 98,
+     "max": 98,
+     "entry": "Necklace of fireballs",
+     "item": "Necklace of Fireballs"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Periapt of health",
+     "item": "Periapt of Health"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Sending stones",
+     "item": "Sending Stones"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "name": "Magic Item Table D",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 20,
+     "entry": "Potion of supreme healing",
+     "item": "Potion of Healing (Supreme)"
+    },
+    {
+     "min": 21,
+     "max": 30,
+     "entry": "Potion of invisibility",
+     "item": "Potion of Invisibility"
+    },
+    {
+     "min": 31,
+     "max": 40,
+     "entry": "Potion of speed",
+     "item": "Potion of Speed"
+    },
+    {
+     "min": 41,
+     "max": 50,
+     "entry": "Spell scroll (6th level)",
+     "item": "Spell Scroll (level 6)"
+    },
+    {
+     "min": 51,
+     "max": 57,
+     "entry": "Spell scroll (7th level)",
+     "item": "Spell Scroll (level 7)"
+    },
+    {
+     "min": 58,
+     "max": 62,
+     "entry": "+3 ammunition",
+     "item": "Ammunition, +1, +2, or +3",
+     "label": "Ammunition, +3"
+    },
+    {
+     "min": 63,
+     "max": 67,
+     "entry": "Oil of sharpness",
+     "item": "Oil of Sharpness"
+    },
+    {
+     "min": 68,
+     "max": 72,
+     "entry": "Potion of flying",
+     "item": "Potion of Flying"
+    },
+    {
+     "min": 73,
+     "max": 77,
+     "entry": "Potion of cloud giant strength",
+     "item": "Potion of Giant Strength (Cloud)"
+    },
+    {
+     "min": 78,
+     "max": 82,
+     "entry": "Potion of longevity",
+     "item": "Potion of Longevity"
+    },
+    {
+     "min": 83,
+     "max": 87,
+     "entry": "Potion of vitality",
+     "item": "Potion of Vitality"
+    },
+    {
+     "min": 88,
+     "max": 92,
+     "entry": "Spell scroll (8th level)",
+     "item": "Spell Scroll (level 8)"
+    },
+    {
+     "min": 93,
+     "max": 95,
+     "entry": "Horseshoes of a zephyr",
+     "item": "Horseshoes of a Zephyr"
+    },
+    {
+     "min": 96,
+     "max": 98,
+     "entry": "Nolzur's marvelous pigments",
+     "item": "Nolzur's Marvelous Pigments",
+     "srd": "Marvelous Pigments"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Bag of devouring",
+     "item": "Bag of Devouring"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Portable hole",
+     "item": "Portable Hole"
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "name": "Magic Item Table E",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 30,
+     "entry": "Spell scroll (8th level)",
+     "item": "Spell Scroll (level 8)"
+    },
+    {
+     "min": 31,
+     "max": 55,
+     "entry": "Potion of storm giant strength",
+     "item": "Potion of Giant Strength (Storm)"
+    },
+    {
+     "min": 56,
+     "max": 70,
+     "entry": "Potion of supreme healing",
+     "item": "Potion of Healing (Supreme)"
+    },
+    {
+     "min": 71,
+     "max": 85,
+     "entry": "Spell scroll (9th level)",
+     "item": "Spell Scroll (level 9)"
+    },
+    {
+     "min": 86,
+     "max": 93,
+     "entry": "Universal solvent",
+     "item": "Universal Solvent"
+    },
+    {
+     "min": 94,
+     "max": 98,
+     "entry": "Arrow of slaying",
+     "item": "Ammunition of Slaying",
+     "swappedFrom": "Arrow of Slaying (SRD 5.1)"
+    },
+    {
+     "min": 99,
+     "max": 100,
+     "entry": "Sovereign glue",
+     "item": "Sovereign Glue"
+    }
+   ]
+  },
+  {
+   "id": "F",
+   "name": "Magic Item Table F",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 15,
+     "entry": "+1 weapon",
+     "item": "Weapon, +1, +2, or +3",
+     "label": "Weapon, +1"
+    },
+    {
+     "min": 16,
+     "max": 18,
+     "entry": "+1 shield",
+     "item": "Shield, +1, +2, or +3",
+     "label": "Shield, +1"
+    },
+    {
+     "min": 19,
+     "max": 21,
+     "entry": "Sentinel shield",
+     "item": "Sentinel Shield"
+    },
+    {
+     "min": 22,
+     "max": 23,
+     "entry": "Amulet of proof against detection and location",
+     "item": "Amulet of Proof against Detection and Location"
+    },
+    {
+     "min": 24,
+     "max": 25,
+     "entry": "Boots of elvenkind",
+     "item": "Boots of Elvenkind"
+    },
+    {
+     "min": 26,
+     "max": 27,
+     "entry": "Boots of striding and springing",
+     "item": "Boots of Striding and Springing"
+    },
+    {
+     "min": 28,
+     "max": 29,
+     "entry": "Bracers of archery",
+     "item": "Bracers of Archery"
+    },
+    {
+     "min": 30,
+     "max": 31,
+     "entry": "Brooch of shielding",
+     "item": "Brooch of Shielding"
+    },
+    {
+     "min": 32,
+     "max": 33,
+     "entry": "Broom of flying",
+     "item": "Broom of Flying"
+    },
+    {
+     "min": 34,
+     "max": 35,
+     "entry": "Cloak of elvenkind",
+     "item": "Cloak of Elvenkind"
+    },
+    {
+     "min": 36,
+     "max": 37,
+     "entry": "Cloak of protection",
+     "item": "Cloak of Protection"
+    },
+    {
+     "min": 38,
+     "max": 39,
+     "entry": "Gauntlets of ogre power",
+     "item": "Gauntlets of Ogre Power"
+    },
+    {
+     "min": 40,
+     "max": 41,
+     "entry": "Hat of disguise",
+     "item": "Hat of Disguise"
+    },
+    {
+     "min": 42,
+     "max": 43,
+     "entry": "Javelin of lightning",
+     "item": "Javelin of Lightning"
+    },
+    {
+     "min": 44,
+     "max": 45,
+     "entry": "Pearl of power",
+     "item": "Pearl of Power"
+    },
+    {
+     "min": 46,
+     "max": 47,
+     "entry": "+1 rod of the pact keeper",
+     "item": "Rod of the Pact Keeper",
+     "label": "Rod of the Pact Keeper, +1"
+    },
+    {
+     "min": 48,
+     "max": 49,
+     "entry": "Slippers of spider climbing",
+     "item": "Slippers of Spider Climbing"
+    },
+    {
+     "min": 50,
+     "max": 51,
+     "entry": "Staff of the adder",
+     "item": "Staff of the Adder"
+    },
+    {
+     "min": 52,
+     "max": 53,
+     "entry": "Staff of the python",
+     "item": "Staff of the Python"
+    },
+    {
+     "min": 54,
+     "max": 55,
+     "entry": "Sword of vengeance",
+     "item": "Sword of Vengeance"
+    },
+    {
+     "min": 56,
+     "max": 57,
+     "entry": "Trident of fish command",
+     "item": "Trident of Fish Command"
+    },
+    {
+     "min": 58,
+     "max": 59,
+     "entry": "Wand of magic missiles",
+     "item": "Wand of Magic Missiles"
+    },
+    {
+     "min": 60,
+     "max": 61,
+     "entry": "+1 wand of the war mage",
+     "item": "Wand of the War Mage, +1, +2, or +3",
+     "label": "Wand of the War Mage, +1"
+    },
+    {
+     "min": 62,
+     "max": 63,
+     "entry": "Wand of web",
+     "item": "Wand of Web"
+    },
+    {
+     "min": 64,
+     "max": 65,
+     "entry": "Weapon of warning",
+     "item": "Weapon of Warning"
+    },
+    {
+     "min": 66,
+     "max": 66,
+     "entry": "Adamantine chain mail",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Chain Mail)"
+    },
+    {
+     "min": 67,
+     "max": 67,
+     "entry": "Adamantine chain shirt",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Chain Shirt)"
+    },
+    {
+     "min": 68,
+     "max": 68,
+     "entry": "Adamantine scale mail",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Scale Mail)"
+    },
+    {
+     "min": 69,
+     "max": 69,
+     "entry": "Bag of tricks, gray",
+     "item": "Gray Bag of Tricks"
+    },
+    {
+     "min": 70,
+     "max": 70,
+     "entry": "Bag of tricks, rust",
+     "item": "Rust Bag of Tricks"
+    },
+    {
+     "min": 71,
+     "max": 71,
+     "entry": "Bag of tricks, tan",
+     "item": "Tan Bag of Tricks"
+    },
+    {
+     "min": 72,
+     "max": 72,
+     "entry": "Boots of the Winterlands",
+     "item": "Boots of the Winterlands"
+    },
+    {
+     "min": 73,
+     "max": 73,
+     "entry": "Circlet of blasting",
+     "item": "Circlet of Blasting"
+    },
+    {
+     "min": 74,
+     "max": 74,
+     "entry": "Deck of illusions",
+     "item": "Deck of Illusions"
+    },
+    {
+     "min": 75,
+     "max": 75,
+     "entry": "Eversmoking bottle",
+     "item": "Eversmoking Bottle"
+    },
+    {
+     "min": 76,
+     "max": 76,
+     "entry": "Eyes of charming",
+     "item": "Eyes of Charming"
+    },
+    {
+     "min": 77,
+     "max": 77,
+     "entry": "Eyes of the eagle",
+     "item": "Eyes of the Eagle"
+    },
+    {
+     "min": 78,
+     "max": 78,
+     "entry": "Figurine of wondrous power, silver raven",
+     "item": "Figurine of Wondrous Power",
+     "label": "Figurine of Wondrous Power (Silver Raven)"
+    },
+    {
+     "min": 79,
+     "max": 79,
+     "entry": "Gem of brightness",
+     "item": "Gem of Brightness"
+    },
+    {
+     "min": 80,
+     "max": 80,
+     "entry": "Gloves of missile snaring",
+     "item": "Gloves of Missile Snaring"
+    },
+    {
+     "min": 81,
+     "max": 81,
+     "entry": "Gloves of swimming and climbing",
+     "item": "Gloves of Swimming and Climbing"
+    },
+    {
+     "min": 82,
+     "max": 82,
+     "entry": "Gloves of thievery",
+     "item": "Gloves of Thievery"
+    },
+    {
+     "min": 83,
+     "max": 83,
+     "entry": "Headband of intellect",
+     "item": "Headband of Intellect"
+    },
+    {
+     "min": 84,
+     "max": 84,
+     "entry": "Helm of telepathy",
+     "item": "Helm of Telepathy"
+    },
+    {
+     "min": 85,
+     "max": 85,
+     "entry": "Instrument of the bards, Doss lute",
+     "item": "Doss Lute Instrument of the Bards"
+    },
+    {
+     "min": 86,
+     "max": 86,
+     "entry": "Instrument of the bards, Fochlucan bandore",
+     "item": "Fochlucan Bandore Instrument of the Bards"
+    },
+    {
+     "min": 87,
+     "max": 87,
+     "entry": "Instrument of the bards, Mac-Fuirmidh cittern",
+     "item": "Mac-Fuirmidh Cittern Instrument of the Bards"
+    },
+    {
+     "min": 88,
+     "max": 88,
+     "entry": "Medallion of thoughts",
+     "item": "Medallion of Thoughts"
+    },
+    {
+     "min": 89,
+     "max": 89,
+     "entry": "Necklace of adaptation",
+     "item": "Necklace of Adaptation"
+    },
+    {
+     "min": 90,
+     "max": 90,
+     "entry": "Periapt of wound closure",
+     "item": "Periapt of Wound Closure"
+    },
+    {
+     "min": 91,
+     "max": 91,
+     "entry": "Pipes of haunting",
+     "item": "Pipes of Haunting"
+    },
+    {
+     "min": 92,
+     "max": 92,
+     "entry": "Pipes of the sewers",
+     "item": "Pipes of the Sewers"
+    },
+    {
+     "min": 93,
+     "max": 93,
+     "entry": "Ring of jumping",
+     "item": "Ring of Jumping"
+    },
+    {
+     "min": 94,
+     "max": 94,
+     "entry": "Ring of mind shielding",
+     "item": "Ring of Mind Shielding"
+    },
+    {
+     "min": 95,
+     "max": 95,
+     "entry": "Ring of warmth",
+     "item": "Ring of Warmth"
+    },
+    {
+     "min": 96,
+     "max": 96,
+     "entry": "Ring of water walking",
+     "item": "Ring of Water Walking"
+    },
+    {
+     "min": 97,
+     "max": 97,
+     "entry": "Quiver of Ehlonna",
+     "item": "Quiver of Ehlonna",
+     "srd": "Efficient Quiver"
+    },
+    {
+     "min": 98,
+     "max": 98,
+     "entry": "Stone of good luck",
+     "item": "Stone of Good Luck (Luckstone)"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Wind fan",
+     "item": "Wind Fan"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Winged boots",
+     "item": "Winged Boots"
+    }
+   ]
+  },
+  {
+   "id": "G",
+   "name": "Magic Item Table G",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 11,
+     "entry": "+2 weapon",
+     "item": "Weapon, +1, +2, or +3",
+     "label": "Weapon, +2"
+    },
+    {
+     "min": 12,
+     "max": 14,
+     "entry": "Figurine of Wondrous Power",
+     "variant": {
+      "die": 8,
+      "rows": [
+       {
+        "min": 1,
+        "max": 1,
+        "entry": "Figurine of wondrous power, bronze griffon",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Bronze Griffon)"
+       },
+       {
+        "min": 2,
+        "max": 2,
+        "entry": "Figurine of wondrous power, ebony fly",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Ebony Fly)"
+       },
+       {
+        "min": 3,
+        "max": 3,
+        "entry": "Figurine of wondrous power, golden lions",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Golden Lions)"
+       },
+       {
+        "min": 4,
+        "max": 4,
+        "entry": "Figurine of wondrous power, ivory goats",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Ivory Goats)"
+       },
+       {
+        "min": 5,
+        "max": 5,
+        "entry": "Figurine of wondrous power, marble elephant",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Marble Elephant)"
+       },
+       {
+        "min": 6,
+        "max": 7,
+        "entry": "Figurine of wondrous power, onyx dog",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Onyx Dog)"
+       },
+       {
+        "min": 8,
+        "max": 8,
+        "entry": "Figurine of wondrous power, serpentine owl",
+        "item": "Figurine of Wondrous Power",
+        "label": "Figurine of Wondrous Power (Serpentine Owl)"
+       }
+      ]
+     }
+    },
+    {
+     "min": 15,
+     "max": 15,
+     "entry": "Adamantine breastplate",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Breastplate)"
+    },
+    {
+     "min": 16,
+     "max": 16,
+     "entry": "Adamantine splint armor",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Splint Armor)"
+    },
+    {
+     "min": 17,
+     "max": 17,
+     "entry": "Amulet of health",
+     "item": "Amulet of Health"
+    },
+    {
+     "min": 18,
+     "max": 18,
+     "entry": "Armor of vulnerability",
+     "item": "Armor of Vulnerability"
+    },
+    {
+     "min": 19,
+     "max": 19,
+     "entry": "Arrow-catching shield",
+     "item": "Arrow-Catching Shield"
+    },
+    {
+     "min": 20,
+     "max": 20,
+     "entry": "Belt of dwarvenkind",
+     "item": "Belt of Dwarvenkind"
+    },
+    {
+     "min": 21,
+     "max": 21,
+     "entry": "Belt of hill giant strength",
+     "item": "Belt of Giant Strength (hill)"
+    },
+    {
+     "min": 22,
+     "max": 22,
+     "entry": "Berserker axe",
+     "item": "Berserker Axe"
+    },
+    {
+     "min": 23,
+     "max": 23,
+     "entry": "Boots of levitation",
+     "item": "Boots of Levitation"
+    },
+    {
+     "min": 24,
+     "max": 24,
+     "entry": "Boots of speed",
+     "item": "Boots of Speed"
+    },
+    {
+     "min": 25,
+     "max": 25,
+     "entry": "Bowl of commanding water elementals",
+     "item": "Bowl of Commanding Water Elementals"
+    },
+    {
+     "min": 26,
+     "max": 26,
+     "entry": "Bracers of defense",
+     "item": "Bracers of Defense"
+    },
+    {
+     "min": 27,
+     "max": 27,
+     "entry": "Brazier of commanding fire elementals",
+     "item": "Brazier of Commanding Fire Elementals"
+    },
+    {
+     "min": 28,
+     "max": 28,
+     "entry": "Cape of the mountebank",
+     "item": "Cape of the Mountebank"
+    },
+    {
+     "min": 29,
+     "max": 29,
+     "entry": "Censer of controlling air elementals",
+     "item": "Censer of Controlling Air Elementals"
+    },
+    {
+     "min": 30,
+     "max": 30,
+     "entry": "+1 chain mail",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Chain Mail)"
+    },
+    {
+     "min": 31,
+     "max": 31,
+     "entry": "Chain mail of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Chain Mail)"
+    },
+    {
+     "min": 32,
+     "max": 32,
+     "entry": "+1 chain shirt",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Chain Shirt)"
+    },
+    {
+     "min": 33,
+     "max": 33,
+     "entry": "Chain shirt of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Chain Shirt)"
+    },
+    {
+     "min": 34,
+     "max": 34,
+     "entry": "Cloak of displacement",
+     "item": "Cloak of Displacement"
+    },
+    {
+     "min": 35,
+     "max": 35,
+     "entry": "Cloak of the bat",
+     "item": "Cloak of the Bat"
+    },
+    {
+     "min": 36,
+     "max": 36,
+     "entry": "Cube of force",
+     "item": "Cube of Force"
+    },
+    {
+     "min": 37,
+     "max": 37,
+     "entry": "Daern's instant fortress",
+     "item": "Daern's Instant Fortress",
+     "srd": "Instant Fortress"
+    },
+    {
+     "min": 38,
+     "max": 38,
+     "entry": "Dagger of venom",
+     "item": "Dagger of Venom"
+    },
+    {
+     "min": 39,
+     "max": 39,
+     "entry": "Dimensional shackles",
+     "item": "Dimensional Shackles"
+    },
+    {
+     "min": 40,
+     "max": 40,
+     "entry": "Dragon slayer",
+     "item": "Dragon Slayer"
+    },
+    {
+     "min": 41,
+     "max": 41,
+     "entry": "Elven chain",
+     "item": "Elven Chain"
+    },
+    {
+     "min": 42,
+     "max": 42,
+     "entry": "Flame tongue",
+     "item": "Flame Tongue"
+    },
+    {
+     "min": 43,
+     "max": 43,
+     "entry": "Gem of seeing",
+     "item": "Gem of Seeing"
+    },
+    {
+     "min": 44,
+     "max": 44,
+     "entry": "Giant slayer",
+     "item": "Giant Slayer"
+    },
+    {
+     "min": 45,
+     "max": 45,
+     "entry": "Glamoured studded leather",
+     "item": "Glamoured Studded Leather"
+    },
+    {
+     "min": 46,
+     "max": 46,
+     "entry": "Helm of teleportation",
+     "item": "Helm of Teleportation"
+    },
+    {
+     "min": 47,
+     "max": 47,
+     "entry": "Horn of blasting",
+     "item": "Horn of Blasting"
+    },
+    {
+     "min": 48,
+     "max": 48,
+     "entry": "Horn of Valhalla (Silver or Brass)",
+     "variant": {
+      "die": 2,
+      "rows": [
+       {
+        "min": 1,
+        "max": 1,
+        "entry": "Horn of Valhalla, Silver",
+        "item": "Silver Horn of Valhalla"
+       },
+       {
+        "min": 2,
+        "max": 2,
+        "entry": "Horn of Valhalla, Brass",
+        "item": "Brass Horn of Valhalla"
+       }
+      ]
+     }
+    },
+    {
+     "min": 49,
+     "max": 49,
+     "entry": "Instrument of the bards, Canaith mandolin",
+     "item": "Canaith Mandolin Instrument of the Bards"
+    },
+    {
+     "min": 50,
+     "max": 50,
+     "entry": "Instrument of the bards, cli lyre",
+     "item": "Cli Lyre Instrument of the Bards"
+    },
+    {
+     "min": 51,
+     "max": 51,
+     "entry": "Ioun stone, awareness",
+     "item": "Ioun Stone of Awareness"
+    },
+    {
+     "min": 52,
+     "max": 52,
+     "entry": "Ioun stone, protection",
+     "item": "Ioun Stone of Protection"
+    },
+    {
+     "min": 53,
+     "max": 53,
+     "entry": "Ioun stone, reserve",
+     "item": "Ioun Stone of Reserve"
+    },
+    {
+     "min": 54,
+     "max": 54,
+     "entry": "Ioun stone, sustenance",
+     "item": "Ioun Stone of Sustenance"
+    },
+    {
+     "min": 55,
+     "max": 55,
+     "entry": "Iron bands of Bilarro",
+     "item": "Iron Bands of Bilarro",
+     "srd": "Iron Bands"
+    },
+    {
+     "min": 56,
+     "max": 56,
+     "entry": "+1 leather armor",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Leather Armor)"
+    },
+    {
+     "min": 57,
+     "max": 57,
+     "entry": "Leather armor of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Leather Armor)"
+    },
+    {
+     "min": 58,
+     "max": 58,
+     "entry": "Mace of disruption",
+     "item": "Mace of Disruption"
+    },
+    {
+     "min": 59,
+     "max": 59,
+     "entry": "Mace of smiting",
+     "item": "Mace of Smiting"
+    },
+    {
+     "min": 60,
+     "max": 60,
+     "entry": "Mace of terror",
+     "item": "Mace of Terror"
+    },
+    {
+     "min": 61,
+     "max": 61,
+     "entry": "Mantle of spell resistance",
+     "item": "Mantle of Spell Resistance"
+    },
+    {
+     "min": 62,
+     "max": 62,
+     "entry": "Necklace of prayer beads",
+     "item": "Necklace of Prayer Beads"
+    },
+    {
+     "min": 63,
+     "max": 63,
+     "entry": "Periapt of proof against poison",
+     "item": "Periapt of Proof against Poison"
+    },
+    {
+     "min": 64,
+     "max": 64,
+     "entry": "Ring of animal influence",
+     "item": "Ring of Animal Influence"
+    },
+    {
+     "min": 65,
+     "max": 65,
+     "entry": "Ring of evasion",
+     "item": "Ring of Evasion"
+    },
+    {
+     "min": 66,
+     "max": 66,
+     "entry": "Ring of feather falling",
+     "item": "Ring of Feather Falling"
+    },
+    {
+     "min": 67,
+     "max": 67,
+     "entry": "Ring of free action",
+     "item": "Ring of Free Action"
+    },
+    {
+     "min": 68,
+     "max": 68,
+     "entry": "Ring of protection",
+     "item": "Ring of Protection"
+    },
+    {
+     "min": 69,
+     "max": 69,
+     "entry": "Ring of resistance",
+     "item": "Ring of Resistance"
+    },
+    {
+     "min": 70,
+     "max": 70,
+     "entry": "Ring of spell storing",
+     "item": "Ring of Spell Storing"
+    },
+    {
+     "min": 71,
+     "max": 71,
+     "entry": "Ring of the ram",
+     "item": "Ring of the Ram"
+    },
+    {
+     "min": 72,
+     "max": 72,
+     "entry": "Ring of x-ray vision",
+     "item": "Ring of X-ray Vision"
+    },
+    {
+     "min": 73,
+     "max": 73,
+     "entry": "Robe of eyes",
+     "item": "Robe of Eyes"
+    },
+    {
+     "min": 74,
+     "max": 74,
+     "entry": "Rod of rulership",
+     "item": "Rod of Rulership"
+    },
+    {
+     "min": 75,
+     "max": 75,
+     "entry": "+2 rod of the pact keeper",
+     "item": "Rod of the Pact Keeper",
+     "label": "Rod of the Pact Keeper, +2"
+    },
+    {
+     "min": 76,
+     "max": 76,
+     "entry": "Rope of entanglement",
+     "item": "Rope of Entanglement"
+    },
+    {
+     "min": 77,
+     "max": 77,
+     "entry": "+1 scale mail",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Scale Mail)"
+    },
+    {
+     "min": 78,
+     "max": 78,
+     "entry": "Scale mail of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Scale Mail)"
+    },
+    {
+     "min": 79,
+     "max": 79,
+     "entry": "+2 shield",
+     "item": "Shield, +1, +2, or +3",
+     "label": "Shield, +2"
+    },
+    {
+     "min": 80,
+     "max": 80,
+     "entry": "Shield of missile attraction",
+     "item": "Shield of Missile Attraction"
+    },
+    {
+     "min": 81,
+     "max": 81,
+     "entry": "Staff of charming",
+     "item": "Staff of Charming"
+    },
+    {
+     "min": 82,
+     "max": 82,
+     "entry": "Staff of healing",
+     "item": "Staff of Healing"
+    },
+    {
+     "min": 83,
+     "max": 83,
+     "entry": "Staff of swarming insects",
+     "item": "Staff of Swarming Insects"
+    },
+    {
+     "min": 84,
+     "max": 84,
+     "entry": "Staff of the woodlands",
+     "item": "Staff of the Woodlands"
+    },
+    {
+     "min": 85,
+     "max": 85,
+     "entry": "Staff of withering",
+     "item": "Staff of Withering"
+    },
+    {
+     "min": 86,
+     "max": 86,
+     "entry": "Stone of controlling earth elementals",
+     "item": "Stone of Controlling Earth Elementals"
+    },
+    {
+     "min": 87,
+     "max": 87,
+     "entry": "Sun blade",
+     "item": "Sun Blade"
+    },
+    {
+     "min": 88,
+     "max": 88,
+     "entry": "Sword of life stealing",
+     "item": "Sword of Life Stealing"
+    },
+    {
+     "min": 89,
+     "max": 89,
+     "entry": "Sword of wounding",
+     "item": "Sword of Wounding"
+    },
+    {
+     "min": 90,
+     "max": 90,
+     "entry": "Tentacle rod",
+     "item": "Tentacle Rod"
+    },
+    {
+     "min": 91,
+     "max": 91,
+     "entry": "Vicious weapon",
+     "item": "Vicious Weapon"
+    },
+    {
+     "min": 92,
+     "max": 92,
+     "entry": "Wand of binding",
+     "item": "Wand of Binding"
+    },
+    {
+     "min": 93,
+     "max": 93,
+     "entry": "Wand of enemy detection",
+     "item": "Wand of Enemy Detection"
+    },
+    {
+     "min": 94,
+     "max": 94,
+     "entry": "Wand of fear",
+     "item": "Wand of Fear"
+    },
+    {
+     "min": 95,
+     "max": 95,
+     "entry": "Wand of fireballs",
+     "item": "Wand of Fireballs"
+    },
+    {
+     "min": 96,
+     "max": 96,
+     "entry": "Wand of lightning bolts",
+     "item": "Wand of Lightning Bolts"
+    },
+    {
+     "min": 97,
+     "max": 97,
+     "entry": "Wand of paralysis",
+     "item": "Wand of Paralysis"
+    },
+    {
+     "min": 98,
+     "max": 98,
+     "entry": "+2 wand of the war mage",
+     "item": "Wand of the War Mage, +1, +2, or +3",
+     "label": "Wand of the War Mage, +2"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Wand of wonder",
+     "item": "Wand of Wonder"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Wings of flying",
+     "item": "Wings of Flying"
+    }
+   ]
+  },
+  {
+   "id": "H",
+   "name": "Magic Item Table H",
+   "die": 100,
+   "rows": [
+    {
+     "min": 1,
+     "max": 10,
+     "entry": "+3 weapon",
+     "item": "Weapon, +1, +2, or +3",
+     "label": "Weapon, +3"
+    },
+    {
+     "min": 11,
+     "max": 12,
+     "entry": "Amulet of the planes",
+     "item": "Amulet of the Planes"
+    },
+    {
+     "min": 13,
+     "max": 14,
+     "entry": "Carpet of flying",
+     "item": "Carpet of Flying"
+    },
+    {
+     "min": 15,
+     "max": 16,
+     "entry": "Crystal ball",
+     "item": "Crystal Ball"
+    },
+    {
+     "min": 17,
+     "max": 18,
+     "entry": "Ring of regeneration",
+     "item": "Ring of Regeneration"
+    },
+    {
+     "min": 19,
+     "max": 20,
+     "entry": "Ring of shooting stars",
+     "item": "Ring of Shooting Stars"
+    },
+    {
+     "min": 21,
+     "max": 22,
+     "entry": "Ring of telekinesis",
+     "item": "Ring of Telekinesis"
+    },
+    {
+     "min": 23,
+     "max": 24,
+     "entry": "Robe of scintillating colors",
+     "item": "Robe of Scintillating Colors"
+    },
+    {
+     "min": 25,
+     "max": 26,
+     "entry": "Robe of stars",
+     "item": "Robe of Stars"
+    },
+    {
+     "min": 27,
+     "max": 28,
+     "entry": "Rod of absorption",
+     "item": "Rod of Absorption"
+    },
+    {
+     "min": 29,
+     "max": 30,
+     "entry": "Rod of alertness",
+     "item": "Rod of Alertness"
+    },
+    {
+     "min": 31,
+     "max": 32,
+     "entry": "Rod of security",
+     "item": "Rod of Security"
+    },
+    {
+     "min": 33,
+     "max": 34,
+     "entry": "+3 rod of the pact keeper",
+     "item": "Rod of the Pact Keeper",
+     "label": "Rod of the Pact Keeper, +3"
+    },
+    {
+     "min": 35,
+     "max": 36,
+     "entry": "Scimitar of speed",
+     "item": "Scimitar of Speed"
+    },
+    {
+     "min": 37,
+     "max": 38,
+     "entry": "+3 shield",
+     "item": "Shield, +1, +2, or +3",
+     "label": "Shield, +3"
+    },
+    {
+     "min": 39,
+     "max": 40,
+     "entry": "Staff of fire",
+     "item": "Staff of Fire"
+    },
+    {
+     "min": 41,
+     "max": 42,
+     "entry": "Staff of frost",
+     "item": "Staff of Frost"
+    },
+    {
+     "min": 43,
+     "max": 44,
+     "entry": "Staff of power",
+     "item": "Staff of Power"
+    },
+    {
+     "min": 45,
+     "max": 46,
+     "entry": "Staff of striking",
+     "item": "Staff of Striking"
+    },
+    {
+     "min": 47,
+     "max": 48,
+     "entry": "Staff of thunder and lightning",
+     "item": "Staff of Thunder and Lightning"
+    },
+    {
+     "min": 49,
+     "max": 50,
+     "entry": "Sword of sharpness",
+     "item": "Sword of Sharpness"
+    },
+    {
+     "min": 51,
+     "max": 52,
+     "entry": "Wand of polymorph",
+     "item": "Wand of Polymorph"
+    },
+    {
+     "min": 53,
+     "max": 54,
+     "entry": "+3 wand of the war mage",
+     "item": "Wand of the War Mage, +1, +2, or +3",
+     "label": "Wand of the War Mage, +3"
+    },
+    {
+     "min": 55,
+     "max": 55,
+     "entry": "Adamantine half plate armor",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Half Plate Armor)"
+    },
+    {
+     "min": 56,
+     "max": 56,
+     "entry": "Adamantine plate armor",
+     "item": "Adamantine Armor",
+     "label": "Adamantine Armor (Plate Armor)"
+    },
+    {
+     "min": 57,
+     "max": 57,
+     "entry": "Animated shield",
+     "item": "Animated Shield"
+    },
+    {
+     "min": 58,
+     "max": 58,
+     "entry": "Belt of fire giant strength",
+     "item": "Belt of Giant Strength (fire)"
+    },
+    {
+     "min": 59,
+     "max": 59,
+     "entry": "Belt of frost (or stone) giant strength",
+     "variant": {
+      "die": 2,
+      "rows": [
+       {
+        "min": 1,
+        "max": 1,
+        "entry": "Belt of frost giant strength",
+        "item": "Belt of Giant Strength (frost)"
+       },
+       {
+        "min": 2,
+        "max": 2,
+        "entry": "Belt of stone giant strength",
+        "item": "Belt of Giant Strength (stone)"
+       }
+      ]
+     }
+    },
+    {
+     "min": 60,
+     "max": 60,
+     "entry": "+1 breastplate",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Breastplate)"
+    },
+    {
+     "min": 61,
+     "max": 61,
+     "entry": "Breastplate of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Breastplate)"
+    },
+    {
+     "min": 62,
+     "max": 62,
+     "entry": "Candle of invocation",
+     "item": "Candle of Invocation"
+    },
+    {
+     "min": 63,
+     "max": 63,
+     "entry": "+2 chain mail",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +2 (Chain Mail)"
+    },
+    {
+     "min": 64,
+     "max": 64,
+     "entry": "+2 chain shirt",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +2 (Chain Shirt)"
+    },
+    {
+     "min": 65,
+     "max": 65,
+     "entry": "Cloak of arachnida",
+     "item": "Cloak of Arachnida"
+    },
+    {
+     "min": 66,
+     "max": 66,
+     "entry": "Dancing sword",
+     "item": "Dancing Sword"
+    },
+    {
+     "min": 67,
+     "max": 67,
+     "entry": "Demon armor",
+     "item": "Demon Armor"
+    },
+    {
+     "min": 68,
+     "max": 68,
+     "entry": "Dragon scale mail",
+     "item": "Dragon Scale Mail"
+    },
+    {
+     "min": 69,
+     "max": 69,
+     "entry": "Dwarven plate",
+     "item": "Dwarven Plate"
+    },
+    {
+     "min": 70,
+     "max": 70,
+     "entry": "Dwarven thrower",
+     "item": "Dwarven Thrower"
+    },
+    {
+     "min": 71,
+     "max": 71,
+     "entry": "Efreeti bottle",
+     "item": "Efreeti Bottle"
+    },
+    {
+     "min": 72,
+     "max": 72,
+     "entry": "Figurine of wondrous power, obsidian steed",
+     "item": "Figurine of Wondrous Power",
+     "label": "Figurine of Wondrous Power (Obsidian Steed)"
+    },
+    {
+     "min": 73,
+     "max": 73,
+     "entry": "Frost brand",
+     "item": "Frost Brand"
+    },
+    {
+     "min": 74,
+     "max": 74,
+     "entry": "Helm of brilliance",
+     "item": "Helm of Brilliance"
+    },
+    {
+     "min": 75,
+     "max": 75,
+     "entry": "Horn of Valhalla, bronze",
+     "item": "Bronze Horn of Valhalla"
+    },
+    {
+     "min": 76,
+     "max": 76,
+     "entry": "Instrument of the bards, Anstruth harp",
+     "item": "Anstruth Harp Instrument of the Bards"
+    },
+    {
+     "min": 77,
+     "max": 77,
+     "entry": "Ioun stone, absorption",
+     "item": "Ioun Stone of Absorption"
+    },
+    {
+     "min": 78,
+     "max": 78,
+     "entry": "Ioun stone, agility",
+     "item": "Ioun Stone of Agility"
+    },
+    {
+     "min": 79,
+     "max": 79,
+     "entry": "Ioun stone, fortitude",
+     "item": "Ioun Stone of Fortitude"
+    },
+    {
+     "min": 80,
+     "max": 80,
+     "entry": "Ioun stone, insight",
+     "item": "Ioun Stone of Insight"
+    },
+    {
+     "min": 81,
+     "max": 81,
+     "entry": "Ioun stone, intellect",
+     "item": "Ioun Stone of Intellect"
+    },
+    {
+     "min": 82,
+     "max": 82,
+     "entry": "Ioun stone, leadership",
+     "item": "Ioun Stone of Leadership"
+    },
+    {
+     "min": 83,
+     "max": 83,
+     "entry": "Ioun stone, strength",
+     "item": "Ioun Stone of Strength"
+    },
+    {
+     "min": 84,
+     "max": 84,
+     "entry": "+2 leather armor",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +2 (Leather Armor)"
+    },
+    {
+     "min": 85,
+     "max": 85,
+     "entry": "Manual of bodily health",
+     "item": "Manual of Bodily Health"
+    },
+    {
+     "min": 86,
+     "max": 86,
+     "entry": "Manual of gainful exercise",
+     "item": "Manual of Gainful Exercise"
+    },
+    {
+     "min": 87,
+     "max": 87,
+     "entry": "Manual of golems",
+     "item": "Manual of Golems"
+    },
+    {
+     "min": 88,
+     "max": 88,
+     "entry": "Manual of quickness of action",
+     "item": "Manual of Quickness of Action"
+    },
+    {
+     "min": 89,
+     "max": 89,
+     "entry": "Mirror of life trapping",
+     "item": "Mirror of Life Trapping"
+    },
+    {
+     "min": 90,
+     "max": 90,
+     "entry": "Nine lives stealer",
+     "item": "Nine Lives Stealer"
+    },
+    {
+     "min": 91,
+     "max": 91,
+     "entry": "Oathbow",
+     "item": "Oathbow"
+    },
+    {
+     "min": 92,
+     "max": 92,
+     "entry": "+2 scale mail",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +2 (Scale Mail)"
+    },
+    {
+     "min": 93,
+     "max": 93,
+     "entry": "Spellguard shield",
+     "item": "Spellguard Shield"
+    },
+    {
+     "min": 94,
+     "max": 94,
+     "entry": "+1 splint armor",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Splint Armor)"
+    },
+    {
+     "min": 95,
+     "max": 95,
+     "entry": "Splint armor of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Splint Armor)"
+    },
+    {
+     "min": 96,
+     "max": 96,
+     "entry": "+1 studded leather armor",
+     "item": "Armor, +1, +2, or +3",
+     "label": "Armor, +1 (Studded Leather Armor)"
+    },
+    {
+     "min": 97,
+     "max": 97,
+     "entry": "Studded leather armor of resistance",
+     "item": "Armor of Resistance",
+     "label": "Armor of Resistance (Studded Leather Armor)"
+    },
+    {
+     "min": 98,
+     "max": 98,
+     "entry": "Tome of clear thought",
+     "item": "Tome of Clear Thought"
+    },
+    {
+     "min": 99,
+     "max": 99,
+     "entry": "Tome of leadership and influence",
+     "item": "Tome of Leadership and Influence"
+    },
+    {
+     "min": 100,
+     "max": 100,
+     "entry": "Tome of understanding",
+     "item": "Tome of Understanding"
+    }
+   ]
+  }
+ ],
+ "trinkets": {
+  "fragment-of-fate": {
+   "name": "Fragment of Fate",
+   "type": "loot",
+   "img": "https://assets.forge-vtt.com/688646fa2c44e091c8b0a740/modules/dnd-adventures-faerun/assets/journal-art/skull-amulet.webp",
+   "system": {
+    "description": {
+     "value": "<p>Fragments of Fate can be used for any of the following:</p><ul><li><p>Reroll ability stat score</p></li><li><p>Reroll an HP roll</p></li><li><p>Prevent a lingering injury</p></li><li><p>Heal a lingering injury</p></li><li><p>Heroic Inspiration</p></li></ul>",
+     "chat": ""
+    },
+    "identifier": "fragment-of-fate",
+    "source": {
+     "revision": 1,
+     "rules": "2024"
+    },
+    "identified": true,
+    "unidentified": {
+     "description": ""
+    },
+    "container": null,
+    "quantity": 1,
+    "weight": {
+     "value": 0,
+     "units": "lb"
+    },
+    "price": {
+     "value": 0,
+     "denomination": "gp"
+    },
+    "rarity": "",
+    "properties": [],
+    "type": {
+     "value": "",
+     "subtype": ""
+    }
+   },
+   "effects": [],
+   "flags": {
+    "dnd5e": {
+     "riders": {
+      "activity": []
+     }
+    }
+   }
+  }
+ }
 }
