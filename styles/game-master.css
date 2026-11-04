@@ -105,10 +105,12 @@ body.mlgm-open #hotbar { display:none!important; }
 #mlgm .gm-bulk .gm-bulk-coin-action > select { flex:0 1 auto; align-self:stretch; width:100%; min-width:min(100%,fit-content); max-width:100%; margin-left:0; margin-inline-start:0; }
 #mlgm .gm-bulk button:not(.ml-icon-button):not(.ml-stepper button) { width:max-content !important; max-width:100%; flex:0 0 auto; margin-left:0 !important; margin-inline-start:0 !important; }
 #mlgm .gm-bulk > .ml-card > button { align-self:flex-start; }
-#mlgm .gm-bulk .gm-specialty-row > button, #mlgm .gm-bulk-coin-fields > button { align-self:flex-end; }
+#mlgm .gm-bulk .gm-specialty-row > button, #mlgm .gm-bulk .gm-apply-row > button, #mlgm .gm-bulk-coin-fields > button { align-self:flex-end; }
 #mlgm .gm-bulk .ml-horizontal-scroll, #mlgm .gm-bulk form { overflow:visible; width:100%; max-width:100%; min-width:0; margin:0; align-self:stretch; }
 #mlgm .gm-xp-fields { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:var(--ml-space-2); width:100%; }
 #mlgm .gm-xp-fields > .gm-specialty-row { align-self:flex-start; width:auto; max-width:100%; }
+/* Apply stays with the last control. The outer row may wrap earlier fields; this tail does not drop the button on its own line. */
+#mlgm .gm-bulk .gm-apply-row { display:flex; flex-flow:row nowrap; align-items:flex-end; justify-content:flex-start; gap:var(--ml-space-2); flex:0 1 auto; width:max-content; max-width:100%; min-width:0; }
 #mlgm .gm-bulk-coin-fields { display:flex; flex-wrap:wrap; gap:var(--ml-space-2); justify-content:flex-start; align-items:flex-end; width:100%; max-width:100%; min-width:0; margin-inline-start:0; }
 #mlgm .gm-bulk-coin-fields > label { align-items:flex-start; justify-content:flex-start; flex:0 0 auto; width:max-content; max-width:100%; margin-left:0; }
 #mlgm .gm-bulk-coin-action { width:max-content; max-width:100%; }
