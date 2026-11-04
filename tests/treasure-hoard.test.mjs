@@ -8,64 +8,92 @@ import {actorIdentity} from "../../morelord-core/scripts/ui/actor-identity.js";
 import * as currency from "../../morelord-core/scripts/services/currency-service.js";
 import {
   HOARD_BANDS, addHoardCoins, auditTreasure, commitHoardStep, describeRow, emptyHoardState, findSrdItem,
-  hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
+  ITEM_PACKS, hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, magicItemFor, srdItemIndex, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
 } from "../scripts/treasure.mjs";
 import {initializeRequests, createRequest, placeHoardItem, registerRequestRenderers} from "../scripts/requests.mjs";
 
 const ID = "morelord-game-master";
 const rowAt = (hoard, roll) => hoard.rows.find(row => roll >= row.min && roll <= row.max);
 
-test("treasure tables cover d100 and map every SRD name to a lookup key", async () => {
+test("treasure tables copy the compendium Table 2 hoards and Magic Item Tables A-G exactly", async () => {
   const data = await loadTreasure();
   assert.deepEqual(auditTreasure(data), []);
   assert.deepEqual(data.hoards.map(hoard => hoard.id), HOARD_BANDS.map(band => band.id));
-  assert.equal(data.hoards.every(hoard => hoard.coins == null), true);
-  const names = data.tables.flatMap(table => table.rows.map(row => row.name));
-  assert.equal(names.includes("Bead of Nourishment"), true);
-  assert.equal(names.includes("Energy Bow"), true);
-  assert.equal(names.includes("Weapon of Warning"), true);
-  assert.equal(names.includes("Potion of Healing"), true);
-  assert.equal(names.includes("Dragon Orb"), false);
-  assert.equal(names.includes("Mysterious Deck"), false);
-  for (const name of names) {
-    const key = lookupKey(name);
-    assert.match(key, /^[a-z0-9]+$/);
-    assert.equal(lookupKey(name), key);
+  const live = JSON.parse(readFileSync(new URL("./fixtures/compendium-table2.json", import.meta.url), "utf8")).tables;
+  const fix = text => text.replaceAll("ΓÇö", "—").replace(/^@item\[[^\]|]*\|\|([^|]+)\|\]$/, "$1").replace(/^@item\[([^\]]+)\]$/, "$1");
+  const ours = [...data.hoards, ...data.tables.filter(table => table.id !== "H")];
+  assert.equal(ours.length, live.length);
+  for (const table of live) {
+    const mine = ours.find(entry => fix(table.name).includes(entry.name ?? entry.label) || entry.name === table.name);
+    assert.ok(mine, table.name);
+    assert.equal(table.formula, "d100");
+    assert.deepEqual(mine.rows.map(row => [row.min, row.max]), table.results.map(([min, max]) => [min, max]), table.name);
+    mine.rows.forEach((row, i) => { if (!row.variant) assert.equal(row.entry, fix(table.results[i][2]), `${table.name} ${row.min}`); });
   }
-  assert.equal(lookupKey("Spell Scroll (level 3)"), "spellscrolllevel3");
-  assert.equal(findSrdItem(new Map([[lookupKey("Spell Scroll (Level 3)"), {name: "Spell Scroll (Level 3)", uuid: "Item.scroll"}]]), "Spell Scroll (level 3)").uuid, "Item.scroll");
-  const source = readFileSync(new URL("../data/srd-treasure.json", import.meta.url), "utf8");
-  for (const banned of ["Deck of Many Things", "Orb of Dragonkind", "Apparatus of Kwalish", "morelord-compendium", "Magic Item Table"]) assert.equal(source.includes(banned), false, banned);
-  const treasureSource = readFileSync(new URL("../scripts/treasure.mjs", import.meta.url), "utf8");
-  assert.equal(treasureSource.includes("morelord-compendium"), false);
-  assert.doesNotMatch(treasureSource, /img:.*gem-pile-gold\.webp/);
-  assert.match(treasureSource, /icons\/commodities\/treasure\/brooch-crown-gold\.webp/);
-  assert.match(treasureSource, /Foundry 14\.369/);
-  assert.equal(readFileSync(new URL("../module.json", import.meta.url), "utf8").includes("morelord-craftworks"), false);
-  assert.deepEqual(rangeIssues([{min: 1, max: 99}], 100), [100]);
+  assert.deepEqual(data.tables.map(table => [table.id, table.rows.length]), [["A", 8], ["B", 35], ["C", 28], ["D", 16], ["E", 7], ["F", 60], ["G", 88], ["H", 69]]);
+  for (const table of data.tables) for (const row of table.rows) for (const pick of row.variant?.rows ?? [row]) assert.match(lookupKey(pick.item), /^[a-z0-9]+$/);
+  // Arrow of Slaying is the one swap.
+  const swapped = data.tables.flatMap(table => table.rows.filter(row => row.swappedFrom));
+  assert.deepEqual(swapped.map(row => [row.entry, row.item]), [["Arrow of slaying", "Ammunition of Slaying"]]);
+  assert.equal(magicItemFor(data, "E", 95).name, "Ammunition of Slaying");
+  // Table H follows the 2014 DMG Table H.
+  const h = data.tables.find(table => table.id === "H");
+  assert.deepEqual(rangeIssues(h.rows, 100), []);
+  assert.equal(magicItemFor(data, "H", 5).name, "Weapon, +3");
+  assert.equal(magicItemFor(data, "H", 12).catalogName, "Amulet of the Planes");
+  assert.equal(magicItemFor(data, "H", 59).pending.die, 2);
+  assert.equal(magicItemFor(data, "H", 59, 2).catalogName.includes("stone"), true);
+  // Variants roll their own die; +N armor keeps its base armor in the name.
+  assert.equal(magicItemFor(data, "G", 13).pending.die, 8);
+  assert.match(magicItemFor(data, "G", 13, 3).name, /Golden Lions/i);
+  assert.equal(magicItemFor(data, "G", 13, 3).catalogName, "Figurine of Wondrous Power");
+  assert.equal(magicItemFor(data, "G", 48, 1).catalogName, "Silver Horn of Valhalla");
+  assert.equal(magicItemFor(data, "G", 30).name, "Armor, +1 (Chain Mail)");
+  // Row trinkets grant the bundled Fragment of Fate.
+  assert.equal(data.trinkets["fragment-of-fate"].name, "Fragment of Fate");
+  assert.equal("_id" in data.trinkets["fragment-of-fate"], false);
   const low = data.hoards[0];
-  const high = data.hoards[1];
-  assert.equal(describeRow(rowAt(low, 1)), "No treasure");
-  assert.equal(describeRow(rowAt(high, 4)), "No treasure");
-  assert.deepEqual(rowAt(low, 7).valuables[0], {kind: "gems", dice: 2, sides: 6, each: {gp: 10}});
-  assert.deepEqual(rowAt(low, 17).valuables[0], {kind: "art", dice: 2, sides: 4, each: {gp: 25}});
-  assert.deepEqual(rowAt(low, 27).valuables[0], {kind: "gems", dice: 2, sides: 6, each: {gp: 50}});
-  assert.equal(rowAt(low, 37).magic[0].tables[0], "common");
-  assert.equal(rowAt(low, 37).magic[0].sides, 6);
-  assert.equal(rowAt(low, 61).magic[0].tables[0], "uncommon");
-  assert.deepEqual(rowAt(low, 86).magic[0].tables, ["rare-1", "rare-2"]);
-  assert.equal(rowAt(low, 86).valuables[0].kind, "art");
-  assert.equal(rowAt(low, 86).valuables[0].each.gp, 25);
-  assert.equal(rowAt(low, 100).magic[0].count, 1);
-  assert.equal(rowAt(low, 100).magic[0].tables[0], "very-rare");
-  assert.deepEqual(rowAt(high, 23).valuables[0], {kind: "art", dice: 2, sides: 4, each: {gp: 250}});
-  assert.equal(rowAt(high, 29).magic[0].tables[0], "common");
-  assert.equal(rowAt(high, 75).magic[0].count, 1);
-  assert.deepEqual(rowAt(high, 75).magic[0].tables, ["rare-1", "rare-2"]);
-  assert.equal(rowAt(high, 95).magic[0].tables[0], "very-rare");
-  assert.equal(rowAt(high, 95).magic[0].sides, 4);
-  assert.equal(rowAt(high, 99).magic[0].count, 1);
-  assert.equal(rowAt(low, 1).valuables.length + rowAt(low, 1).magic.length, 0);
+  assert.equal(rowAt(low, 95).trinket, "fragment-of-fate");
+  assert.match(describeRow(rowAt(low, 95), data), /Roll 1d4 times on Magic Item Table F; Fragment of Fate trinket/);
+  assert.equal(describeRow(rowAt(low, 1), data), "No treasure");
+  assert.deepEqual(rangeIssues([{min: 1, max: 99}], 100), [100]);
+  assert.equal(lookupKey("Spell Scroll (level 3)"), "spellscrolllevel3");
+  const source = readFileSync(new URL("../scripts/treasure.mjs", import.meta.url), "utf8");
+  assert.equal(source.includes("morelord-compendium"), false);
+  assert.match(source, /icons\/commodities\/treasure\/brooch-crown-gold\.webp/);
+  assert.match(source, /Foundry 14\.369/);
+  assert.equal(readFileSync(new URL("../module.json", import.meta.url), "utf8").includes("morelord-craftworks"), false);
+});
+
+test("items resolve from the 2024 DMG, then the 2024 PHB, then SRD 5.2, and show their source", async () => {
+  const pack = (collection, names) => ({documentName: "Item", collection, async getIndex() { return names.map(name => ({_id: lookupKey(name), name, type: "loot"})); }});
+  const packs = [
+    pack("dnd5e.equipment24", ["Potion of Healing", "Bag of Holding", "Ammunition of Slaying"]),
+    pack("dnd5e.equipment", ["Driftglobe", "Arrow of Slaying"]),
+    pack("dnd-players-handbook.equipment", ["Potion of Healing"]),
+    pack("dnd-dungeon-masters-guide.equipment", ["Bag of Holding", "Driftglobe"])
+  ];
+  const index = await srdItemIndex(packs);
+  assert.deepEqual(ITEM_PACKS.map(entry => entry.collection), ["dnd-dungeon-masters-guide.equipment", "dnd-players-handbook.equipment", "dnd5e.equipment24"]);
+  assert.equal(findSrdItem(index, "Bag of Holding").uuid, "Compendium.dnd-dungeon-masters-guide.equipment.Item.bagofholding");
+  assert.equal(findSrdItem(index, "Potion of Healing").source, "Player's Handbook (2024)");
+  assert.equal(findSrdItem(index, "Ammunition of Slaying").source, "SRD 5.2");
+  assert.equal(findSrdItem(index, "Arrow of Slaying"), null);
+  // A DMG-only item with no DMG installed is text only: no 5.1 fallback, no grant.
+  const srdOnly = await srdItemIndex([packs[0], packs[1]]);
+  assert.equal(findSrdItem(srdOnly, "Driftglobe"), null);
+  const data = {hoards: [{id: "cr-0-4", label: "CR 0-4", die: 100, rows: [{min: 1, max: 100, valuables: [], magic: [{table: "X", count: 2}]}]}], tables: [{id: "X", name: "Magic Item Table X", die: 100, rows: [{min: 1, max: 50, entry: "Driftglobe", item: "Driftglobe"}, {min: 51, max: 100, entry: "Bag", item: "Bag of Holding"}]}]};
+  let state = emptyHoardState("actor");
+  const placed = [];
+  const placeItem = async item => { placed.push(item.name); return {uuid: "Actor.actor.Item.x"}; };
+  globalThis.fromUuid = async uuid => ({toObject: () => ({name: uuid, system: {}})});
+  for (const totals of [[1], [10], [70]]) state = (await commitHoardStep({data, bandId: "cr-0-4", state, totals, index: srdOnly, placeItem})).state;
+  delete globalThis.fromUuid;
+  assert.deepEqual(state.items.map(item => [item.name, item.unresolved || !item.compendiumUuid]), [["Driftglobe", true], ["Bag of Holding", false]]);
+  assert.equal(placed.length, 1);
+  const html = hoardCardHTML({title: "Treasure Hoard", state, step: null, escape: value => value});
+  assert.match(html, /Driftglobe \(text only\)/);
+  assert.match(html, /\(SRD 5\.2\)/);
 });
 
 test("hoard coins use one denomination and Core addCoins when it exists", async () => {
@@ -106,62 +134,17 @@ test("hoard coins use one denomination and Core addCoins when it exists", async 
   assert.equal(calls.length, 1);
 });
 
-test("a rare item is one step, and the step card survives a re-render without granting twice", async () => {
-  const warnings = [];
-  const originalWarn = console.warn;
-  console.warn = (...args) => { warnings.push(args.join(" ")); };
-  try {
-  const data = await loadTreasure();
-  let state = emptyHoardState("actor");
-  state = (await commitHoardStep({data, bandId: "cr-0-4", state, totals: [86], index: new Map()})).state;
-  assert.match(state.rowText, /2d4 art objects \(25 GP each\)/);
-  assert.match(state.rowText, /1d4 Rare magic items/);
-  state = (await commitHoardStep({data, bandId: "cr-0-4", state, totals: [4], index: new Map(), placeItem: async () => ({uuid: "Actor.actor.Item.art"})})).state;
-  state = (await commitHoardStep({data, bandId: "cr-0-4", state, totals: [1], index: new Map()})).state;
-  const item = nextHoardStep(data, "cr-0-4", state);
-  assert.equal(item.kind, "magic");
-  assert.deepEqual(item.formulas, ["1d2", "1d100"]);
-  const places = [];
-  const granted = await commitHoardStep({
-    data, bandId: "cr-0-4", state, totals: [2, 1], index: new Map(),
-    placeItem: async itemData => { places.push(itemData.name); return {uuid: "Actor.actor.Item.mace"}; }
-  });
-  assert.equal(granted.state.items[0].tableId, "rare-2");
-  assert.equal(granted.state.items[0].name, "Mace of Smiting");
-  assert.equal(places.length, 0);
-  const repeat = await commitHoardStep({data, bandId: "cr-0-4", state: granted.state, stepId: item.id, totals: [2, 1], index: new Map(), placeItem: async () => { places.push("again"); return {uuid: "Actor.actor.Item.again"}; }});
-  assert.equal(repeat.alreadyResolved, true);
-  assert.equal(places.length, 0);
-  const html = hoardCardHTML({title: "Treasure Hoard", state: granted.state, step: null, escape: value => value});
-  assert.equal(html, hoardCardHTML({title: "Treasure Hoard", state: granted.state, step: null, escape: value => value}));
-  assert.match(html, /Mace of Smiting/);
-  assert.doesNotMatch(html, /data-uuid="[^"]*Mace/);
-  assert.match(html, /Actor\.actor\.Item\.art/);
-  assert.equal((html.match(/data-mlgm-hoard-step/g) ?? []).length, 0);
-  assert.equal(places.length, 0);
-  assert.equal(warnings.some(line => /Art object|Gemstone/.test(line)), false);
-  assert.equal(warnings.some(line => line.includes("Mace of Smiting")), true);
-  } finally { console.warn = originalWarn; }
-});
-
-test("hoard row 95 rolls one item per counted roll, each from its own SRD 5.2 rarity table", async () => {
+test("hoard row 95 rolls one item per counted roll, each its own step on its table", async () => {
   const warn = console.warn;
   console.warn = () => {};
   try {
     const data = await loadTreasure();
-    const named = id => data.tables.find(table => table.id === id);
-    // SRD 5.2 sorts magic items by rarity. Nothing in the data is a lettered 2014 table.
-    assert.equal(data.tables.some(table => /\bTable [A-I]\b/.test(table.name)), false);
-    for (const hoard of data.hoards) for (const row of hoard.rows) for (const term of row.magic ?? []) for (const id of term.tables) assert.ok(named(id), id);
-
     const drive = async (bandId, hoardRoll, valuables, count, picks) => {
       let state = emptyHoardState("actor");
       const labels = [];
       const run = async totals => {
-        const step = nextHoardStep(data, bandId, state);
-        labels.push(step);
+        labels.push(nextHoardStep(data, bandId, state));
         state = (await commitHoardStep({data, bandId, state, totals, index: new Map(), placeItem: async () => ({uuid: "Actor.actor.Item.x"})})).state;
-        return step;
       };
       await run([hoardRoll]);
       await run([valuables]);
@@ -169,45 +152,35 @@ test("hoard row 95 rolls one item per counted roll, each from its own SRD 5.2 ra
       for (const totals of picks) await run(totals);
       return {state, labels, next: nextHoardStep(data, bandId, state)};
     };
-
-    // CR 0-4, row 95: 2d6 gems and 1d4 Rare magic items. Rare is split over two d100 tables, picked by 1d2.
-    assert.deepEqual(rowAt(data.hoards[0], 95).magic, [{tables: ["rare-1", "rare-2"], dice: 1, sides: 4}]);
-    const three = await drive("cr-0-4", 95, 7, 3, [[1, 40], [2, 10], [1, 55]]);
-    assert.equal(three.state.counts["0"] ?? Object.values(three.state.counts)[0], 3);
+    // CR 5-10, row 95: 3d6 100 gp gems and 1d4 rolls on Magic Item Table G.
+    assert.deepEqual(rowAt(data.hoards[1], 95).magic, [{table: "G", dice: 1, sides: 4}]);
+    const three = await drive("cr-5-10", 95, 10, 3, [[1], [50], [99]]);
     assert.equal(three.state.items.length, 3);
-    assert.deepEqual(three.state.items.map(item => item.tableId), ["rare-1", "rare-2", "rare-1"]);
-    for (const item of three.state.items) {
-      const table = named(item.tableId);
-      assert.equal(table.rarity, "Rare");
-      const row = table.rows.find(entry => item.roll >= entry.min && item.roll <= entry.max);
-      assert.equal(row.name, item.catalogName);
-    }
+    assert.equal(three.state.items.every(item => item.tableId === "G"), true);
     assert.equal(three.next, null);
     const magicSteps = three.labels.filter(step => step.kind === "magic");
-    assert.deepEqual(magicSteps.map(step => step.formulas), [["1d2", "1d100"], ["1d2", "1d100"], ["1d2", "1d100"]]);
-    assert.deepEqual(magicSteps.map(step => step.prompt.slice(0, 22)), ["Rare magic item 1 of 3", "Rare magic item 2 of 3", "Rare magic item 3 of 3"]);
-    assert.match(magicSteps[0].prompt, /1d2 to pick the table \(1 = Rare Magic Items, 2 = Rare Magic Items II\), then 1d100/);
-    assert.match(three.labels.find(step => step.kind === "magic-count").prompt, /roll 1d4 for how many/);
-
-    const html = hoardCardHTML({title: "Treasure Hoard", state: three.state, step: null, escape: value => value});
-    assert.match(html, /Magic items \(3 of 3\)/);
-    assert.match(html, /1d2: 2, d100: 10/);
-    const partial = await drive("cr-0-4", 95, 7, 3, [[1, 40]]);
-    assert.equal(nextHoardStep(data, "cr-0-4", partial.state).index, 1);
-    assert.match(nextHoardStep(data, "cr-0-4", partial.state).prompt, /item 2 of 3/);
-
-    // A count of 1 yields one item, and a count of 4 yields four.
-    assert.equal((await drive("cr-0-4", 95, 7, 1, [[2, 99]])).state.items.length, 1);
-    const four = await drive("cr-0-4", 95, 7, 4, [[1, 1], [1, 2], [2, 3], [2, 4]]);
+    assert.deepEqual(magicSteps.map(step => step.formulas), [["1d100"], ["1d100"], ["1d100"]]);
+    assert.deepEqual(magicSteps.map(step => step.prompt), ["Magic Item Table G: item 1 of 3", "Magic Item Table G: item 2 of 3", "Magic Item Table G: item 3 of 3"]);
+    assert.match(three.labels.find(step => step.kind === "magic-count").prompt, /Magic Item Table G: roll 1d4 for how many/);
+    assert.match(hoardCardHTML({title: "T", state: three.state, step: null, escape: value => value}), /Magic items \(3 of 3\)/);
+    const four = await drive("cr-5-10", 95, 10, 4, [[1], [2], [3], [4]]);
     assert.equal(four.state.items.length, 4);
-    assert.equal(four.next, null);
-
-    // CR 5-10, row 95: Very Rare items, one table, so each item is a single d100.
-    assert.deepEqual(rowAt(data.hoards[1], 95).magic, [{tables: ["very-rare"], dice: 1, sides: 4}]);
-    const veryRare = await drive("cr-5-10", 95, 9, 3, [[12], [50], [76]]);
-    assert.equal(veryRare.state.items.length, 3);
-    assert.equal(veryRare.state.items.every(item => item.tableId === "very-rare" && item.choice == null), true);
-    assert.equal(veryRare.labels.filter(step => step.kind === "magic").every(step => step.formulas.length === 1), true);
+    // A Figurine rolls its d8 as its own step before the next item.
+    const fig = await drive("cr-5-10", 95, 10, 2, [[13]]);
+    const variant = fig.next;
+    assert.equal(variant.kind, "variant");
+    assert.deepEqual(variant.formulas, ["1d8"]);
+    const done = (await commitHoardStep({data, bandId: "cr-5-10", state: fig.state, totals: [8], index: new Map(), placeItem: async () => ({uuid: "Actor.actor.Item.x"})})).state;
+    assert.match(done.items[0].name, /Serpentine Owl/i);
+    assert.equal(done.items[0].variantRoll, 8);
+    assert.match(hoardCardHTML({title: "T", state: done, step: null, escape: value => value}), /d100: 13, d8: 8/);
+    assert.equal(nextHoardStep(data, "cr-5-10", done).prompt, "Magic Item Table G: item 2 of 2");
+    // CR 0-4, row 95 also grants the Fragment of Fate once.
+    const placed = [];
+    let low = emptyHoardState("actor");
+    for (const totals of [[95], [7], [1], [1]]) low = (await commitHoardStep({data, bandId: "cr-0-4", state: low, totals, index: new Map(), placeItem: async item => { placed.push(item.name); return {uuid: "Actor.actor.Item.f"}; }})).state;
+    assert.equal(placed.filter(name => name === "Fragment of Fate").length, 1);
+    assert.equal(low.trinket.granted, true);
   } finally { console.warn = warn; }
 });
 
@@ -243,7 +216,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
     documentName: "Item", collection: "dnd5e.equipment24",
     async getIndex() {
       return [
-        {_id: "bead", name: "Bead of Nourishment", type: "consumable"},
+        {_id: "heal", name: "Potion of Healing", type: "consumable"},
         {_id: "gem", name: "Gemstone (10 GP)", type: "loot"},
         {_id: "scroll", name: "Spell Scroll (Level 3)", type: "consumable"},
         {_id: "mace", name: "Mace of Smiting", type: "weapon"}
@@ -367,7 +340,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   faces.push(1, 1);
   await send(request);
   await send(request);
-  assert.match(request.content, /Bead of Nourishment/);
+  assert.match(request.content, /Potion of Healing<\/a> \(SRD 5.2\)/);
   assert.equal(buttons(request.content).length, 0);
   assert.equal(request.rolls.at(-1) instanceof Roll, true);
   assert.equal(created.length, 2);
@@ -380,7 +353,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   assert.equal(needsGmPlace(gm, actor), false);
   actor.testUserPermission = user => user.isGM || user.id === "player";
 
-  const scrollFaces = [61, 6, 1, 85];
+  const scrollFaces = [61, 6, 1, 62];
   const scrolls = {calls: 0};
   game.modules.set("morelord-craftworks", {id: "morelord-craftworks", active: true, api: {spellScrollGenerator: {
     hasAccess: true,
