@@ -304,13 +304,13 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   const buttons = html => html.match(/data-ml-core-roll=/g) ?? [];
   await assert.rejects(() => createRequest({kind: "hoard", band: "cr-17", actorIds: [actor.id]}), /treasure hoard/);
   const request = await createRequest({kind: "hoard", band: "cr-0-4", blind: false, actorIds: [actor.id]});
-  assert.match(request.content, /<h3>Roll for Treasure<\/h3>/);
+  assert.match(request.content, /ml-award-card__title">Roll for Treasure</);
   assert.doesNotMatch(request.content, /Treasure Hoard|CR 0-4/);
   assert.equal(buttons(request.content).length, 1);
   // The pending step is Core's roll-request card: modes off, one Roll button, no GM-side roll attached.
   assert.match(request.content, /ml-core-roll-request/);
   assert.match(request.content, /data-ml-roll-entry="hoard"/);
-  assert.match(request.content, /<button type="button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button>/);
+  assert.match(request.content, /<button type="button" class="ml-button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button>/);
   assert.doesNotMatch(request.content, /DIS|ADV|data-mlgm-hoard-step/);
   assert.equal(request.rolls.length, 0);
   assert.equal(request.getFlag(ID, "hoard"), undefined);

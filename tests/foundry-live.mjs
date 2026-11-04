@@ -37,7 +37,7 @@ try {
         const playerId=await player.evaluate('game.user.id');
         fixture=await browser.evaluate(`var actor=await Actor.create({name:"MLGM multiplayer fixture",type:"character",ownership:{default:0,[${JSON.stringify(playerId)}]:3}});var requests=await import("./modules/morelord-game-master/scripts/requests.mjs");var request=await requests.createRequest({kind:"skill",skill:"prc",dc:12,actorIds:[actor.id]});({actorId:actor.id,requestId:request.id})`);
         await player.wait(`!!game.messages.get(${JSON.stringify(fixture.requestId)})`);
-        const checks=await player.evaluate(`({tray:!!document.querySelector('#mlgm'),button:!!document.querySelector('[data-message-id="${fixture.requestId}"] [data-mlgm-actor="${fixture.actorId}"]'),prompts:[...document.querySelectorAll('.application.dialog')].length})`);
+        const checks=await player.evaluate(`({tray:!!document.querySelector('#mlgm'),button:!!document.querySelector('[data-message-id="${fixture.requestId}"] [data-ml-roll-entry$=":${fixture.actorId}"] [data-ml-core-roll="normal"]'),prompts:[...document.querySelectorAll('.application.dialog')].length})`);
         if(checks.tray || !checks.button)throw Error('Player did not receive the chat request, or received a GM tray.');
         const replies=await Promise.all([
           player.evaluate(`var requests=await import("./modules/morelord-game-master/scripts/requests.mjs");await requests.rollRequest(${JSON.stringify(fixture.requestId)},${JSON.stringify(fixture.actorId)})`),

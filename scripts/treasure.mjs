@@ -623,8 +623,8 @@ export function hoardCardHTML({title, actorUuid = "", identity = "", recipientNa
   const pending = allowRoll && step;
   let request;
   if (pending && requestCard) {
-    // The title line comes first in Core's card, so the Initial Roll goes right after it.
-    request = pendingRequestCard(requestCard, {title, actorUuid, step}).replace("</h3>", `</h3>${row}`);
+    // Core's card has a header, then the roll row. The Initial Roll sits at the top of that row.
+    request = pendingRequestCard(requestCard, {title, actorUuid, step}).replace('data-ml-roll-entry="hoard">', `data-ml-roll-entry="hoard">${row}`);
   } else {
     const prompt = pending && step.prompt ? `<p>${escape(step.prompt)}</p>` : "";
     const button = pending ? `<button type="button" data-mlgm-hoard-step="${escape(step.id)}">Roll</button>` : "";

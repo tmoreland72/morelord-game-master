@@ -1,4 +1,4 @@
-﻿import test from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import {itemCard} from "../../morelord-core/scripts/ui/item-card.js";
 import {ChatRollRequests} from "../../morelord-core/scripts/services/chat-roll-requests.js";
@@ -31,19 +31,19 @@ test("pending steps are Core's roll-request card with modes off and a Roll butto
   const countingCard = options => { calls++; return itemCard(options); };
   for (const card of [countingCard, null]) {
     const html = hoardCardHTML({title: "Roll for Treasure", actorUuid: "Actor.a", identity, recipientName: "Chuck", state: pendingState(), step, allowRoll: true, escape, itemCard: card, requestCard});
-    assert.doesNotMatch(html, /ml-award-card/);
-    assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><h3>Roll for Treasure<\/h3><p>Initial Roll: 37<\/p><div class="ml-card ml-stack" data-ml-roll-entry="hoard"><span class="ml-actor-identity"><img [^>]*><span>Chuck<\/span><\/span><p>Magic item 2 of 2<\/p><div class="ml-roll-controls"><button type="button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button><\/div><\/div><\/section><\/div>$/);
+    assert.doesNotMatch(html, /ml-award-card"/);
+    assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><header class="ml-award-card__header">.*<\/header><div class="ml-card ml-stack" data-ml-roll-entry="hoard"><p>Initial Roll: 37<\/p><span class="ml-actor-identity"><img [^>]*><span>Chuck<\/span><\/span><p>Magic item 2 of 2<\/p><div class="ml-roll-controls"><button type="button" class="ml-button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button><\/div><\/div><\/section><\/div>$/);
     assert.equal(html.match(/data-ml-core-roll=/g).length, 1);
     assert.doesNotMatch(html, /DIS|ADV|data-mlgm-hoard-step|<select/);
     assert.doesNotMatch(html, /Table [A-Z]|d100|1d\d/);
   }
   assert.equal(calls, 0);
   const first = hoardCardHTML({title: "Roll for Treasure", actorUuid: "Actor.a", identity, state: emptyHoardState("a"), step: {id: "table", prompt: ""}, allowRoll: true, escape, itemCard, requestCard});
-  assert.doesNotMatch(first, /ml-award-card|Initial Roll/);
-  assert.match(first, /<button type="button" data-ml-core-roll="normal"/);
+  assert.doesNotMatch(first, /ml-award-card"|Initial Roll/);
+  assert.match(first, /<button type="button" class="ml-button" data-ml-core-roll="normal"/);
   // An empty purse is still not a result worth a card.
   const none = hoardCardHTML({title: "T", identity, state: {...pendingState(), coins: {purse: {}, granted: true}}, step: null, escape, itemCard: () => { throw new Error("empty card"); }, requestCard});
-  assert.doesNotMatch(none, /ml-award-card|data-ml-core-roll/);
+  assert.doesNotMatch(none, /ml-award-card"|data-ml-core-roll/);
   assert.match(none, /Coins<\/strong><br>None/);
 });
 
@@ -60,7 +60,7 @@ test("without Core's roll-request card the pending step keeps the plain Roll but
 test("results go to Core's item card below the request, with no Roll button inside the item card", () => {
   const calls = [];
   const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: state(), step, allowRoll: true, escape, requestCard, itemCard: options => { calls.push(options); return `<section class="stub">card</section>`; }});
-  assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><h3>Roll for Treasure<\/h3><p>Initial Roll: 37<\/p><div class="ml-card ml-stack" data-ml-roll-entry="hoard">/);
+  assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><header class="ml-award-card__header">.*<\/header><div class="ml-card ml-stack" data-ml-roll-entry="hoard"><p>Initial Roll: 37<\/p>/);
   assert.match(html, /data-ml-core-roll="normal"[^>]*>Roll<\/button><\/div><\/div><\/section><section class="stub">card<\/section><\/div>$/);
   const [options] = calls;
   assert.equal(options.recipientName, "Chuck");
@@ -89,7 +89,7 @@ test("results render on Core's real item card with images, rarity, links, and on
   assert.match(html, /<span>120 gp<\/span>/);
   assert.match(html, /MORELORD GAME MASTER/);
   assert.equal(html.match(/data-ml-core-roll=/g).length, 1);
-  assert.ok(html.indexOf("data-ml-core-roll") < html.indexOf("ml-award-card"));
+  assert.ok(html.indexOf("data-ml-core-roll") < html.indexOf('ml-award-card"'));
 });
 
 test("results fall back to the plain lists until Core ships the shared card", () => {
@@ -97,7 +97,7 @@ test("results fall back to the plain lists until Core ships the shared card", ()
   assert.equal(typeof coreItemCard({ui: {itemCard}}), "function");
   const html = hoardCardHTML({title: "Roll for Treasure", identity, recipientName: "Chuck", state: state(), step, allowRoll: true, escape, itemCard: null, requestCard});
   assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request">.*<\/section><section class="ml-chat-card ml-stack"><p><strong>Coins<\/strong>/);
-  assert.doesNotMatch(html, /ml-award-card/);
+  assert.doesNotMatch(html, /ml-award-card"/);
   assert.equal(html.match(/data-ml-core-roll=/g).length, 1);
 });
 
