@@ -98,7 +98,7 @@ function coreRequestHTML(req, requests) {
   const choices = req.kind === "delerium" ? [...req.searchSkills.map(({id, label}) => ({id, label})), {id: "decline", label: "Decline search"}] : [];
   const entries = Object.fromEntries(req.actorIds.map(id => [id, {type, key: `${ID}:${id}`, title, actorUuid: game.actors.get(id)?.uuid ?? null, dc: req.dc ?? null, modes: false, actionLabel: "Roll", choices, data: {}, completed: false}]));
   const card = requests.html({type, key: ID, title, entries});
-  const finalize = req.kind === "delerium" ? '<button type="button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : "";
+  const finalize = req.kind === "delerium" ? '<button type="button" class="ml-button" data-mlgm-finalize>Finalize / open search results (GM)</button>' : "";
   const close = card.lastIndexOf("</section>");
   return `<div class="mlgm-request">${card.slice(0, close)}${finalize}${card.slice(close)}</div>`;
 }

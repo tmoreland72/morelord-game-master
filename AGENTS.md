@@ -6,7 +6,7 @@ All module settings are world-scoped and GM-only unless Troy says otherwise.
 
 HARD RULE: Always use morelord-core's shared features (CSS, UI components, helpers, settings, APIs) instead of building our own. Ask Core for anything that belongs in Core.
 
-Follow `../morelord-core/AGENTS.md`, `../morelord-core/MORELORD-BRAND-GUIDE.md`,
+Follow `../morelord-core/AGENTS.md`, the [Morelord Brand Guide](https://docs.google.com/document/d/1ppfwqiKhtnCsOTK_5-OtV8Ho5patd5dSm2m5eWpiwBk/edit) (in the [Morelord Gaming](https://drive.google.com/drive/folders/1JKMCzl8f7MyNhgtuIMzCz1Y2o4_w9cC0) Drive folder),
 and `../morelord-core/IN-GAME-TESTING.md` before changing this module.
 
 - Morelord Core is required. Reuse its UI, participation, user filtering, skill
