@@ -120,6 +120,11 @@ export async function placeHoardItem(actor, itemData) {
   const created = await actor.createEmbeddedDocuments("Item", [itemData]);
   return created?.[0] ?? null;
 }
+// A blind hoard keeps its results on a GM-only card, so the player's shell carries only the next dice to roll.
+function hoardNextFlag(data, band, state) {
+  const step = nextHoardStep(data, band, state);
+  return step ? {id: step.id, formulas: step.formulas} : null;
+}
 async function rollHoardFormulas(formulas, blind) {
   const rolls = [];
   const totals = [];
@@ -194,7 +199,9 @@ export async function createRequest(config) {
     req.dc = req.searchSession.zone.dc;
   }
   const content = req.kind === "hoard" ? await freshHoardContent(req) : requestHTML(req);
-  const message = await ChatMessage.create({content,whisper:[],blind:false,flags:{[ID]:{request:req}}},{messageMode:"public"});
+  const flags = {request: req};
+  if (req.kind === "hoard" && req.blind) flags.hoardNext = hoardNextFlag(await loadTreasure(), req.band, emptyHoardState(actorIds[0]));
+  const message = await ChatMessage.create({content,whisper:[],blind:false,flags:{[ID]:flags}},{messageMode:"public"});
   return message;
 }
 
@@ -212,25 +219,37 @@ async function materializeRoll(prepared, kind) {
   if (prepared.packed === false) return prepared.roll ?? null;
   const data = prepared.data;
   if (!data || typeof data !== "object") throw new Error("The prepared roll could not be read.");
-  const RollClass = CONFIG.Dice?.D20Roll ?? globalThis.Roll;
+  const RollClass = ["encounter", "surge"].includes(kind) ? globalThis.Roll : CONFIG.Dice?.D20Roll ?? globalThis.Roll;
   const roll = typeof RollClass.fromData === "function" ? RollClass.fromData(data) : new RollClass(data.formula);
   if (kind === "death") return roll;
+  // The clicking client already rolled the dice. The GM applies that result and never rolls again.
+  if (prepared.evaluated === true || roll._evaluated === true) {
+    if (!Number.isFinite(Number(roll.total))) throw new Error("The prepared roll has no result.");
+    return roll;
+  }
+  // A roll from an older client that never evaluated it is still rolled here.
   const formula = roll.formula ?? data.formula;
   const fresh = new RollClass(formula, roll.data, roll.options);
   if (typeof fresh.evaluate === "function") await fresh.evaluate({allowInteractive: false});
   return fresh;
 }
+const requestDie = req => req.kind === "surge" ? surgeDie(req) : req.die;
 export async function prepareRequestRoll(req, actor, skillId) {
   if (!req || !actor) throw new Error("This request is no longer available.");
-  if (["encounter", "surge", "hoard"].includes(req.kind)) return null;
+  if (req.kind === "hoard") return null;
+  // The clicking client rolls. The GM only applies the result.
+  if (["encounter", "surge"].includes(req.kind)) return new Roll(`1d${requestDie(req)}`).evaluate({allowInteractive: false});
   if (req.kind === "death") {
-    if (req.blind !== false) return null;
-    const roll = firstRoll(await actor.rollDeathSave({}, {}, {create: false}));
-    if (!roll) throw new RollCancelled();
-    return roll;
+    // A private save must not reveal its outcome through sheet counters.
+    const preventUpdate = req.blind !== false && Hooks.on("dnd5e.rollDeathSave", (_rolls, data) => { if (data.subject === actor) return false; });
+    try {
+      const roll = firstRoll(await actor.rollDeathSave({}, {}, {create: false}));
+      if (!roll) throw new RollCancelled();
+      return roll;
+    } finally { if (preventUpdate) Hooks.off("dnd5e.rollDeathSave", preventUpdate); }
   }
   if (req.kind === "delerium" && skillId === "decline") return null;
-  const roll = await rollNative(actor, req, skillId, {}, {evaluate: false});
+  const roll = await rollNative(actor, req, skillId, {});
   if (!roll) throw new RollCancelled();
   return roll;
 }
@@ -260,7 +279,7 @@ async function advanceHoard(message, req, actor, payload = {}) {
   if (blind) {
     if (card) await card.update({content, rolls, blind: true, whisper: gmWhisper(), [`flags.${ID}.hoard`]: committed.state});
     else card = await ChatMessage.create({speaker: ChatMessage.getSpeaker({actor}), flavor: e(hoardTitle(req, actor)), content, rolls, blind: true, whisper: gmWhisper(), flags: {[ID]: {hoard: committed.state, hoardRequest: message.id}}}, {messageMode: "blind"});
-    await message.update({content: hoardShellHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), done: committed.state.done, escape: e}), [`flags.${ID}.hoardLink`]: card.id});
+    await message.update({content: hoardShellHTML({title: hoardTitle(req, actor), identity: hoardIdentity(actor), done: committed.state.done, escape: e}), [`flags.${ID}.hoardLink`]: card.id, [`flags.${ID}.hoardNext`]: hoardNextFlag(data, req.band, committed.state)});
   } else await message.update({content, rolls, [`flags.${ID}.hoard`]: committed.state});
   if (committed.state.done) {
     const current = message.getFlag(ID, "request") ?? req;
@@ -293,7 +312,8 @@ async function submitHoardRoll(message, actor) {
   const holder = message.getFlag(ID, "hoard") ? message : (!blind ? request : null);
   const data = peekTreasure() ?? await loadTreasure();
   const state = holder?.getFlag(ID, "hoard") ?? emptyHoardState(actor.id);
-  const step = holder || !blind ? nextHoardStep(data, req.band, state) : null;
+  const hidden = request.getFlag(ID, "hoardNext");
+  const step = holder || !blind ? nextHoardStep(data, req.band, state) : hidden?.formulas?.length ? {...hidden, kind: "hidden"} : null;
   const hoard = {stepId: step?.id ?? "next"};
   if (step) {
     const rolled = await rollHoardFormulas(step.formulas, blind);
@@ -351,25 +371,24 @@ export async function rollRequest(requestId, actorId, skillId, prepared = null) 
   if (!acknowledgement?.accepted) throw new Error(acknowledgement?.reason ?? "The check could not be resolved.");
   return acknowledgement;
 }
-async function rollNative(actor, req, skillId, dialog, {evaluate} = {}) {
+async function rollNative(actor, req, skillId, dialog) {
   const message = {create: false};
   const target = req.dc == null ? {} : {target: req.dc};
-  const pending = evaluate === false ? {evaluate: false} : {};
   if (req.kind === "ability" || req.kind === "save") {
     const method = req.kind === "ability" ? "rollAbilityCheck" : "rollSavingThrow";
     if (typeof actor[method] !== "function") throw new Error(`${actor.name} cannot make ${req.kind === "ability" ? "an ability check" : "a saving throw"}.`);
-    return firstRoll(await actor[method]({ability: req.ability, ...target, ...pending}, dialog, message));
+    return firstRoll(await actor[method]({ability: req.ability, ...target}, dialog, message));
   }
   const skill = req.kind === "delerium" ? skillId : req.skill;
   if (typeof actor.rollSkill !== "function") throw new Error(`${actor.name} cannot make a skill check.`);
-  return firstRoll(await actor.rollSkill({skill, ...target, ...pending}, dialog, message));
+  return firstRoll(await actor.rollSkill({skill, ...target}, dialog, message));
 }
 async function resolveRequest({requestId,actorId,skillId,roll:prepared,hoard}, execution) {
   const message = game.messages.get(requestId), req = validRequest(message), actor = game.actors.get(actorId), sender = game.users.get(execution.senderUserId);
   if (!game.user.isGM || game.user.id !== authority(message)?.id) return {accepted:false,reason:"The request's active GM must resolve this check."};
   if (!req || !req.actorIds.includes(actorId)) return {accepted:false,reason:"This request is no longer available."};
   if (!canRoll(message,actor,sender)) return {accepted:false,reason:"The check is assigned to another player. Any GM may roll for this character."};
-  // Results are authored by the authority GM. Client dice are rebuilt and evaluated here, except a public death save that already updated its sheet.
+  // Results are authored by the authority GM. The clicking client rolls; its dice are rebuilt here and never rolled again.
   if (isComplete(message,actorId)) { scheduleRequestOutcomes(message); return {accepted:true,alreadyResolved:true}; }
   if (req.kind === "surge") {
     // Finish any interrupted earlier check before consuming this trigger's next threshold.
@@ -386,8 +405,11 @@ async function resolveRequest({requestId,actorId,skillId,roll:prepared,hoard}, e
   }
   if (req.kind === "hoard") return advanceHoard(message, req, actor, hoard ?? {});
   let roll, declined = false;
-  const supplied = prepared && !["encounter","surge"].includes(req.kind) && !(req.kind === "delerium" && skillId === "decline");
-  if (supplied) roll = await materializeRoll(prepared, req.kind);
+  const supplied = prepared && !(req.kind === "delerium" && skillId === "decline");
+  if (supplied) {
+    roll = await materializeRoll(prepared, req.kind);
+    if (["encounter","surge"].includes(req.kind) && roll?.formula !== `1d${requestDie(req)}`) return {accepted:false,reason:"The supplied roll does not match this check."};
+  }
   else if (["encounter","surge"].includes(req.kind)) roll = await new Roll(`1d${req.kind === "surge" ? surgeDie(req) : req.die}`).evaluate({allowInteractive:false});
   else if (req.kind === "death") {
     // Native bonuses and advantage apply, but private checks must not reveal the outcome through sheet counters.
