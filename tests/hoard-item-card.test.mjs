@@ -32,7 +32,7 @@ test("pending steps are Core's roll-request card with modes off and a Roll butto
   for (const card of [countingCard, null]) {
     const html = hoardCardHTML({title: "Roll for Treasure", actorUuid: "Actor.a", identity, recipientName: "Chuck", state: pendingState(), step, allowRoll: true, escape, itemCard: card, requestCard});
     assert.doesNotMatch(html, /ml-award-card"/);
-    assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><header class="ml-award-card__header">.*<\/header><div class="ml-card ml-stack" data-ml-roll-entry="hoard"><p>Initial Roll: 37<\/p><span class="ml-actor-identity"><img [^>]*><span>Chuck<\/span><\/span><p>Magic item 2 of 2<\/p><div class="ml-roll-controls"><button type="button" class="ml-button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button><\/div><\/div><\/section><\/div>$/);
+    assert.match(html, /^<div class="mlgm-hoard"><section class="ml-chat-card ml-stack ml-core-roll-request"><header class="ml-award-card__header">.*<\/header><div class="ml-card ml-stack" data-ml-roll-entry="hoard"><p>Initial Roll: 37<\/p><p>Magic item 2 of 2<\/p><div class="ml-roll-controls"><button type="button" class="ml-button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button><\/div><\/div><\/section><\/div>$/);
     assert.equal(html.match(/data-ml-core-roll=/g).length, 1);
     assert.doesNotMatch(html, /DIS|ADV|data-mlgm-hoard-step|<select/);
     assert.doesNotMatch(html, /Table [A-Z]|d100|1d\d/);
