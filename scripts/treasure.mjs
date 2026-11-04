@@ -555,6 +555,17 @@ export async function grantHoardAwards(state, {placeItem, addCoins}) {
   return state;
 }
 
+// The rolling player's own client shows the dice, so they use that player's colors and dice set.
+// `users` limits who sees them; null shows everyone.
+export async function showHoardDice(rolls, users = null) {
+  const dice = globalThis.game?.dice3d;
+  if (typeof dice?.showForRoll !== "function" || !rolls?.length) return;
+  for (const roll of rolls) {
+    try { await dice.showForRoll(roll, globalThis.game.user, true, users, false); }
+    catch (error) { console.warn("Morelord Game Master | Dice animation", error); }
+  }
+}
+
 export async function commitHoardStep({data, bandId, state, stepId = null, totals, scroll = null, index = new Map(), placeItem = async () => null, addCoins = async () => false}) {
   const step = nextHoardStep(data, bandId, state);
   if (!step || (stepId && stepId !== "next" && stepId !== step.id)) return {state: copyState(state), step, alreadyResolved: true};
