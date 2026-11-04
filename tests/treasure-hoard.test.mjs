@@ -5,6 +5,7 @@ import {ContextualSocketService} from "../../morelord-core/scripts/services/cont
 import * as users from "../../morelord-core/scripts/services/user-service.js";
 import * as participation from "../../morelord-core/scripts/ui/actor-participation.js";
 import {actorIdentity} from "../../morelord-core/scripts/ui/actor-identity.js";
+import {ChatRollRequests} from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import * as currency from "../../morelord-core/scripts/services/currency-service.js";
 import {
   HOARD_BANDS, addHoardCoins, auditTreasure, commitHoardStep, describeRow, emptyHoardState, findSrdItem,
@@ -293,15 +294,25 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   globalThis.socketlib = {registerModule: () => ({register(_name, fn) { dispatch = fn; }})};
   const transport = new ContextualSocketService();
   transport.start();
-  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency};
+  // Core's real roll-request renderer, so the hoard card is built from the shared markup.
+  globalThis.foundry.utils.escapeHTML = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  globalThis.fromUuidSync = uuid => game.actors.get(uuid.replace("Actor.", ""));
+  const chatRequests = new ChatRollRequests({createChannel: () => ({on() {}})});
+  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, chatRequests};
   initializeRequests();
   const send = (message, hoard, sender = gm.id) => dispatch({namespace: ID, type: "roll", data: {requestId: message.id, actorId: actor.id, hoard}, senderUserId: sender, targetUserId: gm.id, messageId: crypto.randomUUID()});
-  const buttons = html => html.match(/data-mlgm-hoard-step/g) ?? [];
+  const buttons = html => html.match(/data-ml-core-roll=/g) ?? [];
   await assert.rejects(() => createRequest({kind: "hoard", band: "cr-17", actorIds: [actor.id]}), /treasure hoard/);
   const request = await createRequest({kind: "hoard", band: "cr-0-4", blind: false, actorIds: [actor.id]});
   assert.match(request.content, /<h3>Roll for Treasure<\/h3>/);
   assert.doesNotMatch(request.content, /Treasure Hoard|CR 0-4/);
   assert.equal(buttons(request.content).length, 1);
+  // The pending step is Core's roll-request card: modes off, one Roll button, no GM-side roll attached.
+  assert.match(request.content, /ml-core-roll-request/);
+  assert.match(request.content, /data-ml-roll-entry="hoard"/);
+  assert.match(request.content, /<button type="button" data-ml-core-roll="normal" aria-label="Roll">Roll<\/button>/);
+  assert.doesNotMatch(request.content, /DIS|ADV|data-mlgm-hoard-step/);
+  assert.equal(request.rolls.length, 0);
   assert.equal(request.getFlag(ID, "hoard"), undefined);
   const denied = await send(request, undefined, stranger.id);
   assert.equal(denied.accepted, false);
@@ -570,10 +581,17 @@ function chatRoot(source) {
       return null;
     },
     querySelectorAll(selector) {
-      const button = () => ({disabled: false, dataset: {}, closest() { return {querySelector() { return null; }}; }, parentElement: null, addEventListener() {}});
-      if (selector === "[data-mlgm-hoard-step]") return [...this.source.matchAll(/data-mlgm-hoard-step="/g)].map(button);
-      if (selector === "[data-mlgm-actor]") return [...this.source.matchAll(/data-mlgm-actor="/g)].map(button);
-      return [];
+      const entry = id => ({dataset: {mlRollEntry: id}, querySelector() { return null; }});
+      const button = () => ({disabled: false, dataset: {}, hasAttribute() { return false; }, closest() { return entry("actor"); }, parentElement: null, addEventListener() {}});
+      const hoard = this.source.includes("mlgm-hoard");
+      // The renderers pass a comma list: the older plain markup and Core's roll-request markup.
+      return selector.split(",").map(part => part.trim()).flatMap(part => {
+        if (part === "[data-mlgm-hoard-step]") return [...this.source.matchAll(/data-mlgm-hoard-step="/g)].map(button);
+        if (part === ".mlgm-hoard [data-ml-core-roll]") return hoard ? [...this.source.matchAll(/data-ml-core-roll="/g)].map(button) : [];
+        if (part === "[data-mlgm-actor]") return [...this.source.matchAll(/data-mlgm-actor="/g)].map(button);
+        if (part === "[data-ml-core-roll]") return [...this.source.matchAll(/data-ml-core-roll="/g)].map(button);
+        return [];
+      });
     }
   };
   return root;
