@@ -180,10 +180,9 @@ export function nextHoardStep(data, bandId, state) {
   for (let group = 0; group < (row.magic ?? []).length; group += 1) {
     const term = row.magic[group];
     const count = term.count ?? state.counts?.[group];
-    const name = tableName(data, term.table);
-    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], table: term.table, prompt: `${name}: roll ${term.dice}d${term.sides} for how many`};
+    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], table: term.table, prompt: `Roll ${term.dice}d${term.sides} for how many magic items`};
     const have = (state.items ?? []).filter(item => item.group === group).length;
-    if (have < count) return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, count, formulas: [`1d${tableById(data, term.table).die ?? 100}`], table: term.table, prompt: `${name}: item ${have + 1} of ${count}`};
+    if (have < count) return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, count, formulas: [`1d${tableById(data, term.table).die ?? 100}`], table: term.table, prompt: `Magic item ${have + 1} of ${count}`};
   }
   return null;
 }
@@ -568,11 +567,9 @@ export async function commitHoardStep({data, bandId, state, stepId = null, total
 
 
 function itemLine(item, escape) {
-  const variant = item.variantRoll != null ? `, d${item.variantDie}: ${item.variantRoll}` : "";
-  const detail = `${escape(item.tableName)} (d100: ${item.roll}${variant})`;
   const link = contentLink(item.embeddedUuid || item.compendiumUuid || item.spell?.uuid, item.name, escape);
   const source = item.pendingVariant ? "" : item.spell ? " (Craftworks)" : item.source ? ` (${escape(item.source)})` : item.embeddedUuid || item.compendiumUuid ? "" : " (text only)";
-  return `<li>${detail}: ${link}${source}</li>`;
+  return `<li>${link}${source}</li>`;
 }
 
 export function hoardCardHTML({title, identity = "", state, step = null, allowRoll = false, escape}) {
@@ -583,7 +580,7 @@ export function hoardCardHTML({title, identity = "", state, step = null, allowRo
   const valuable = state?.valuable ? `<p><strong>${state.valuable.kind === "gems" ? "Gems" : "Art objects"}</strong><br>${state.valuable.quantity} × ${contentLink(state.valuable.embeddedUuid || state.valuable.compendiumUuid, state.valuable.name, escape)}</p>` : "";
   const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
   const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
-  const row = rolled ? `<p>Hoard roll: ${state.hoardRoll}</p><p>${escape(state.rowText)}</p>` : "";
+  const row = rolled ? `<p>Initial Roll: ${state.hoardRoll}</p>` : "";
   const trinket = state?.trinket ? `<p><strong>Trinket</strong><br>${contentLink(state.trinket.embeddedUuid, state.trinket.name, escape)} (${escape(state.trinket.source)})</p>` : "";
   return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${trinket}${button}</section>`;
 }

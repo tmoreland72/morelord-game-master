@@ -103,7 +103,7 @@ function hoardWhisper(req) {
   const owners = game.users.filter(user => !user.isGM && actor?.testUserPermission?.(user, "OWNER")).map(user => user.id);
   return [...new Set([...owners, ...gmWhisper()])];
 }
-const hoardTitle = (req, actor) => `${requestTitle(req)} · ${actor?.name ?? "Character"}`;
+const hoardTitle = () => "Roll for Treasure";
 const hoardIdentity = actor => actor ? core().ui.actorIdentity({actorUuid: actor.uuid}) : "";
 function hoardMarkup(req, actor, state, {allowRoll = false} = {}) {
   const data = peekTreasure();

@@ -160,8 +160,8 @@ test("hoard row 95 rolls one item per counted roll, each its own step on its tab
     assert.equal(three.next, null);
     const magicSteps = three.labels.filter(step => step.kind === "magic");
     assert.deepEqual(magicSteps.map(step => step.formulas), [["1d100"], ["1d100"], ["1d100"]]);
-    assert.deepEqual(magicSteps.map(step => step.prompt), ["Magic Item Table G: item 1 of 3", "Magic Item Table G: item 2 of 3", "Magic Item Table G: item 3 of 3"]);
-    assert.match(three.labels.find(step => step.kind === "magic-count").prompt, /Magic Item Table G: roll 1d4 for how many/);
+    assert.deepEqual(magicSteps.map(step => step.prompt), ["Magic item 1 of 3", "Magic item 2 of 3", "Magic item 3 of 3"]);
+    assert.match(three.labels.find(step => step.kind === "magic-count").prompt, /^Roll 1d4 for how many magic items$/);
     assert.match(hoardCardHTML({title: "T", state: three.state, step: null, escape: value => value}), /Magic items \(3 of 3\)/);
     const four = await drive("cr-5-10", 95, 10, 4, [[1], [2], [3], [4]]);
     assert.equal(four.state.items.length, 4);
@@ -173,8 +173,9 @@ test("hoard row 95 rolls one item per counted roll, each its own step on its tab
     const done = (await commitHoardStep({data, bandId: "cr-5-10", state: fig.state, totals: [8], index: new Map(), placeItem: async () => ({uuid: "Actor.actor.Item.x"})})).state;
     assert.match(done.items[0].name, /Serpentine Owl/i);
     assert.equal(done.items[0].variantRoll, 8);
-    assert.match(hoardCardHTML({title: "T", state: done, step: null, escape: value => value}), /d100: 13, d8: 8/);
-    assert.equal(nextHoardStep(data, "cr-5-10", done).prompt, "Magic Item Table G: item 2 of 2");
+    assert.match(hoardCardHTML({title: "T", state: done, step: null, escape: value => value}), /Serpentine Owl/);
+    assert.doesNotMatch(hoardCardHTML({title: "T", state: done, step: null, escape: value => value}), /Table|d100|d8:/);
+    assert.equal(nextHoardStep(data, "cr-5-10", done).prompt, "Magic item 2 of 2");
     // CR 0-4, row 95 also grants the Fragment of Fate once.
     const placed = [];
     let low = emptyHoardState("actor");
@@ -298,7 +299,8 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   const buttons = html => html.match(/data-mlgm-hoard-step/g) ?? [];
   await assert.rejects(() => createRequest({kind: "hoard", band: "cr-17", actorIds: [actor.id]}), /treasure hoard/);
   const request = await createRequest({kind: "hoard", band: "cr-0-4", blind: false, actorIds: [actor.id]});
-  assert.match(request.content, /Treasure Hoard · CR 0-4 · Aster/);
+  assert.match(request.content, /<h3>Roll for Treasure<\/h3>/);
+  assert.doesNotMatch(request.content, /Treasure Hoard|CR 0-4/);
   assert.equal(buttons(request.content).length, 1);
   assert.equal(request.getFlag(ID, "hoard"), undefined);
   const denied = await send(request, undefined, stranger.id);
@@ -309,8 +311,8 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   const table = await send(request);
   assert.deepEqual(table, {accepted: true});
   assert.equal(JSON.stringify(table).includes("Gemstone"), false);
-  assert.match(request.content, /Hoard roll: 37/);
-  assert.match(request.content, /2d6 gems \(10 GP each\)/);
+  assert.match(request.content, /<p>Initial Roll: 37<\/p>/);
+  assert.doesNotMatch(request.content, /Hoard roll|Table [A-Z]|d100|1d100/);
   assert.equal(buttons(request.content).length, 1);
   assert.equal(created.length, 0);
   // The card speaks as the character, so Dice So Nice's owner-appearance setting plays the player's dice.
@@ -417,20 +419,20 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   assert.deepEqual(old.speaker, {actor: actor.id});
   // The player's client must not animate the dice a second time.
   assert.doesNotMatch(readFileSync(new URL("../scripts/requests.mjs", import.meta.url), "utf8"), /showHoardDice|showForRoll/);
-  assert.match(priv.content, /Hoard roll: 27/);
+  assert.match(priv.content, /Initial Roll: 27/);
   assert.doesNotMatch(priv.content, /data-mlgm-hoard-reveal|Reveal/);
   assert.deepEqual([...priv.whisper].sort(), ["gm", "player"]);
   // Private hoards grant as they roll, the same as public ones.
   assert.equal(created.length, beforePrivate + 1);
   const privRoot = chatRoot(priv.content);
   render(priv, privRoot);
-  assert.match(privRoot.source, /Hoard roll: 27/);
+  assert.match(privRoot.source, /Initial Roll: 27/);
   // Another player gets the whispered roll message from Foundry but must not see the card.
   const strangerView = Object.create(priv, {isContentVisible: {value: false}});
   const hiddenRoot = chatRoot("<p>Private roll</p>");
   render(strangerView, hiddenRoot);
   assert.equal(hiddenRoot.hidden, true);
-  assert.doesNotMatch(hiddenRoot.source, /Hoard roll/);
+  assert.doesNotMatch(hiddenRoot.source, /Initial Roll/);
   assert.equal(created.length, beforePrivate + 1);
   assert.equal(game.messages.contents?.some?.(message => message.getFlag?.(ID, "hoardLink")) ?? false, false);
   const ui = readFileSync(new URL("../scripts/main.mjs", import.meta.url), "utf8");
@@ -455,7 +457,7 @@ test("a hoard card that rendered before ready gets its Roll button back", async 
   const listeners = [];
   const message = {
     id: "existing", author: gm, rolls: [],
-    content: `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Treasure Hoard · CR 0-4 · Aster</h3><button type="button" data-mlgm-hoard-step="table">Roll</button></section>`,
+    content: `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>Roll for Treasure</h3><button type="button" data-mlgm-hoard-step="table">Roll</button></section>`,
     flags: {[ID]: {request: {kind: "hoard", band: "cr-0-4", actorIds: ["actor"], version: 2, blind: false, completed: []}}},
     getFlag(ns, key) { return this.flags?.[ns]?.[key]; },
     async update() {}
