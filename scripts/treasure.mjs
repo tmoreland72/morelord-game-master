@@ -178,13 +178,15 @@ export function nextHoardStep(data, bandId, state) {
     const term = row.magic[group];
     const count = term.count ?? state.counts?.[group];
     const tier = tierName(term.tables);
-    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], tier, prompt: `${tier} magic items`};
+    if (count == null) return {id: `magic-count-${group}`, kind: "magic-count", group, formulas: [`${term.dice}d${term.sides}`], tier, prompt: `${tier} magic items: roll ${term.dice}d${term.sides} for how many`};
     const have = (state.items ?? []).filter(item => item.group === group).length;
     if (have < count) {
       const formulas = [];
       if (term.tables.length > 1) formulas.push(`1d${term.tables.length}`);
       formulas.push(`1d${tableById(data, term.tables[0]).die ?? 100}`);
-      return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, formulas, tables: [...term.tables], tier, prompt: `${tier} magic item`};
+      // A tier split across tables rolls 1d<n> to pick the table, then d100 on it. Say so on the card.
+      const pick = term.tables.length > 1 ? `: roll ${formulas[0]} to pick the table (${term.tables.map((id, i) => `${i + 1} = ${tableById(data, id).name}`).join(", ")}), then ${formulas[1]}` : "";
+      return {id: `magic-${group}-${have}`, kind: "magic", group, index: have, count, formulas, tables: [...term.tables], tier, prompt: `${tier} magic item ${have + 1} of ${count}${pick}`};
     }
   }
   return null;
@@ -264,6 +266,7 @@ export function applyHoardStep(data, bandId, state, step, totals, scroll = null)
     tableName: preview.table.name,
     roll: preview.roll,
     choice: step.tables.length > 1 ? preview.choice : null,
+    tableCount: step.tables.length > 1 ? step.tables.length : null,
     quantity: 1,
     compendiumUuid: null,
     embeddedUuid: null,
@@ -554,7 +557,7 @@ export async function showHoardDice(rolls, blind) {
 }
 
 function itemLine(item, escape) {
-  const detail = item.choice == null ? `${escape(item.tableName)} (${item.roll})` : `${escape(item.tableName)} (${item.roll})`;
+  const detail = item.choice == null ? `${escape(item.tableName)} (${item.roll})` : `${escape(item.tableName)} (1d${item.tableCount ?? 2}: ${item.choice}, d100: ${item.roll})`;
   const link = contentLink(item.embeddedUuid || item.compendiumUuid || item.spell?.uuid, item.name, escape);
   return `<li>${detail}: ${link}</li>`;
 }
@@ -566,7 +569,8 @@ export function hoardCardHTML({title, identity = "", state, step = null, blind =
   const reveal = allowReveal && blind && state?.done && !state?.revealed ? `<button type="button" data-mlgm-hoard-reveal>Reveal</button>` : "";
   const coins = state?.coins ? `<p><strong>Coins</strong><br>${escape(formatHoardCoins(state.coins.purse) || "None")}${state.coins.granted ? "<br>Added to the purse." : ""}</p>` : "";
   const valuable = state?.valuable ? `<p><strong>${state.valuable.kind === "gems" ? "Gems" : "Art objects"}</strong><br>${state.valuable.quantity} × ${contentLink(state.valuable.embeddedUuid || state.valuable.compendiumUuid, state.valuable.name, escape)}</p>` : "";
-  const items = state?.items?.length ? `<p><strong>Magic items</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
+  const planned = Object.values(state?.counts ?? {}).reduce((sum, count) => sum + (Number(count) || 0), 0);
+  const items = state?.items?.length ? `<p><strong>Magic items${planned > 1 ? ` (${state.items.length} of ${planned})` : ""}</strong></p><ul>${state.items.map(item => itemLine(item, escape)).join("")}</ul>` : "";
   const row = rolled ? `<p>Hoard roll: ${state.hoardRoll}</p><p>${escape(state.rowText)}</p>` : "";
   return `<section class="ml-chat-card ml-stack mlgm-hoard"><h3>${escape(title)}</h3>${identity}${row}${coins}${valuable}${items}${button}${reveal}</section>`;
 }

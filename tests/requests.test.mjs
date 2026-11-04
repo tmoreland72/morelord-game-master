@@ -15,12 +15,12 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   const events=new Map();globalThis.Hooks={on(k,f){events.set(k,[...(events.get(k)??[]),f]);return f;},off(k,f){events.set(k,(events.get(k)??[]).filter(x=>x!==f));},call(k,...args){return !(events.get(k)??[]).some(f=>f(...args)===false);}};
   const gm={id:"gm",isGM:true,active:true},assistant={id:"assistant",isGM:true,active:true},player={id:"player",isGM:false,active:true},other={id:"other",isGM:false,active:true};
   let dieTotal=4;
-  let skillCalls=0,dieCalls=0,deathUpdates=0,dispatch,holdAnimations=false; const warnings=[];
+  let skillCalls=0,clientRolls=0,dieCalls=0,deathUpdates=0,dispatch,holdAnimations=false; const warnings=[];
   const actor={id:"actor",uuid:"Actor.actor",name:"Aster",type:"character",hasPlayerOwner:true,isOwner:true,system:{skills:{prc:{}}},testUserPermission:u=>u.isGM||u.id==="player",
     async rollSkill(config,dialog,message){
       assert.equal(message.create,false);assert.equal(config.advantage,undefined);assert.equal(config.disadvantage,undefined);
-      if(config.evaluate===false){assert.deepEqual(dialog,{});return [{formula:"1d20+1",options:{},_evaluated:false,toJSON(){return {formula:this.formula,options:this.options,evaluated:false};}}];}
-      assert.equal(dialog.configure,false);skillCalls++;return [{total:15,options:{target:config.target},dice:[{faces:20,results:[{result:15}]}]}];
+      if(dialog.configure!==false){assert.deepEqual(dialog,{});clientRolls++;return [{formula:"1d20+1",options:{},total:15,_evaluated:true,toJSON(){return {formula:this.formula,options:this.options,total:15,evaluated:true};}}];}
+      skillCalls++;return [{total:15,options:{target:config.target},dice:[{faces:20,results:[{result:15}]}]}];
     },
     async rollDeathSave(_config,_dialog,message){assert.equal(message.create,false);const result=[{total:12}];if(Hooks.call("dnd5e.rollDeathSave",result,{subject:this}))deathUpdates++;return result;}};
   player.character=actor;
@@ -159,8 +159,8 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   const abilityConfigs=[];
   const rollAbility=async(config,dialog,message)=>{
     assert.equal(message.create,false);assert.equal(config.advantage,undefined);assert.equal(config.disadvantage,undefined);
-    if(config.evaluate===false){assert.deepEqual(dialog,{});return [{formula:"1d20+2",options:{},_evaluated:false,toJSON(){return {formula:this.formula,options:this.options,evaluated:false};}}];}
-    assert.equal(dialog.configure,false);abilityConfigs.push(config);return [{total:18,dice:[{faces:20,results:[{result:18}]}]}];
+    if(dialog.configure!==false){assert.deepEqual(dialog,{});return [{formula:"1d20+2",options:{},total:18,_evaluated:true,toJSON(){return {formula:this.formula,options:this.options,total:18,evaluated:true};}}];}
+    abilityConfigs.push(config);return [{total:18,dice:[{faces:20,results:[{result:18}]}]}];
   };
   actor.rollAbilityCheck=rollAbility;second.rollAbilityCheck=rollAbility;
   actor.rollSavingThrow=async(config,dialog,message)=>{assert.equal(message.create,false);assert.equal(dialog.configure,false);assert.equal(config.advantage,undefined);assert.equal(config.ability,"dex");assert.equal(config.target,12);return [{total:9,dice:[{faces:20,results:[{result:9}]}]}];};
@@ -183,10 +183,12 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   await assert.rejects(()=>createRequest({kind:"ability",ability:"luck",actorIds:[actor.id]}),/ability/);
 
   const preparedSkill=await prepareRequestRoll(check.getFlag(ID,"request"),actor);
-  assert.equal(preparedSkill._evaluated,false);assert.equal(preparedSkill.toJSON().formula,"1d20+1");
+  // The clicking client rolls its own dice: the prepared roll is already evaluated.
+  assert.equal(preparedSkill._evaluated,true);assert.equal(preparedSkill.toJSON().formula,"1d20+1");
   const deathCallsBefore=deathUpdates;
-  assert.equal(await prepareRequestRoll({kind:"death",blind:true,actorIds:[actor.id]},actor),null);
-  assert.equal(deathUpdates,deathCallsBefore);
+  const blindDeath=await prepareRequestRoll({kind:"death",blind:true,actorIds:[actor.id]},actor);
+  assert.equal(blindDeath.total,12);
+  assert.equal(deathUpdates,deathCallsBefore);assert.equal((events.get("dnd5e.rollDeathSave")??[]).length,0);
   const deathCalls=[];
   const previousDeath=actor.rollDeathSave;
   actor.rollDeathSave=async(_config,dialog,message)=>{deathCalls.push({dialog,message});return [{total:11,_evaluated:true,formula:"1d20",toJSON(){return {formula:"1d20",total:11,evaluated:true};}}];};
@@ -198,15 +200,32 @@ test("Core routes chat requests; all results are GM-only; racing clicks resolve 
   let evaluated=0;
   const PreviousRoll=globalThis.Roll;
   globalThis.Roll=class extends PreviousRoll{
-    static fromData(data){const roll=new this(data.formula);roll.planted=99;roll.total=99;return roll;}
+    static fromData(data){const roll=new this(data.formula);roll.total=99;roll._evaluated=data.evaluated===true;return roll;}
     async evaluate(){evaluated++;this.total=21;this.dice=[{faces:20,results:[{result:21}]}];this._evaluated=true;return this;}
   };
+  // The player's client rolled 18. The GM rebuilds that roll and never rolls again.
   const prepared=await prepareRequestRoll(nativeRequest.getFlag(ID,"request"),actor);
-  const ack=await dispatch({namespace:ID,type:"roll",data:{requestId:nativeRequest.id,actorId:actor.id,roll:{packed:true,data:prepared.toJSON(),evaluated:false}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  const ack=await dispatch({namespace:ID,type:"roll",data:{requestId:nativeRequest.id,actorId:actor.id,roll:{packed:true,data:prepared.toJSON(),evaluated:true}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
   await settle();
-  assert.equal(ack.accepted,true);assert.equal("total" in ack,false);assert.equal(evaluated,1);
+  assert.equal(ack.accepted,true);assert.equal("total" in ack,false);assert.equal(evaluated,0);
   const nativeResult=game.messages.find(m=>m.getFlag(ID,"result")?.requestId===nativeRequest.id);
-  assert.equal(nativeResult.rolls[0].total,21);assert.equal(nativeResult.rolls[0].planted,undefined);
+  assert.equal(nativeResult.rolls[0].total,99);
   assert.equal(nativeResult.blind,true);
+  // A roll from an older client that was never evaluated is still rolled once.
+  const legacyRequest=await createRequest({kind:"ability",ability:"wis",dc:15,actorIds:[actor.id]});
+  await dispatch({namespace:ID,type:"roll",data:{requestId:legacyRequest.id,actorId:actor.id,roll:{packed:true,data:{formula:"1d20+2",evaluated:false},evaluated:false}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  await settle();
+  assert.equal(evaluated,1);
+  assert.equal(game.messages.find(m=>m.getFlag(ID,"result")?.requestId===legacyRequest.id).rolls[0].total,21);
+  // Encounter checks roll on the clicking client too; the GM checks the die and applies the total.
+  const dieBefore=dieCalls;
+  const encounterRequest=await createRequest({actorIds:[actor.id],kind:"encounter",die:8});
+  const wrongDie=await dispatch({namespace:ID,type:"roll",data:{requestId:encounterRequest.id,actorId:actor.id,roll:{packed:true,data:{formula:"1d20",total:7,evaluated:true},evaluated:true}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  await settle();
+  assert.equal(wrongDie.accepted,false);
+  const rolledOnClient=await dispatch({namespace:ID,type:"roll",data:{requestId:encounterRequest.id,actorId:actor.id,roll:{packed:true,data:{formula:"1d8",total:6,evaluated:true},evaluated:true}},context:{},senderUserId:gm.id,messageId:crypto.randomUUID(),targetUserId:gm.id});
+  await settle();
+  assert.equal(rolledOnClient.accepted,true);assert.equal(dieCalls,dieBefore);
+  assert.equal(game.messages.find(m=>m.getFlag(ID,"result")?.requestId===encounterRequest.id).rolls[0].total,99);
   globalThis.Roll=PreviousRoll;
 });

@@ -144,6 +144,73 @@ test("a rare item is one step, and the step card survives a re-render without gr
   } finally { console.warn = originalWarn; }
 });
 
+test("hoard row 95 rolls one item per counted roll, each from its own SRD 5.2 rarity table", async () => {
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const data = await loadTreasure();
+    const named = id => data.tables.find(table => table.id === id);
+    // SRD 5.2 sorts magic items by rarity. Nothing in the data is a lettered 2014 table.
+    assert.equal(data.tables.some(table => /\bTable [A-I]\b/.test(table.name)), false);
+    for (const hoard of data.hoards) for (const row of hoard.rows) for (const term of row.magic ?? []) for (const id of term.tables) assert.ok(named(id), id);
+
+    const drive = async (bandId, hoardRoll, valuables, count, picks) => {
+      let state = emptyHoardState("actor");
+      const labels = [];
+      const run = async totals => {
+        const step = nextHoardStep(data, bandId, state);
+        labels.push(step);
+        state = (await commitHoardStep({data, bandId, state, totals, index: new Map(), placeItem: async () => ({uuid: "Actor.actor.Item.x"})})).state;
+        return step;
+      };
+      await run([hoardRoll]);
+      await run([valuables]);
+      await run([count]);
+      for (const totals of picks) await run(totals);
+      return {state, labels, next: nextHoardStep(data, bandId, state)};
+    };
+
+    // CR 0-4, row 95: 2d6 gems and 1d4 Rare magic items. Rare is split over two d100 tables, picked by 1d2.
+    assert.deepEqual(rowAt(data.hoards[0], 95).magic, [{tables: ["rare-1", "rare-2"], dice: 1, sides: 4}]);
+    const three = await drive("cr-0-4", 95, 7, 3, [[1, 40], [2, 10], [1, 55]]);
+    assert.equal(three.state.counts["0"] ?? Object.values(three.state.counts)[0], 3);
+    assert.equal(three.state.items.length, 3);
+    assert.deepEqual(three.state.items.map(item => item.tableId), ["rare-1", "rare-2", "rare-1"]);
+    for (const item of three.state.items) {
+      const table = named(item.tableId);
+      assert.equal(table.rarity, "Rare");
+      const row = table.rows.find(entry => item.roll >= entry.min && item.roll <= entry.max);
+      assert.equal(row.name, item.catalogName);
+    }
+    assert.equal(three.next, null);
+    const magicSteps = three.labels.filter(step => step.kind === "magic");
+    assert.deepEqual(magicSteps.map(step => step.formulas), [["1d2", "1d100"], ["1d2", "1d100"], ["1d2", "1d100"]]);
+    assert.deepEqual(magicSteps.map(step => step.prompt.slice(0, 22)), ["Rare magic item 1 of 3", "Rare magic item 2 of 3", "Rare magic item 3 of 3"]);
+    assert.match(magicSteps[0].prompt, /1d2 to pick the table \(1 = Rare Magic Items, 2 = Rare Magic Items II\), then 1d100/);
+    assert.match(three.labels.find(step => step.kind === "magic-count").prompt, /roll 1d4 for how many/);
+
+    const html = hoardCardHTML({title: "Treasure Hoard", state: three.state, step: null, escape: value => value});
+    assert.match(html, /Magic items \(3 of 3\)/);
+    assert.match(html, /1d2: 2, d100: 10/);
+    const partial = await drive("cr-0-4", 95, 7, 3, [[1, 40]]);
+    assert.equal(nextHoardStep(data, "cr-0-4", partial.state).index, 1);
+    assert.match(nextHoardStep(data, "cr-0-4", partial.state).prompt, /item 2 of 3/);
+
+    // A count of 1 yields one item, and a count of 4 yields four.
+    assert.equal((await drive("cr-0-4", 95, 7, 1, [[2, 99]])).state.items.length, 1);
+    const four = await drive("cr-0-4", 95, 7, 4, [[1, 1], [1, 2], [2, 3], [2, 4]]);
+    assert.equal(four.state.items.length, 4);
+    assert.equal(four.next, null);
+
+    // CR 5-10, row 95: Very Rare items, one table, so each item is a single d100.
+    assert.deepEqual(rowAt(data.hoards[1], 95).magic, [{tables: ["very-rare"], dice: 1, sides: 4}]);
+    const veryRare = await drive("cr-5-10", 95, 9, 3, [[12], [50], [76]]);
+    assert.equal(veryRare.state.items.length, 3);
+    assert.equal(veryRare.state.items.every(item => item.tableId === "very-rare" && item.choice == null), true);
+    assert.equal(veryRare.labels.filter(step => step.kind === "magic").every(step => step.formulas.length === 1), true);
+  } finally { console.warn = warn; }
+});
+
 test("the chat card rolls one step at a time, grants once, and keeps blind results whispered", async () => {
   const events = new Map();
   globalThis.Hooks = {on(name, fn) { events.set(name, [...(events.get(name) ?? []), fn]); return fn; }, off() {}, call() {}};
@@ -344,9 +411,14 @@ test("the chat card rolls one step at a time, grants once, and keeps blind resul
 
   const beforeBlind = created.length;
   const blind = await createRequest({kind: "hoard", band: "cr-0-4", blind: true, actorIds: [actor.id]});
+  // The public shell carries only the next dice, so the player's own client rolls them.
+  assert.deepEqual(blind.getFlag(ID, "hoardNext"), {id: "table", formulas: ["1d100"]});
   faces.push(27, 6);
   await send(blind);
+  assert.equal(blind.getFlag(ID, "hoardNext").id, "valuables");
+  assert.deepEqual(Object.keys(blind.getFlag(ID, "hoardNext")).sort(), ["formulas", "id"]);
   await send(blind);
+  assert.equal(blind.getFlag(ID, "hoardNext"), null);
   const hidden = game.messages.get(blind.getFlag(ID, "hoardLink"));
   assert.equal(hidden.blind, true);
   assert.deepEqual(hidden.whisper, ["gm"]);
