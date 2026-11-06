@@ -13,6 +13,7 @@
 - Skill checks, ability checks, saving throws, foraging, encounter checks, death saves, Delerium Search, Wild Magic checks, and Treasure Hoard steps use Morelord Core's shared roll-request card. Ammunition recovered uses Core's shared item card.
 - Bulk coin splits and removals use Morelord Core's currency rates. The coins each character receives are unchanged.
 - Requires Morelord Core 0.9.2 for shared currency, roll-request cards, and Treasure Hoard.
+- Private Treasure Hoards keep their whisper through Core's `preserveMessageMode`. Hoard steps use `holdCompletion`, so a step does not flash Completed before the next roll. Treasure grants use Core's `inventory.addItems`.
 
 ### Fixed
 
