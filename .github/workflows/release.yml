@@ -117,44 +117,16 @@ jobs:
 
       - name: Run unit tests
         if: ${{ inputs.publish_only == false }}
-        # Pass each unit test path. A glob is one literal path under this shell.
+        # Node treats a quoted glob as one literal path
+        # (Could not find tests/*.test.mjs). PowerShell resolves the maintained
+        # tests/*.test.mjs files, the same way the other Morelord release
+        # workflows do. Names are sorted so the set is stable. Live Foundry
+        # scripts and tests/*.test.cjs stay out of this list; npm test is the
+        # same *.test.mjs set.
         run: |
-          $tests = @(
-            'tests/ambience-folders.test.mjs'
-            'tests/ammo-recovery.test.mjs'
-            'tests/bulk-actions.test.mjs'
-            'tests/bulk-click.test.mjs'
-            'tests/bulk-coins.test.mjs'
-            'tests/bulk-layout.test.mjs'
-            'tests/changelog.test.mjs'
-            'tests/cheat-sheet.test.mjs'
-            'tests/core.test.mjs'
-            'tests/craftworks-privacy.test.mjs'
-            'tests/critical-triggers.test.mjs'
-            'tests/dialog-validation.test.mjs'
-            'tests/fate.test.mjs'
-            'tests/global-triggers.test.mjs'
-            'tests/hunters-mark.test.mjs'
-            'tests/lucky-finds.test.mjs'
-            'tests/mass-combat.test.mjs'
-            'tests/release-flow.test.mjs'
-            'tests/requests.test.mjs'
-            'tests/roll-requests.test.mjs'
-            'tests/run-macros-on-load.test.mjs'
-            'tests/scene-tokens.test.mjs'
-            'tests/smithy-at-the-scar.test.mjs'
-            'tests/sound-volume-playback.test.mjs'
-            'tests/sound-volume.test.mjs'
-            'tests/start-playlist.test.mjs'
-            'tests/tray-layout.test.mjs'
-            'tests/tray-sort.test.mjs'
-            'tests/tray-stack.test.mjs'
-            'tests/tray-state.test.mjs'
-            'tests/trigger-macros.test.mjs'
-            'tests/triggers.test.mjs'
-            'tests/world-clock.test.mjs'
-          )
-          node --test @tests
+          $tests = @(Get-ChildItem -LiteralPath tests -Filter *.test.mjs -File | Sort-Object -Property Name)
+          if ($tests.Count -eq 0) { throw 'No tests/*.test.mjs files were found.' }
+          node --test @($tests.FullName)
 
       - name: Resolve release version
         id: version

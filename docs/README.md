@@ -14,7 +14,7 @@ Morelord Game Master is free. Every DM needs a screen. This one lives inside Fou
 
 ## Setup
 
-Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.9.0 or newer. Enable Core and Game Master in your world. Delerium Search also needs one of `drakkenheim-core`, `drakkenheim-monsters`, or `drakkenheim-scgd` active.
+Requires Foundry VTT v14 or newer, the D&D 5e system 6.0 or newer, and Morelord Core 0.9.2 or newer. Enable Core and Game Master in your world. Delerium Search also needs one of `drakkenheim-core`, `drakkenheim-monsters`, or `drakkenheim-scgd` active.
 
 As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. You can change the shortcut in Foundry's keybinding settings. The screen opens as a tray above the canvas and below Foundry windows and dialogs, so you can keep working while it is open.
 
@@ -26,7 +26,7 @@ Choose the characters in scope once. Party requests, selected-token requests, an
 
 Build a skill check, ability check, or saving throw with an optional DC, then choose who rolls: the whole party, selected party tokens, or one character. One character lists every player character in the world. The label sits above that select. Sending with none chosen warns and leaves the form as it is. The request names only the chosen character, so only that character's owner can roll. Field labels sit above their controls. Players receive the request in chat and roll with the system's roll dialog, including advantage, disadvantage, and automatic modifiers. A summary card lists each total and, when a DC is set, who passed.
 
-Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, Treasure Hoard, and Roll of Fate. Treasure Hoard sends one party character a CR 0-4 or CR 5-10 hoard. The player rolls the d100, then each gem, art, and magic item step, on that same card. GM Settings can hide any of them or change their order.
+Turn on **Blind roll** to keep results and summaries visible only to GMs and Assistant GMs. Specialty requests sit below the builder: Encounter Check, Delerium Search, Foraging Check, Death Save, Treasure Hoard, and Roll of Fate. Treasure Hoard sends one Player Settings character a CR 0-4 or CR 5-10 hoard. The card is titled Roll for Treasure. The player rolls the d100, then each gem, art, and magic item step, on that same card. Private whispers that card to the character's owners and the GMs. Public and private hoards both add the items and any coins. GM Settings can hide any of them or change their order.
 
 ## Bulk Actions
 
