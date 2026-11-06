@@ -5,7 +5,7 @@ import { HOARD_BANDS, addHoardCoins, commitHoardStep, emptyHoardState, grantHoar
 
 export const core = () => {
   const api = game.modules.get("morelord-core")?.active && globalThis.MorelordCore;
-  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ and its Socketlib connection.");
+  if (!api?.socket?.createChannel || !api.ui?.participation || !api.rolls?.skill) throw new Error("Morelord Game Master requires Morelord Core 0.9.2+ and its Socketlib connection.");
   return api;
 };
 function coreReady() {
@@ -17,7 +17,7 @@ const authority = message => core().users.list().find(user => user.id === messag
 export const recipient = actor => core().users.activePlayerForActor(actor) ?? activeGM();
 export const deleriumSearch = () => {
   const api = core().deleriumSearch;
-  if (typeof api?.start !== "function" || typeof api?.available !== "function") throw new Error("Morelord Game Master requires Morelord Core 0.9.0+ for Delerium Search.");
+  if (typeof api?.start !== "function" || typeof api?.available !== "function") throw new Error("Morelord Game Master requires Morelord Core 0.9.2+ for Delerium Search.");
   if (!api.available()) throw new Error("Enable a Drakkenheim content module to search for delerium.");
   return api;
 };
@@ -201,7 +201,14 @@ async function createCoreRequest(req, cards) {
     // The card speaks as the character, so Dice So Nice plays the owner's dice when the GM adds the rolls.
     const whisper = req.private ? hoardWhisper(req) : [];
     const message = await cards.create({type, key: actor?.id ?? groupKey, groupKey, groupTitle: hoardTitle(), title: step?.prompt || hoardTitle(), actorUuid: actor?.uuid ?? null, modes: false, actionLabel: "Roll", data: {actorId: actor?.id}, speaker: ChatMessage.getSpeaker({actor}), whisper, flags});
-    // Core posts its cards in public mode, which clears the whisper. A private hoard restores its recipients.
+    // Privacy workaround until Core's create honors an opt-in.
+    // chatRequests.create copies whisper onto the message data, then always posts
+    // with messageMode "public". Foundry's public mode clears whisper, so a private
+    // hoard writes its recipients back. sameIds is the detection for today's create:
+    // when the installed Core already kept those recipients, this update does not run.
+    // Passing whisper is not that opt-in. Switch only when create reads a documented
+    // privacy option, such as a message mode or preserve-whisper flag, and the message
+    // it returns already lists these recipients. Until both are true, keep this update.
     if (whisper.length && !sameIds(message.whisper, whisper)) await message.update({whisper, blind: false});
     return message;
   }
@@ -391,8 +398,17 @@ async function resolveCoreRoll(data, {actor, choice, senderUserId, message, roll
   return result;
 }
 /**
- * Core marks an entry complete as soon as resolve returns, so the next hoard step reopens the same entry after that.
- * Running on the same GM queue puts it behind the handler that is still finishing.
+ * Reopen workaround until Core's register accepts an opt-in.
+ * Core marks the entry complete as soon as resolve returns. completeChatRoll can
+ * reopen when called directly with { reopen: true, title, actionLabel }, but
+ * register always calls completeChatRoll(message, entryKey) with no options, so
+ * that argument is not an opt-in this handler can use. Calling it here would also
+ * race the handler that is still completing the entry. This queues updateEntry on
+ * the same GM roll queue, behind that handler.
+ * Adopt Core only when register options, or the value resolve returns, can ask
+ * that handler to pass reopen, title, and actionLabel into completeChatRoll before
+ * it returns. typeof completeChatRoll and the existing reopen argument are already
+ * on Core and are not that signal. Until then, keep this function.
  */
 function reopenHoardStep(message) {
   const cards = coreRollCards(core());
@@ -584,7 +600,8 @@ export function registerRequestRenderers() {
   Hooks.on("renderChatMessageHTML",(message,html) => {
     if (!coreReady()) return;
     const hoardReq = validRequest(message)?.kind === "hoard" ? validRequest(message) : null;
-    // Foundry lists whispered roll messages for everyone; a private hoard stays hidden from non-recipients.
+    // Foundry lists a whispered message for every client. Hiding it when
+    // isContentVisible is false stays, including after Core's create privacy opt-in.
     if (hoardReq?.private && message.isContentVisible === false) {
       html.hidden = true;
       if (html.style) html.style.display = "none";

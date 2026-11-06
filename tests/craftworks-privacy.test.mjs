@@ -14,7 +14,7 @@ test("Delerium Search no longer imports or recommends Craftworks", () => {
   assert.doesNotMatch(source, /morelord-craftworks|craftworks\(/);
   assert.doesNotMatch(triggers, /morelord-craftworks|openLuckyFinds/);
   assert.doesNotMatch(manifest, /morelord-craftworks/);
-  assert.match(manifest, /"minimum":\s*"0\.9\.0"/);
+  assert.match(manifest, /"minimum":\s*"0\.9\.2"/);
 });
 
 test("the authority GM awards through Core and keeps a blind search private", async () => {

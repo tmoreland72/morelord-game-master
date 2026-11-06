@@ -59,6 +59,43 @@ test('release.ps1 is the shared GitHub, Foundry, and website publisher', () => {
   assert.equal(fs.existsSync(path.join(root, 'scripts/release-sync.cjs')), false);
 });
 
+test('the release workflow resolves every maintained unit test file', () => {
+  const workflow = read('.github/workflows/release.yml');
+  assert.match(workflow, /Get-ChildItem -LiteralPath tests -Filter \*\.test\.mjs -File \| Sort-Object -Property Name/);
+  assert.match(workflow, /if \(\$tests\.Count -eq 0\) \{ throw 'No tests\/\*\.test\.mjs files were found\.' \}/);
+  assert.match(workflow, /node --test @\(\$tests\.FullName\)/);
+  assert.doesNotMatch(workflow, /'tests\/ambience-folders\.test\.mjs'/);
+  const files = fs.readdirSync(path.join(root, 'tests')).filter(name => name.endsWith('.test.mjs')).sort();
+  for (const name of [
+    'treasure-hoard.test.mjs',
+    'hoard-item-card.test.mjs',
+    'core-register-flow.test.mjs',
+    'core-roll-request-card.test.mjs'
+  ]) {
+    assert.ok(files.includes(name), name);
+  }
+  assert.equal(files.length > 30, true);
+});
+
+test('0.5.0 notes are recorded and the published version stays for the Release workflow', () => {
+  const manifest = JSON.parse(read('module.json'));
+  assert.equal(manifest.version, '0.4.4');
+  assert.equal(
+    manifest.download,
+    'https://github.com/tmoreland72/morelord-game-master/releases/download/v0.4.4/morelord-game-master.zip'
+  );
+  assert.equal(manifest.relationships.requires[0].id, 'morelord-core');
+  assert.equal(manifest.relationships.requires[0].compatibility.minimum, '0.9.2');
+  assert.match(read('docs/README.md'), /^version:\s*0\.4\.4\s*$/m);
+  assert.match(read('README.md'), /^Version 0\.4\.4\.\s*$/m);
+  assert.match(read('package.json'), /"version": "0\.4\.4"/);
+  assert.equal(fs.existsSync(path.join(root, 'release-notes/RELEASE-NOTES-0.5.0.md')), true);
+  const notes = read('release-notes/RELEASE-NOTES-0.5.0.md');
+  assert.match(notes, /^## What Changed\s*$/m);
+  assert.match(notes, /^### Added\s*$/m);
+  assert.match(notes, /Morelord Core 0\.9\.2/);
+});
+
 test('the env example names the tokens release.ps1 reads', () => {
   const example = read('.env.example');
   assert.match(example, /^RELEASE_PUBLISH_TOKEN=/m);
