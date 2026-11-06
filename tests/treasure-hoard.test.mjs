@@ -7,6 +7,7 @@ import * as participation from "../../morelord-core/scripts/ui/actor-participati
 import {actorIdentity} from "../../morelord-core/scripts/ui/actor-identity.js";
 import {ChatRollRequests} from "../../morelord-core/scripts/services/chat-roll-requests.js";
 import * as currency from "../../morelord-core/scripts/services/currency-service.js";
+import {addItems} from "../../morelord-core/scripts/services/inventory-service.js";
 import {
   HOARD_BANDS, addHoardCoins, auditTreasure, commitHoardStep, describeRow, emptyHoardState, findSrdItem,
   ITEM_PACKS, hoardCardHTML, hoardCoinPurse, loadTreasure, lookupKey, magicItemFor, srdItemIndex, needsGmPlace, nextHoardStep, rangeIssues, resolveSpellScroll
@@ -299,7 +300,7 @@ test("the chat card rolls one step at a time, grants once, and keeps private hoa
   globalThis.foundry.utils.escapeHTML = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   globalThis.fromUuidSync = uuid => game.actors.get(uuid.replace("Actor.", ""));
   const chatRequests = releasedCoreCards();
-  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, chatRequests};
+  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, inventory: {addItems}, chatRequests};
   initializeRequests();
   const send = (message, hoard, sender = gm.id) => dispatch({namespace: ID, type: "roll", data: {requestId: message.id, actorId: actor.id, hoard}, senderUserId: sender, targetUserId: gm.id, messageId: crypto.randomUUID()});
   const buttons = html => html.match(/data-ml-core-roll=/g) ?? [];

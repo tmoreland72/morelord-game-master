@@ -130,6 +130,19 @@ async function freshHoardContent(req) {
   const state = emptyHoardState(actor?.id);
   return hoardCardHTML({title: hoardTitle(req, actor), actorUuid: actor?.uuid ?? "", identity: hoardIdentity(actor), recipientName: actor?.name ?? "", state, step: nextHoardStep(data, req.band, state), allowRoll: true, escape: e});
 }
+function grantedItem(result, itemData) {
+  const created = Array.isArray(result?.created) ? result.created.find(item => item?.uuid) : null;
+  if (created?.uuid) return {uuid: created.uuid, name: created.name ?? itemData?.name ?? ""};
+  const updated = Array.isArray(result?.updated) ? result.updated.find(item => item?.uuid) : null;
+  if (updated?.uuid) return {uuid: updated.uuid, name: itemData?.name ?? ""};
+  return null;
+}
+/** Core stacks compatible items and rolls a failed add back. Every treasure grant goes through it. */
+async function grantActorItem(actor, itemData) {
+  const addItems = core().inventory?.addItems;
+  if (typeof addItems !== "function") throw new Error("Morelord Game Master requires Morelord Core 0.9.2+ to add items.");
+  return grantedItem(await addItems(actor, [itemData]), itemData);
+}
 export async function placeHoardItem(actor, itemData) {
   if (needsGmPlace(game.user, actor)) {
     const gm = activeGM();
@@ -137,8 +150,7 @@ export async function placeHoardItem(actor, itemData) {
     const placed = await channel.executeAsUser("placeHoardItem", {actorId: actor.id, itemData}, gm.id);
     return placed?.uuid ? {uuid: placed.uuid, name: placed.name} : null;
   }
-  const created = await actor.createEmbeddedDocuments("Item", [itemData]);
-  return created?.[0] ?? null;
+  return grantActorItem(actor, itemData);
 }
 // Dice So Nice animates the rolls once, when the GM adds them to the card. The card's speaker is the
 // character, so Dice So Nice's "Use character owner's dice appearance" setting plays the player's own dice.
@@ -190,7 +202,6 @@ export function coreRollCards(api = globalThis.MorelordCore) {
   const requests = api?.chatRequests;
   return requests && ["register", "create", "updateEntry"].every(name => typeof requests[name] === "function") ? requests : null;
 }
-const sameIds = (left, right) => [...(left ?? [])].sort().join() === [...right].sort().join();
 /** One Core card per request: the hoard is a single entry, every other kind has one entry per character. */
 async function createCoreRequest(req, cards) {
   const type = requestType(req.kind), groupKey = foundry.utils.randomID();
@@ -199,18 +210,10 @@ async function createCoreRequest(req, cards) {
     const actor = game.actors.get(req.actorIds[0]);
     const step = nextHoardStep(await loadTreasure(), req.band, emptyHoardState(actor?.id));
     // The card speaks as the character, so Dice So Nice plays the owner's dice when the GM adds the rolls.
+    // preserveMessageMode keeps a private whisper. Public mode would clear it. Omit messageMode so the list stays as given.
+    // holdCompletion leaves the row open until the hoard is finished, so a step does not flash Completed.
     const whisper = req.private ? hoardWhisper(req) : [];
-    const message = await cards.create({type, key: actor?.id ?? groupKey, groupKey, groupTitle: hoardTitle(), title: step?.prompt || hoardTitle(), actorUuid: actor?.uuid ?? null, modes: false, actionLabel: "Roll", data: {actorId: actor?.id}, speaker: ChatMessage.getSpeaker({actor}), whisper, flags});
-    // Privacy workaround until Core's create honors an opt-in.
-    // chatRequests.create copies whisper onto the message data, then always posts
-    // with messageMode "public". Foundry's public mode clears whisper, so a private
-    // hoard writes its recipients back. sameIds is the detection for today's create:
-    // when the installed Core already kept those recipients, this update does not run.
-    // Passing whisper is not that opt-in. Switch only when create reads a documented
-    // privacy option, such as a message mode or preserve-whisper flag, and the message
-    // it returns already lists these recipients. Until both are true, keep this update.
-    if (whisper.length && !sameIds(message.whisper, whisper)) await message.update({whisper, blind: false});
-    return message;
+    return cards.create({type, key: actor?.id ?? groupKey, groupKey, groupTitle: hoardTitle(), title: step?.prompt || hoardTitle(), actorUuid: actor?.uuid ?? null, modes: false, actionLabel: "Roll", data: {actorId: actor?.id}, speaker: ChatMessage.getSpeaker({actor}), whisper, flags, holdCompletion: true, ...(whisper.length ? {preserveMessageMode: true} : {})});
   }
   const title = requestTitle(req);
   const choices = req.kind === "delerium" ? [...req.searchSkills.map(({id, label}) => ({id, label})), {id: "decline", label: "Decline search"}] : [];
@@ -394,32 +397,25 @@ async function prepareCoreRoll(entry, choice, {message}) {
 /** Core runs this on the GM. The player's dice are applied as rolled; the GM rolls nothing. */
 async function resolveCoreRoll(data, {actor, choice, senderUserId, message, rollData}) {
   const result = await resolveRequest({requestId: message.id, actorId: actor?.id ?? data?.actorId, skillId: choice || undefined, roll: rollData?.roll, hoard: rollData?.hoard}, {senderUserId});
-  if (result?.accepted !== false && validRequest(message)?.kind === "hoard") reopenHoardStep(message);
+  if (result?.accepted === false || validRequest(message)?.kind !== "hoard") return result;
+  // holdCompletion keeps the row open. Returning complete asks Core to mark it completed.
+  if (result?.alreadyResolved) return message.getFlag(ID, "hoard")?.done ? {...result, complete: true} : result;
+  if (await hoardStepFinished(message)) return {...result, complete: true};
   return result;
 }
 /**
- * Reopen workaround until Core's register accepts an opt-in.
- * Core marks the entry complete as soon as resolve returns. completeChatRoll can
- * reopen when called directly with { reopen: true, title, actionLabel }, but
- * register always calls completeChatRoll(message, entryKey) with no options, so
- * that argument is not an opt-in this handler can use. Calling it here would also
- * race the handler that is still completing the entry. This queues updateEntry on
- * the same GM roll queue, behind that handler.
- * Adopt Core only when register options, or the value resolve returns, can ask
- * that handler to pass reopen, title, and actionLabel into completeChatRoll before
- * it returns. typeof completeChatRoll and the existing reopen argument are already
- * on Core and are not that signal. Until then, keep this function.
+ * The hoard entry stays open between steps. Point it at the next roll, and report
+ * when the hoard is finished so the caller can return { complete: true }.
  */
-function reopenHoardStep(message) {
+async function hoardStepFinished(message) {
   const cards = coreRollCards(core());
-  const reopen = async () => {
-    const req = validRequest(message), state = message.getFlag(ID, "hoard");
-    const [entryKey] = Object.keys(message.getFlag(CORE_ID, "rollRequest")?.entries ?? {});
-    if (!cards || !req || !state || state.done || entryKey == null) return;
-    const step = nextHoardStep(peekTreasure() ?? await loadTreasure(), req.band, state);
-    if (step) await cards.updateEntry(message, entryKey, {completed: false, title: step.prompt || hoardTitle(), actionLabel: "Roll"});
-  };
-  void core().socket.runSerialized(`${ID}.rolls`, reopen).catch(error => ui.notifications.warn(`Treasure roll saved; the next step needs a refresh: ${error.message}`));
+  const req = validRequest(message), state = message.getFlag(ID, "hoard");
+  const [entryKey] = Object.keys(message.getFlag(CORE_ID, "rollRequest")?.entries ?? {});
+  if (!cards || !req || !state || entryKey == null) return false;
+  if (state.done) return true;
+  const step = nextHoardStep(peekTreasure() ?? await loadTreasure(), req.band, state);
+  if (step) await cards.updateEntry(message, entryKey, {title: step.prompt || hoardTitle(), actionLabel: "Roll"});
+  return false;
 }
 function registerCoreRequests(cards) {
   for (const kind of REQUEST_KINDS) cards.register(requestType(kind), {prepare: prepareCoreRoll, resolve: resolveCoreRoll}, {serialize: `${ID}.rolls`});
@@ -669,8 +665,8 @@ export function initializeRequests() {
   channel.on("placeHoardItem", async ({actorId, itemData}) => {
     if (!game.user.isGM) throw new Error("Only a GM can add treasure.");
     const actor = game.actors.get(actorId);
-    const created = await actor?.createEmbeddedDocuments("Item", [itemData]);
-    return {uuid: created?.[0]?.uuid ?? null, name: created?.[0]?.name ?? itemData?.name ?? ""};
+    const placed = actor ? await grantActorItem(actor, itemData) : null;
+    return {uuid: placed?.uuid ?? null, name: placed?.name ?? itemData?.name ?? ""};
   }, {serialize: `${ID}.rolls`});
   channel.on("finalizeSearch",async ({requestId},execution) => {
     if (!game.user.isGM || !game.users.get(execution.senderUserId)?.isGM) throw new Error("Only GMs can finalize searches.");

@@ -5,9 +5,10 @@ import {ChatRollRequests} from "../../morelord-core/scripts/services/chat-roll-r
 import * as users from "../../morelord-core/scripts/services/user-service.js";
 import * as participation from "../../morelord-core/scripts/ui/actor-participation.js";
 import * as currency from "../../morelord-core/scripts/services/currency-service.js";
+import {addItems} from "../../morelord-core/scripts/services/inventory-service.js";
 import {actorIdentity} from "../../morelord-core/scripts/ui/actor-identity.js";
 import {deleriumSearch} from "../../morelord-core/scripts/services/delerium-search.js";
-import {initializeRequests, createRequest, registerRequestRenderers, coreRollCards} from "../scripts/requests.mjs";
+import {initializeRequests, createRequest, placeHoardItem, registerRequestRenderers, coreRollCards} from "../scripts/requests.mjs";
 import {releasedCoreCards} from "./core-release.mjs";
 
 const ID = "morelord-game-master", CORE = "morelord-core";
@@ -22,11 +23,11 @@ const collection = rows => new Collection(rows.map(row => [row.id, row]));
 
 /** A chat root with Core's buttons and rows read from the markup; insertAdjacentHTML is recorded. */
 function chatRoot(content) {
-  const root = {inserted: [], clicks: new Map(), buttons: [], hidden: false};
+  const root = {inserted: [], clicks: new Map(), buttons: [], hidden: false, appended: []};
   const spot = {insertAdjacentHTML: (position, html) => root.inserted.push([position, html])};
   root.querySelector = selector => selector === "[data-ml-roll-entry]" || selector === ".ml-core-roll-request" ? spot : null;
   root.buttons = content.split('data-ml-roll-entry="').slice(1).flatMap(chunk => {
-    const row = {dataset: {mlRollEntry: chunk.slice(0, chunk.indexOf('"'))}, choice: null, querySelector() { return null; }, querySelectorAll() { return []; }, append() {}};
+    const row = {dataset: {mlRollEntry: chunk.slice(0, chunk.indexOf('"'))}, choice: null, querySelector() { return null; }, querySelectorAll() { return []; }, append(node) { root.appended.push(node); }};
     return [...chunk.matchAll(/<button[^>]*data-ml-core-roll="(\w+)"[^>]*>/g)].map(([tag, mode]) => ({
       row, dataset: {mlCoreRoll: mode}, disabled: false, title: "", listeners: [],
       hasAttribute: name => tag.includes(name), closest: css => css === "[data-ml-roll-entry]" || css === ".ml-card" ? row : null,
@@ -57,7 +58,7 @@ function world({core = "real"} = {}) {
   globalThis.document = {createElement: () => ({setAttribute() {}})};
   globalThis.fromUuidSync = uuid => game.actors.get(uuid.replace("Actor.", ""));
   globalThis.fromUuid = async uuid => uuid.startsWith("Actor.") ? fromUuidSync(uuid) : ({uuid, name: "Copied", type: "loot", toObject() { return {name: "Copied", type: "loot", system: {quantity: 1}}; }});
-  const faces = [], rolled = [], totals = new WeakMap();
+  const faces = [], rolled = [], totals = new WeakMap(), posted = [];
   globalThis.Roll = class {
     constructor(formula) { this.formula = formula; }
     get total() { return totals.get(this); }
@@ -70,6 +71,7 @@ function world({core = "real"} = {}) {
   globalThis.ChatMessage = {
     getSpeaker: ({actor: who}) => ({actor: who?.id}),
     async create(data, options = {}) {
+      posted.push({whisper: [...(data.whisper ?? [])], blind: data.blind, messageMode: options.messageMode});
       const message = {id: crypto.randomUUID(), author: gm, timestamp: Date.now(), rolls: [], blind: false, ...data, whisper: options.messageMode === "public" ? [] : [...(data.whisper ?? [])],
         flags: structuredClone(data.flags ?? {}), getFlag(ns, key) { return this.flags?.[ns]?.[key]; },
         async setFlag(ns, key, value) { this.flags[ns] ??= {}; this.flags[ns][key] = structuredClone(value); },
@@ -92,7 +94,7 @@ function world({core = "real"} = {}) {
   transport.start();
   const chat = new ChatRollRequests(transport);
   const cards = core === "real" ? chat : releasedCoreCards(chat);
-  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, deleriumSearch, chatRequests: cards};
+  globalThis.MorelordCore = {users: {...users, list: users.listUsers}, ui: {participation, actorIdentity}, rolls: {skill() {}}, socket: transport, currency, inventory: {addItems}, deleriumSearch, chatRequests: cards};
   if (core === "real") chat.start();
   initializeRequests();
   registerRequestRenderers();
@@ -101,11 +103,11 @@ function world({core = "real"} = {}) {
     const root = render(message, as), previous = game.user;
     game.user = as;
     try { for (const listener of root.buttons[index].listeners) await listener(); } finally { game.user = previous; }
-    // Core completes the entry as the handler returns; a step's reopen queues behind it on the same GM queue.
+    // A held step updates its title before the handler returns. The queue wait still lets a later refresh settle.
     await transport.runSerialized(`${ID}.rolls`, () => {});
     return root;
   };
-  return {calls, gm, player, actor, created, faces, rolled, animations, updates, chat, cards, click, render, entry: message => Object.values(message.getFlag(CORE, "rollRequest").entries ?? {})[0] ?? message.getFlag(CORE, "rollRequest")};
+  return {calls, gm, player, actor, created, faces, rolled, animations, updates, posted, chat, cards, click, render, entry: message => Object.values(message.getFlag(CORE, "rollRequest").entries ?? {})[0] ?? message.getFlag(CORE, "rollRequest")};
 }
 
 test("Core's feature check needs register, create, and updateEntry", () => {
@@ -124,13 +126,18 @@ test("every request kind registers one prepare and resolve pair with Core", () =
   }
 });
 
-test("a private hoard speaks as the roller, is whispered to the roller and GMs, and each step is one player roll on one reopened entry", async () => {
+test("a private hoard speaks as the roller, is whispered to the roller and GMs, and each step is one player roll on the same open entry", async () => {
   const w = world();
   w.faces.push(37, 6, 1, 1);
   const message = await createRequest({kind: "hoard", band: "cr-0-4", private: true, blind: true, actorIds: [w.actor.id]});
-  // Core posts in public mode, which clears the whisper; the recipients are put back and the card is never blind.
+  // preserveMessageMode posts the whisper as given and does not force public mode, which would clear it.
+  assert.equal(w.posted[0].messageMode, undefined);
+  assert.equal(w.posted[0].blind, false);
+  assert.deepEqual([...w.posted[0].whisper].sort(), ["gm", "other", "player"]);
   assert.deepEqual([...message.whisper].sort(), ["gm", "other", "player"]);
   assert.equal(message.blind, false);
+  assert.equal(w.entry(message).holdCompletion, true);
+  assert.equal(w.updates.some(patch => Object.hasOwn(patch, "whisper")), false);
   assert.deepEqual(message.speaker, {actor: w.actor.id});
   assert.equal(message.getFlag(CORE, "rollRequest").type, `${ID}.hoard`);
   assert.equal(message.getFlag(ID, "request").private, true);
@@ -141,7 +148,10 @@ test("a private hoard speaks as the roller, is whispered to the roller and GMs, 
   let steps = 0;
   for (; !message.getFlag(ID, "hoard")?.done && steps < 6; steps += 1) {
     const before = w.rolled.length;
-    await w.click(message);
+    const title = w.entry(message).title;
+    const clickRoot = await w.click(message);
+    // holdCompletion does not flash Completed while the next step is still to come, or on the finishing click.
+    assert.equal(clickRoot.appended.some(node => node?.textContent === "Completed"), false);
     // One roll source per step: the clicking player's client rolls; the GM rolls nothing.
     assert.equal(w.rolled.length > before, true);
     assert.equal(w.rolled.slice(before).every(roll => roll.by === "player"), true);
@@ -153,10 +163,12 @@ test("a private hoard speaks as the roller, is whispered to the roller and GMs, 
     const entry = w.entry(message);
     if (message.getFlag(ID, "hoard").done) assert.equal(entry.completed, true);
     else {
-      // The same entry reopens for the next step instead of a new message.
+      // The same entry stays open for the next step instead of a new message.
       assert.equal(entry.completed, false);
+      assert.equal(entry.holdCompletion, true);
       assert.equal(entry.actionLabel, "Roll");
       assert.notEqual(entry.title, "");
+      assert.notEqual(entry.title, title);
     }
   }
   assert.equal(steps, 4);
@@ -165,11 +177,53 @@ test("a private hoard speaks as the roller, is whispered to the roller and GMs, 
   assert.equal(w.animations.length, 4);
   // The itemCard results are drawn below Core's card when it renders, and the Initial Roll joins its row.
   const root = w.render(message);
+  assert.equal(root.appended.some(node => node?.textContent === "Completed"), true);
   assert.match(root.inserted.map(([, html]) => html).join(""), /Initial Roll: 37/);
   assert.match(root.inserted.map(([position, html]) => position === "afterend" && html).join(""), /Gemstone \(10 GP\)|Potion of Healing/);
   // The finished entry is marked complete, so the card offers no further click.
   assert.equal(root.buttons.every(button => button.listeners.length === 0), true);
   assert.equal(w.rolled.length, 4);
+});
+
+test("a public hoard stays public and still holds the row open between steps", async () => {
+  const w = world();
+  const message = await createRequest({kind: "hoard", band: "cr-0-4", actorIds: [w.actor.id]});
+  assert.equal(w.posted.at(-1).messageMode, "public");
+  assert.deepEqual(message.whisper, []);
+  assert.equal(message.blind, false);
+  assert.equal(w.entry(message).holdCompletion, true);
+});
+
+test("treasure grants use Core addItems, including when a non-owner asks the GM to place an item", async () => {
+  const w = world();
+  const potion = {name: "Potion of Healing", type: "consumable", system: {quantity: 1, identified: true}};
+  w.actor.items = [];
+  w.actor.updateEmbeddedDocuments = async (_type, updates) => {
+    for (const update of updates) {
+      const item = w.actor.items.find(entry => entry.id === update._id);
+      if (item && update["system.quantity"] != null) item.system.quantity = update["system.quantity"];
+    }
+  };
+  w.actor.createEmbeddedDocuments = async (_type, documents) => documents.map(document => {
+    const item = {id: `item-${w.actor.items.length + 1}`, uuid: `Actor.actor.Item.${w.actor.items.length + 1}`, name: document.name, type: document.type, system: structuredClone(document.system ?? {})};
+    w.actor.items.push(item);
+    w.created.push(structuredClone(document));
+    return item;
+  });
+  const first = await placeHoardItem(w.actor, potion);
+  const second = await placeHoardItem(w.actor, structuredClone(potion));
+  assert.equal(first.name, "Potion of Healing");
+  assert.equal(first.uuid, second.uuid);
+  assert.equal(w.actor.items.length, 1);
+  assert.equal(w.actor.items[0].system.quantity, 2);
+  const stranger = {id: "stranger", isGM: false, active: true, name: "Stranger"};
+  game.users.set(stranger.id, stranger);
+  game.user = stranger;
+  w.actor.testUserPermission = () => false;
+  const third = await placeHoardItem(w.actor, structuredClone(potion));
+  assert.equal(third.uuid, first.uuid);
+  assert.equal(w.actor.items[0].system.quantity, 3);
+  assert.equal(w.actor.items.length, 1);
 });
 
 test("a skill roll is one player roll recorded blind by the GM, with no roll attached by Core and none animated twice", async () => {
