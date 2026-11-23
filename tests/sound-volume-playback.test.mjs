@@ -18,8 +18,8 @@ test('set all track volumes updates playlist songs only, and ambience volume upd
   assert.match(source, /data-tooltip-direction="LEFT"/);
   assert.match(source, /aria-label="\$\{e\(file\.path\)\}"/);
   assert.match(source, /gm-ambience-layer/);
-  assert.match(css, /\.ml-window :is\(\.form-footer/);
-  assert.match(css, /flex:0 0 auto !important/);
+  assert.doesNotMatch(css, /\.ml-window :is\(\.form-footer/, 'Core owns shared footers');
+  assert.doesNotMatch(css, /\.ml-window \.ml-dialog-shell (?:\.ml-stack|select|input\[type="number"\])/, 'Tray styling must not leak into other modules');
   assert.match(css, /grid-template-columns:auto minmax\(0,1fr\) auto max-content/);
   assert.match(source, /label\("Name"/);
   assert.doesNotMatch(source.slice(source.indexOf('async function ambienceForm'), source.indexOf('export async function requestCheck')), /name="name\$\{i\}"/);

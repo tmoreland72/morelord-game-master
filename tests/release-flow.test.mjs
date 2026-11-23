@@ -11,14 +11,14 @@ function read(relativePath) {
 
 test('the manifest URL players already use stays on master', () => {
   const manifest = JSON.parse(read('module.json'));
-  assert.equal(manifest.version, '0.4.4');
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.equal(
     manifest.manifest,
     'https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json'
   );
   assert.equal(
     manifest.download,
-    'https://github.com/tmoreland72/morelord-game-master/releases/download/v0.4.4/morelord-game-master.zip'
+    `https://github.com/tmoreland72/morelord-game-master/releases/download/v${manifest.version}/morelord-game-master.zip`
   );
   assert.equal(manifest.changelog, 'https://github.com/tmoreland72/morelord-game-master/releases');
 });
@@ -40,7 +40,7 @@ test('release config matches the shared Morelord release.ps1 contract', () => {
   }
   const docs = read('docs/README.md');
   assert.match(docs, /^product:\s*morelord-game-master\s*$/m);
-  assert.match(docs, /^version:\s*0\.4\.4\s*$/m);
+  assert.equal(/^version:\s*(\S+)\s*$/m.exec(docs)?.[1], JSON.parse(read('module.json')).version);
 });
 
 test('release.ps1 is the shared GitHub, Foundry, and website publisher', () => {
@@ -77,18 +77,18 @@ test('the release workflow resolves every maintained unit test file', () => {
   assert.equal(files.length > 30, true);
 });
 
-test('0.5.0 notes are recorded and the published version stays for the Release workflow', () => {
+test('0.5.0 notes are recorded and documentation matches the published version', () => {
   const manifest = JSON.parse(read('module.json'));
-  assert.equal(manifest.version, '0.4.4');
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.equal(
     manifest.download,
-    'https://github.com/tmoreland72/morelord-game-master/releases/download/v0.4.4/morelord-game-master.zip'
+    `https://github.com/tmoreland72/morelord-game-master/releases/download/v${manifest.version}/morelord-game-master.zip`
   );
   assert.equal(manifest.relationships.requires[0].id, 'morelord-core');
-  assert.equal(manifest.relationships.requires[0].compatibility.minimum, '0.9.2');
-  assert.match(read('docs/README.md'), /^version:\s*0\.4\.4\s*$/m);
-  assert.match(read('README.md'), /^Version 0\.4\.4\.\s*$/m);
-  assert.match(read('package.json'), /"version": "0\.4\.4"/);
+  assert.equal(manifest.relationships.requires[0].compatibility.minimum, '0.9.4');
+  assert.equal(/^version:\s*(\S+)\s*$/m.exec(read('docs/README.md'))?.[1], manifest.version);
+  assert.ok(read('README.md').split(/\r?\n/).includes(`Version ${manifest.version}.`));
+  assert.equal(JSON.parse(read('package.json')).version, manifest.version);
   assert.equal(fs.existsSync(path.join(root, 'release-notes/RELEASE-NOTES-0.5.0.md')), true);
   const notes = read('release-notes/RELEASE-NOTES-0.5.0.md');
   assert.match(notes, /^## What Changed\s*$/m);

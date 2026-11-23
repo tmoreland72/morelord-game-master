@@ -1,6 +1,6 @@
 # Mass Combat
 
-GM macros for selecting attackers, selecting targets, and resolving a group of ordinary attacks quickly. Uses one shared attack profile, d20 attack rolls, fixed average damage, and focus fire. Requires Morelord Core, Game Master, and D&D5e 6.0.3+.
+GM macros for selecting attackers, selecting targets, and resolving a group of ordinary attacks quickly. Uses one shared attack profile, d20 attack rolls, fixed average damage, and attacks cycling across living targets. Requires Morelord Core, Game Master, and D&D5e 6.0.3+.
 
 1. Select the living attackers on the map. Run **Mass Combat — Select Attackers**.
 2. Select the living opposing tokens. Run **Mass Combat — Attack Targets**. Review attack bonus, attacks per troop, average normal/critical damage, damage type, and normal/advantage/disadvantage. Expand Target order to inspect the order. Resolve attacks.
@@ -10,7 +10,7 @@ Repeat step 2 with new target selections to keep using the same attackers. Step 
 
 The first available simple attack on the first attacker supplies editable suggestions. **All troops in a batch use the entered profile:** use separate batches for different weapons/modifiers. Complex or multi-type damage may require manual entries or separate batches. Set attacks per troop explicitly for multiattack. Automatic situational attack modifiers are not evaluated; include them in the entered bonus/mode. Native critical dice provide a suggested average critical value, which can be adjusted for house rules.
 
-Each attack checks the current focus target's AC. Natural 1 misses; natural 20 hits using the entered average critical damage. A killing blow's excess damage is lost. Subsequent attacks move to the next listed target. An immune target can therefore absorb all remaining attacks without damage; change target selection if the troops should change tactics. Attacks stop once every target falls.
+Each attack checks the next living target's AC, cycling through all living targets once before repeating. Misses advance to the next target, and dead targets are skipped. Natural 1 misses; natural 20 hits using the entered average critical damage. A killing blow's excess damage is lost. An immune target receives its turn in the cycle without absorbing attacks intended for other targets. Attacks stop once every target falls.
 
 The native D&D5e calculator determines each target's per-hit resistance, immunity, vulnerability, damage reduction, and threshold. The magical checkbox supplies the magical weapon property. Temporary HP is spent before HP. Shared linked target actors are rejected when selected more than once; troop tokens should have independent HP. Apply checks that HP and defenses still match the preview and otherwise asks for a new resolution. Interrupted application can resume without double damage when HP still matches the expected before/after values; discarding an interrupted batch keeps damage already applied.
 

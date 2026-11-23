@@ -136,7 +136,7 @@ describe('bulk actions', {concurrency: 1}, () => {
     assert.match(xpCard, /name="xp"/);
     assert.match(xpCard, /class="gm-label-help"/);
     assert.match(css, /align-items:flex-start/);
-    assert.match(css, /#mlgm select, \.ml-window \.ml-dialog-shell select \{ width:auto; min-width:fit-content/);
+    assert.match(css, /#mlgm select \{ width:auto; min-width:fit-content/);
     assert.match(css, /#mlgm \.gm-bulk button:not\(\.ml-icon-button\):not\(\.ml-stepper button\) \{ width:max-content !important/);
     assert.doesNotMatch(css, /width:min\(100%,14rem\)/);
     assert.doesNotMatch(css, /justify-content:space-between/);

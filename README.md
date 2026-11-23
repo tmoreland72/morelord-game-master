@@ -1,6 +1,6 @@
 # Morelord Game Master
 
-[Mass Combat macros](macros/mass-combat/README.md) resolve selected attacker and target groups using average damage, focus fire, casualty previews, and optional HP updates.
+[Mass Combat macros](macros/mass-combat/README.md) resolve selected attacker and target groups using average damage, attacks cycling across living targets, casualty previews, and optional HP updates.
 
 Smithy at the Scar has optional [native wave-control macros](macros/smithy-at-the-scar/README.md) for perimeter spawning, ten rounds of reinforcements, and the ratling safe word.
 
@@ -11,7 +11,7 @@ The module is already in the development installation's `Data/modules/morelord-g
 
 As a GM, click the **Game Master** handle at the bottom of the screen, or press **Alt+G**. Press Escape or click the handle again to close it. Roll requests, bulk actions, macros, playlists, ambience, Foundry Game Settings, and this module's Configure menu leave the tray open. Change the shortcut in Foundry's keybinding settings. The bottom-centered tray uses 65% of the viewport width and 75% of its height. It stays above the canvas, sidebars, and normal Foundry windows. Roll dialogs, including the dnd5e roll configuration dialog and Foundry's dice RollResolver, chat card popouts, and confirm or prompt dialogs open above the tray, including a roll dialog opened from a sheet. Tooltips and notifications stay above both. Rebuilding the tray keeps in-progress fields. Chat messages do not rebuild it. The tray hides the local hotbar while open and restores its existing visibility when closed. Players receive roll requests in chat; they do not get the GM tray.
 
-Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.9.2+ is required (including its Socketlib dependency) for shared currency, roll-request cards, and Treasure Hoard. The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search uses Core’s search areas, rewards, and results window, and the tray card appears only while `drakkenheim-core`, `drakkenheim-monsters`, or `drakkenheim-scgd` is active. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
+Target: Foundry 14 and D&D 5e 6.0.x. Rolls use the installed D&D 5e 6 skill API. Sound and macro controls use native Foundry documents. Morelord Core 0.9.4+ is required (including its Socketlib dependency) for shared currency, roll-request cards, and Treasure Hoard. The tray, dialogs, cards, character selection, and documentation use Core’s shared UI. Delerium Search uses Core’s search areas, rewards, and results window, and the tray card appears only while `drakkenheim-core`, `drakkenheim-monsters`, or `drakkenheim-scgd` is active. Foraging requires Journeys 0.3.5+ for its terrain/DC configuration and food rules. No build step is required.
 
 ## Available controls
 
@@ -128,7 +128,7 @@ Core (66), Craftworks (67), and Game Master (19) automated tests pass, together 
 
 ## GitHub installation and releases
 
-Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. That manifest URL stays on `master` and keeps resolving to the latest `module.json`. Morelord Core 0.9.2 or newer is required for shared UI controls, sortable reordering, combat services, Delerium Search, currency, roll-request cards, and Treasure Hoard.
+Install using https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json in Foundry Setup. That manifest URL stays on `master` and keeps resolving to the latest `module.json`. Morelord Core 0.9.4 or newer is required for shared UI controls, sortable reordering, combat services, Delerium Search, currency, roll-request cards, and Treasure Hoard.
 
 Releases use the shared `release.ps1` workflow. Project values live in `release.config.json`. Copy `.env.example` to `.env` and set `RELEASE_PUBLISH_TOKEN` and `FOUNDRY_RELEASE_TOKEN`. From a clean `master` that matches origin, validate and then publish:
 
@@ -247,3 +247,5 @@ Bulk coin inputs use compact widths suitable for typical four-digit amounts, wit
 This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
 Treasure Hoard uses SRD 5.2.1 magic item names. Gems and art are recorded by count and GP value. See [ATTRIBUTION.md](ATTRIBUTION.md).
+
+Shared-dialog integration: Game Master no longer applies its tray control and stack sizing to every Morelord dialog. Core owns those shared controls, allowing Encounters wave fields, grouped-attack selects, and footers to retain their intended layout.

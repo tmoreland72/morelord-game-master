@@ -4,16 +4,16 @@ import {readFile} from 'node:fs/promises';
 import {resolveMassCombat,massCombatCommand} from '../scripts/mass-combat.mjs';
 const target=(id,hp,other={})=>({id,hp,temp:0,ac:12,normal:7,critical:11,...other});
 
-test('focus fire uses later attacks on later targets, never spillover damage',()=>{
+test('attacks cycle targets without spillover damage',()=>{
   const result=resolveMassCombat([15,15,15],3,[target('a',5),target('b',12),target('c',10)]);
-  assert.equal(result.dropped,2);assert.equal(result.hits,3);
-  assert.deepEqual(result.rows.map(r=>[r.id,r.hp,r.hits]),[['a',0,1],['b',0,2],['c',10,0]]);
+  assert.equal(result.dropped,1);assert.equal(result.hits,3);
+  assert.deepEqual(result.rows.map(r=>[r.id,r.hp,r.hits]),[['a',0,1],['b',5,1],['c',3,1]]);
   assert.equal(result.rows[0].damage,5);
 });
 test('each target uses its own AC; natural 1 misses and natural 20 hits',()=>{
   const result=resolveMassCombat([1,2,20,15,20],10,[target('a',11,{ac:99}),target('b',20,{ac:30})]);
-  assert.equal(result.rows[0].attempts,3);assert.equal(result.rows[0].hp,0);
-  assert.equal(result.rows[1].attempts,2);assert.equal(result.rows[1].hp,9);
+  assert.equal(result.rows[0].attempts,2);assert.equal(result.rows[0].hp,0);
+  assert.equal(result.rows[1].attempts,3);assert.equal(result.rows[1].hp,9);
   assert.equal(result.hits,2);
 });
 test('temporary HP, per-hit resistance and immunity remain separate',()=>{
