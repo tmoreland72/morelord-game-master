@@ -57,3 +57,7 @@ Look up conditions, actions, DCs, exhaustion, travel pace, and other quick rules
 ## GM Settings
 
 Roll Requests, Bulk Actions, Triggers, and Cheat Sheet each have a list. A grip on the row reorders that list for this world. While a row is moving, the whole row follows the pointer and a line shows where it will drop. The checkbox shows or hides the item. These choices are saved for the world. Ambience folders stay in Foundry's Game Settings.
+
+## Game Settings
+
+Open **Configure Settings → Morelord Game Master → Configure** as a GM. **Ambience folders** lists the content folders searched by Add Ambience. **Add folder** appends a folder row; browse to choose its source and folder path, or remove the row to exclude it. **Save Changes** saves the world folder list and closes the dialog only after both the folder list and its migration state save successfully. A failed save keeps the dialog open with your entries for retry. Closing without saving discards edits. These folders do not change sound that is already playing.
