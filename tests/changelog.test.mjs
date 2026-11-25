@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const require = createRequire(import.meta.url);
 const {
@@ -14,6 +15,15 @@ const {
 } = require("../scripts/changelog.cjs");
 
 const root = path.resolve(import.meta.dirname, "..");
+
+test('release publisher uses the maintained formatter and preserves legacy history',()=>{
+  const stdout=execFileSync(process.execPath,[path.join(root,'scripts/changelog.cjs'),'--stdout'],{encoding:'utf8'});
+  assert.equal(stdout,changelogStatus(root).expected);
+  assert.match(stdout,/^## 0\.1\.7$/m);
+  const release=fs.readFileSync(path.join(root,'release.ps1'),'utf8');
+  const generator=release.slice(release.indexOf('function New-ChangelogMarkdown'),release.indexOf('function Update-ChangelogFile'));
+  assert.match(generator,/node \$Generator --stdout/);
+});
 
 test("release notes become a newest-first BBMM changelog", () => {
   const markdown = renderChangelog({

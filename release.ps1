@@ -596,42 +596,11 @@ function New-ChangelogMarkdown {
         [Parameter(Mandatory = $true)][string]$ModuleTitle,
         [Parameter(Mandatory = $true)][string]$ReleaseNotesDirectory
     )
-    if (-not (Test-Path -LiteralPath $ReleaseNotesDirectory -PathType Container)) {
-        throw "Release notes directory was not found: $ReleaseNotesDirectory"
-    }
-
-    $Entries = New-Object System.Collections.Generic.List[object]
-    foreach ($File in @(Get-ChildItem -LiteralPath $ReleaseNotesDirectory -Filter 'RELEASE-NOTES-*.md' -File)) {
-        if ($File.Name -notmatch '^RELEASE-NOTES-(\d+\.\d+\.\d+)\.md$') {
-            throw "Release notes file '$($File.Name)' does not use RELEASE-NOTES-<x.y.z>.md."
-        }
-        $Entries.Add([pscustomobject]@{
-            Version = $Matches[1]
-            SortKey = [version]$Matches[1]
-            Path = $File.FullName
-        })
-    }
-    if ($Entries.Count -eq 0) {
-        throw "No RELEASE-NOTES-<x.y.z>.md files were found in $ReleaseNotesDirectory."
-    }
-
-    $Sorted = @($Entries | Sort-Object -Property SortKey -Descending)
-    $Seen = @{}
-    $Lines = New-Object System.Collections.Generic.List[string]
-    $Lines.Add("# $ModuleTitle Changelog")
-    $Lines.Add('')
-    foreach ($Entry in $Sorted) {
-        if ($Seen.ContainsKey($Entry.Version)) { throw "Duplicate release notes for version $($Entry.Version)." }
-        $Seen[$Entry.Version] = $true
-        $Lines.Add("## $($Entry.Version)")
-        $Body = @(Get-ChangelogBodyLines -Path $Entry.Path)
-        if ($Body.Count -gt 0) {
-            $Lines.Add('')
-            foreach ($BodyLine in $Body) { $Lines.Add([string]$BodyLine) }
-        }
-        $Lines.Add('')
-    }
-    return (($Lines -join "`n").TrimEnd("`n") + "`n")
+    # Reuse the maintained formatter so validation and packaged history include the same legacy notes.
+    $Generator = Join-Path $ProjectRoot 'scripts/changelog.cjs'
+    $Lines = @(& node $Generator --stdout)
+    if ($LASTEXITCODE -ne 0) { throw 'Changelog generation failed.' }
+    return (($Lines -join "`n").TrimEnd([char[]]"`r`n") + "`n")
 }
 
 function Update-ChangelogFile {

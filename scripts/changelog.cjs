@@ -264,6 +264,10 @@ if (require.main === module) {
   const root = path.resolve(__dirname, '..');
   const check = process.argv.includes('--check');
   const status = changelogStatus(root);
+  if (process.argv.includes('--stdout')) {
+    if (status.expected) process.stdout.write(status.expected);
+    process.exit(status.expected ? 0 : 1);
+  }
   if (status.skipped) {
     console.log('No release-notes/RELEASE-NOTES-*.md files; CHANGELOG.md left unchanged.');
     process.exit(0);
