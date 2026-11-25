@@ -1,4 +1,4 @@
-# Dispatch from the master branch after this workflow is on master.
+# Dispatch from the main branch after this workflow is on main.
 # In-Foundry tests are not part of this workflow.
 name: Release
 
@@ -33,10 +33,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Require the master branch
+      - name: Require the main branch
         run: |
-          if ($env:GITHUB_REF -ne 'refs/heads/master') {
-            throw "Dispatch this workflow from the master branch. Current ref: $env:GITHUB_REF"
+          if ($env:GITHUB_REF -ne 'refs/heads/main') {
+            throw "Dispatch this workflow from the main branch. Current ref: $env:GITHUB_REF"
           }
 
       - name: Require publish secrets
@@ -54,7 +54,7 @@ jobs:
       - name: Checkout Game Master
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 0
           persist-credentials: true
 
@@ -206,3 +206,6 @@ jobs:
         # Archive paths stay in release.config.json: requiredPaths, plus optionalPaths that exist.
         # One invocation creates the GitHub Release and publishes Foundry and the website.
         run: ./release.ps1 -Version $env:RELEASE_VERSION
+
+      - name: Update legacy manifest branch
+        run: git push origin HEAD:refs/heads/master

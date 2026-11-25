@@ -1245,11 +1245,12 @@ function bindAmbienceFolderEditor(dialog) {
 }
 async function settings() {
   await ensureAmbienceFolders(game.settings, ID);
-  const result = await form("Game Master settings", ambienceFolderEditor(normalizeAmbienceFolders(get(AMBIENCE_FOLDERS))), [["ok", "Save"]], {modal: false});
-  if (!result) return;
-  const sources = result.data.getAll("ambienceSource");
-  const paths = result.data.getAll("ambiencePath");
-  await game.settings.set(ID, AMBIENCE_FOLDERS, normalizeAmbienceFolders(sources.map((source, index) => ({source, path: paths[index]}))));
-  await game.settings.set(ID, AMBIENCE_MIGRATED, true);
-  render();
+  await openDialog({id: `${ID}-game-master-settings`, title: 'Game Master settings', content: ambienceFolderEditor(normalizeAmbienceFolders(get(AMBIENCE_FOLDERS))), actions: [['ok', 'Save Changes']], modal: false, width: 480,
+    submit: async data => {
+      const sources = data.getAll('ambienceSource'), paths = data.getAll('ambiencePath');
+      await game.settings.set(ID, AMBIENCE_FOLDERS, normalizeAmbienceFolders(sources.map((source, index) => ({source, path: paths[index]}))));
+      await game.settings.set(ID, AMBIENCE_MIGRATED, true);
+      render();
+    }
+  });
 }

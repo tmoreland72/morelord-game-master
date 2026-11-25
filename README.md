@@ -249,3 +249,5 @@ This work includes material from the System Reference Document 5.2.1 (“SRD 5.2
 Treasure Hoard uses SRD 5.2.1 magic item names. Gems and art are recorded by count and GP value. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 Shared-dialog integration: Game Master no longer applies its tray control and stack sizing to every Morelord dialog. Core owns those shared controls, allowing Encounters wave fields, grouped-attack selects, and footers to retain their intended layout.
+
+Releases run through `.github/workflows/release.yml` on `main`. After successful publication, the workflow advances the legacy `master` branch without force so existing installed manifest URLs continue to receive updates.

@@ -9,13 +9,11 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
-test('the manifest URL players already use stays on master', () => {
+test('release workflow preserves the legacy manifest route', () => {
   const manifest = JSON.parse(read('module.json'));
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
-  assert.equal(
-    manifest.manifest,
-    'https://raw.githubusercontent.com/tmoreland72/morelord-game-master/master/module.json'
-  );
+  assert.match(manifest.manifest, /^https:\/\/raw\.githubusercontent\.com\/tmoreland72\/morelord-game-master\/(main|master)\/module\.json$/);
+  assert.match(read('.github/workflows/release.yml'), /git push origin HEAD:refs\/heads\/master/);
   assert.equal(
     manifest.download,
     `https://github.com/tmoreland72/morelord-game-master/releases/download/v${manifest.version}/morelord-game-master.zip`
@@ -30,7 +28,7 @@ test('release config matches the shared Morelord release.ps1 contract', () => {
   assert.equal(config.productSlug, 'morelord-game-master');
   assert.equal(config.githubOwner, 'tmoreland72');
   assert.equal(config.githubRepo, 'morelord-game-master');
-  assert.equal(config.releaseBranch, 'master');
+  assert.equal(config.releaseBranch, 'main');
   assert.equal(config.archiveName, 'morelord-game-master.zip');
   assert.equal(config.websiteUrl, 'https://morelordgaming.com');
   assert.equal(config.productDocumentationPath, 'docs/README.md');

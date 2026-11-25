@@ -305,7 +305,9 @@ test('the ambience picker and settings dialog use folder paths and relative labe
   assert.match(settings, /await picker\.render\(\{force: true\}\)/);
   assert.match(settings, /bringToFront\?\.\(\)/);
   assert.match(settings, /path: ""/);
-  assert.match(settings, /form\("Game Master settings",[\s\S]*\{modal: false\}\)/);
+  assert.match(settings, /openDialog\(\{[\s\S]*title: 'Game Master settings'/);
+  assert.match(settings, /actions: \[\['ok', 'Save Changes'\]\], modal: false/);
+  assert.match(settings, /submit: async data =>/);
   assert.match(form, /presentAmbienceScan/);
   assert.doesNotMatch(form, /throw new Error\("No audio files found/);
   assert.match(source, /register\(ID, AMBIENCE_FOLDERS, \{[^}]*default: \[\] \}/);

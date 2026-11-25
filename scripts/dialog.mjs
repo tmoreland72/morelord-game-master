@@ -52,7 +52,7 @@ function dialogClass() {
   return dialogClass.Dialog;
 }
 
-export async function openDialog({title, content, actions = [["ok", "Save"]], modal = true, id, width = 400, validate, render, classes = ["ml-window"], shellClass = "ml-dialog-shell"} = {}) {
+export async function openDialog({title, content, actions = [["ok", "Save"]], modal = true, id, width = 400, validate, submit, render, classes = ["ml-window"], shellClass = "ml-dialog-shell"} = {}) {
   return dialogClass().wait({
     modal, id, classes, window: {title, resizable: true}, position: {width}, rejectClose: false, render,
     content: `<div><div class="ml-app ml-app-shell ${shellClass}">${content}</div></div>`,
@@ -62,6 +62,14 @@ export async function openDialog({title, content, actions = [["ok", "Save"]], mo
         const data = new FormData(button.form);
         const problem = validate ? await validate(data, button.form) : null;
         if (problem) return warnDialog(button.form, problem.field, problem.message);
+        if (submit) {
+          if (button.disabled) return false;
+          const ui = game.modules.get('morelord-core').api.ui;
+          ui.setDisabled(button, 'Saving changes\nPlease wait.');
+          try { await submit(data); }
+          catch (error) { return warnDialog(button.form, null, error.message); }
+          finally { ui.setDisabled(button, ''); }
+        }
         return {action, data};
       }
     }))

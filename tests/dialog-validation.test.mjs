@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {percentIssue, submitDialog, warnDialog} from '../scripts/dialog.mjs';
+import {openDialog, percentIssue, submitDialog, warnDialog} from '../scripts/dialog.mjs';
 
 test('a dialog warning focuses the field and does not close the dialog', async () => {
   const warnings = [];
@@ -57,4 +57,29 @@ test('a dialog warning focuses the field and does not close the dialog', async (
   assert.match(smithy, /Choose an NPC actor for each enemy/);
   assert.match(smithy, /Choose an inset from 0 to 10 squares/);
   assert.doesNotMatch(smithy.slice(smithy.indexOf('async function setup'), smithy.indexOf('export function combatUsesScene')), /throw Error\('Choose/);
+});
+
+test('settings dialog waits for successful persistence and remains open on save failure',async()=>{
+  const saved={foundry:globalThis.foundry,FormData:globalThis.FormData,game:globalThis.game,ui:globalThis.ui};
+  try{
+    globalThis.foundry={applications:{api:{DialogV2:class{static wait(options){return options;}}}}};
+    globalThis.FormData=class{};
+    globalThis.game={modules:new Map([['morelord-core',{api:{ui:{setDisabled(button,reason){button.disabled=Boolean(reason);}}}}]])};
+    const warnings=[];globalThis.ui={notifications:{warn:message=>warnings.push(message)}};
+    for(const fail of [false,true]){
+      let finish,closed=false;
+      const options=await openDialog({title:'Settings',actions:[['ok','Save Changes']],submit:async()=>{
+        await new Promise(resolve=>finish=resolve);if(fail)throw Error('write failed');
+      }});
+      const dialog={options,async close(){closed=true;}},button={dataset:{action:'ok'},form:{},disabled:false};
+      const pending=submitDialog(dialog,button,{preventDefault(){}});
+      while(!finish)await new Promise(resolve=>setImmediate(resolve));
+      assert.equal(closed,false);assert.equal(button.disabled,true);
+      await submitDialog(dialog,button,{preventDefault(){}});
+      assert.equal(closed,false);
+      finish();await pending;
+      assert.equal(closed,!fail);assert.equal(button.disabled,false);
+    }
+    assert.deepEqual(warnings,['write failed']);
+  }finally{Object.assign(globalThis,saved);}
 });
